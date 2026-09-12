@@ -12,6 +12,7 @@ import { workspaceProjectHeaders } from '../collab/workspace-identity';
 import type { StreamHandlers } from './anthropic';
 import { parseSseFrame } from './sse';
 import { isAnthropicSupportedImagePath } from '../utils/apiProtocol';
+import { notifyInfernoKeyRequired } from './inferno-status';
 
 /**
  * Optional per-request context that some protocols thread into the
@@ -94,7 +95,9 @@ export async function streamProxyEndpoint(
 
     if (!resp.ok || !resp.body) {
       const text = await resp.text().catch(() => '');
-      handlers.onError(new Error(`proxy ${resp.status}: ${text || 'no body'}`));
+      const error = infernoProxyHttpError(resp.status, text);
+      if (isInfernoKeyRequiredError(error)) notifyInfernoKeyRequired();
+      handlers.onError(error);
       return;
     }
 
@@ -126,7 +129,9 @@ export async function streamProxyEndpoint(
         }
 
         if (parsed.event === 'error') {
-          handlers.onError(new Error(proxyErrorMessage(parsed.data)));
+          const error = proxyStreamError(parsed.data);
+          if (isInfernoKeyRequiredError(error)) notifyInfernoKeyRequired();
+          handlers.onError(error);
           return;
         }
 
@@ -306,4 +311,50 @@ function proxyErrorMessage(data: Record<string, unknown>): string {
     if (typeof message === 'string' && message) return message;
   }
   return String(data.message ?? 'proxy error');
+}
+
+function proxyErrorCode(data: Record<string, unknown>): string | undefined {
+  const nested = data.error;
+  if (nested && typeof nested === 'object' && 'code' in nested) {
+    const code = (nested as { code?: unknown }).code;
+    if (typeof code === 'string' && code) return code;
+  }
+  return typeof data.code === 'string' ? data.code : undefined;
+}
+
+function taggedError(message: string, code?: string): Error {
+  const error = new Error(message) as Error & { code?: string };
+  if (code) error.code = code;
+  return error;
+}
+
+function parseJsonObject(text: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    return parsed && typeof parsed === 'object' ? parsed as Record<string, unknown> : null;
+  } catch {
+    return null;
+  }
+}
+
+function infernoProxyHttpError(status: number, text: string): Error {
+  const parsed = parseJsonObject(text);
+  const code = parsed ? proxyErrorCode(parsed) : undefined;
+  const message = parsed ? proxyErrorMessage(parsed) : '';
+  return taggedError(
+    message || `proxy ${status}: ${text || 'no body'}`,
+    code,
+  );
+}
+
+function proxyStreamError(data: Record<string, unknown>): Error {
+  return taggedError(proxyErrorMessage(data), proxyErrorCode(data));
+}
+
+export function isInfernoKeyRequiredError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const code = 'code' in error ? (error as { code?: unknown }).code : undefined;
+  if (code === 'INFERNO_KEY_REQUIRED' || code === 'INFERNO_NOT_READY') return true;
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes('INFERNO_KEY_REQUIRED') || message.includes('INFERNO_NOT_READY');
 }

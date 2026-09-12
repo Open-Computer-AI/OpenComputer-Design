@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useInfernoGenerateGate } from '../InfernoKeyGate';
 import { streamViaDaemon } from '../../providers/daemon';
 import { streamMessage } from '../../providers/anthropic';
 import { composeInfernoSystemPrompt } from '../../providers/inferno-prompt';
@@ -100,6 +101,7 @@ export function useConversationChat(
   const [loading, setLoading] = useState(true);
   const messageScopeKey = `${projectId}\u0000${conversationId}`;
   const [messagesReadyScopeKey, setMessagesReadyScopeKey] = useState<string | null>(null);
+  const infernoGate = useInfernoGenerateGate();
 
   // Keep the latest config/agent map in refs so the stable `onSend` callback
   // always reads the current agent selection without re-subscribing the SSE.
@@ -202,6 +204,7 @@ export function useConversationChat(
         setError('Pick a local agent first (top bar).');
         return;
       }
+      if (!infernoGate.requestGenerate()) return;
 
       const retryTarget = retryOfAssistantId
         ? resolveRetryTarget(messagesRef.current, retryOfAssistantId)
@@ -209,10 +212,11 @@ export function useConversationChat(
       if (retryOfAssistantId && !retryTarget) return;
 
       const startedAt = Date.now();
-      const selectedAgent = agents.get(cfg.agentId) ?? null;
-      const choice = effectiveAgentModelChoice(selectedAgent, cfg.agentModels?.[cfg.agentId]);
+      const agentId = cfg.agentId ?? 'inferno';
+      const selectedAgent = agents.get(agentId) ?? null;
+      const choice = effectiveAgentModelChoice(selectedAgent, cfg.agentModels?.[agentId]);
       const assistantAgentName = agentModelDisplayName(
-        cfg.agentId,
+        agentId,
         selectedAgent?.name,
         choice?.model,
       );
@@ -232,7 +236,7 @@ export function useConversationChat(
         id: assistantId,
         role: 'assistant',
         content: '',
-        agentId: cfg.agentId,
+        agentId,
         agentName: assistantAgentName,
         events: [],
         createdAt: retryTarget?.failedAssistant.createdAt ?? startedAt,
@@ -347,7 +351,7 @@ export function useConversationChat(
       }
 
       void streamViaDaemon({
-        agentId: cfg.agentId,
+        agentId,
         history,
         signal: controller.signal,
         cancelSignal: cancelController.signal,
@@ -393,7 +397,7 @@ export function useConversationChat(
         },
       });
     },
-    [projectId, conversationId, messageScopeKey, persist, updateAssistant],
+    [infernoGate, projectId, conversationId, messageScopeKey, persist, updateAssistant],
   );
 
   const onSend = useCallback(
@@ -434,7 +438,7 @@ export function useConversationChat(
     streaming,
     error,
     loading,
-    sendDisabled: messagesReadyScopeKey !== messageScopeKey,
+    sendDisabled: messagesReadyScopeKey !== messageScopeKey || !infernoGate.canGenerate,
     onSend,
     onRetry,
     onStop,

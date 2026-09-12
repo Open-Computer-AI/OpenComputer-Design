@@ -318,6 +318,7 @@ export function EntrySettingsMenu({
             <span>{t('entry.workspaceTeamsLabel')}</span>
             <Icon name="external-link" size={12} className="entry-settings-menu__item-end" />
           </a>
+          {false ? (
           <a
             className="entry-settings-menu__item"
             href={DISCORD_URL}
@@ -344,6 +345,7 @@ export function EntrySettingsMenu({
             ) : null}
             <Icon name="external-link" size={14} className="entry-settings-menu__item-end" />
           </a>
+          ) : null}
           <a
             className="entry-settings-menu__item"
             href={X_URL}

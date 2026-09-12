@@ -353,6 +353,9 @@
   margin: 0;
 }
 .modal .row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.inferno-generate-guard {
+  display: inline-flex;
+}
 
 .updater-popup {
   z-index: 80;

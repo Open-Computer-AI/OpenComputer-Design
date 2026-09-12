@@ -53,7 +53,6 @@ import { resetCloudSignInTipDismissal } from './CloudSignInTip';
 import { SignOutConfirmDialog } from './SignOutConfirmDialog';
 import { notifyAmrLoginStatusChanged } from './amrLoginPolling';
 import { Icon } from './Icon';
-import { GITHUB_STARS_FALLBACK_LABEL, formatStars, useGithubStars } from './useGithubStars';
 import { PlanWordmark, planBadgeTierForWorkspace } from './PlanWordmark';
 import { RemixIcon } from './RemixIcon';
 import { InviteDialog } from './InviteDialog';
@@ -732,7 +731,6 @@ export function EntryTopRightCluster({
   // Sign-out confirm gate (recvqgMWpJZqhL): the menu item only ARMS the
   // confirmation dialog; the real logout chain runs on explicit confirm.
   const [confirmSignOut, setConfirmSignOut] = useState(false);
-  const githubStars = useGithubStars();
   // Signed-in account email for the menu head (#5517 shows it under the
   // display name). The workspace context carries no email, so lazily read the
   // vela login-status projection the first time the menu opens — never on
@@ -863,23 +861,6 @@ export function EntryTopRightCluster({
       {createPortal(
         <div className={clusterVisible ? 'entry-top-right-cluster' : undefined}>
           {leadingSlot}
-          {/* GitHub star chip: its own option in the cluster, right after the
-              campaign badge (per product) — it used to live in the account
-              menu's social row. */}
-          {clusterVisible ? (
-            <a
-              className="entry-top-right-github"
-              href={REPO_URL}
-              {...externalLinkProps}
-              aria-label={`GitHub · ${githubStars == null ? GITHUB_STARS_FALLBACK_LABEL : formatStars(githubStars)} stars`}
-              title={`GitHub · ${githubStars == null ? GITHUB_STARS_FALLBACK_LABEL : formatStars(githubStars)} stars`}
-              data-testid="entry-top-right-github"
-              onClick={() => trackAccountAction('github')}
-            >
-              <Icon name="github-filled" size={14} />
-              <span>{githubStars == null ? GITHUB_STARS_FALLBACK_LABEL : formatStars(githubStars)}</span>
-            </a>
-          ) : null}
           {/* One shared capsule for the account module (per product: 头像和积分
               合并成一个胶囊): credits segment on the left (same availability
               rule as the menu's billing card; clicking jumps to B's billing
@@ -1276,6 +1257,7 @@ function RailSocialRow({
 
   return (
     <div className="entry-nav-rail__social" data-testid="entry-nav-rail-social">
+      {false ? (
       <a
         className="entry-nav-rail__social-btn od-tooltip"
         href={DISCORD_URL}
@@ -1288,6 +1270,7 @@ function RailSocialRow({
       >
         <Icon name="discord" size={15} />
       </a>
+      ) : null}
       <a
         className="entry-nav-rail__social-btn od-tooltip"
         href={X_URL}

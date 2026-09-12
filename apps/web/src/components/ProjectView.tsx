@@ -13353,19 +13353,8 @@ export function ProjectView({
               amrBalanceCardAnchorMessageId={amrBalanceCardAnchorId}
               amrBalanceCardUnavailable={amrBalanceFailureWalletUnavailable}
               onAmrBalanceUpgrade={handleAmrBalanceCardUpgrade}
-              showByokRecoveryAction={
-                config.mode === 'api' &&
-                daemonLive &&
-                (
-                  !config.apiKey.trim() ||
-                  !config.baseUrl.trim() ||
-                  !config.model.trim()
-                )
-              }
-              onSwitchToLocalCli={() => {
-                setError(null);
-                onModeChange('api');
-              }}
+              showByokRecoveryAction={false}
+              onSwitchToLocalCli={undefined}
               onOpenAmrSettings={onOpenAmrSettings}
               onSwitchToAmrAndRetry={handleSwitchToAmrAndRetry}
               onLaunchAntigravityOauth={handleLaunchAntigravityOauth}

@@ -38,6 +38,7 @@ import type {
 import { DesignSystemPicker } from './DesignSystemPicker';
 import type { SkillSummary } from '../types';
 import { Icon, type IconName } from './Icon';
+import { InfernoGenerateGuard, useInfernoGenerateGate } from './InfernoKeyGate';
 import { useAnalytics } from '../analytics/provider';
 import {
   trackContextLinkResult,
@@ -383,6 +384,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
 ) {
   const { locale, t } = useI18n();
   const analytics = useAnalytics();
+  const infernoGate = useInfernoGenerateGate();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [mentionTab, setMentionTab] = useState<HomeMentionTab>('all');
   const [hoveredPlugin, setHoveredPlugin] = useState<InstalledPluginRecord | null>(null);
@@ -511,8 +513,12 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
     !pluginsLoading &&
     carouselScenario !== null &&
     carouselScenarios.some((scenario) => scenario.id === carouselScenario.id);
-  const sendEnabled = canSubmit || carouselSubmittable;
+  const sendEnabled = (canSubmit || carouselSubmittable) && infernoGate.canGenerate;
   function handleSend() {
+    if (!infernoGate.canGenerate) {
+      infernoGate.openGate();
+      return;
+    }
     if (submitting || submitDisabled) return;
     if (canSubmit) {
       notifyCompletionFeedbackGesture();
@@ -2052,6 +2058,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
                 {executionSwitcher}
               </div>
             ) : null}
+            <InfernoGenerateGuard>
             <button
               type="button"
               className={`home-hero__submit od-tooltip${sendAttention ? ' home-hero__attention-sheen' : ''}${submitting ? ' is-sending' : ''}`}
@@ -2066,6 +2073,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
             >
               <Icon name={submitting ? 'spinner' : 'arrow-up'} size={17} />
             </button>
+            </InfernoGenerateGuard>
           </div>
         </div>
       </div>

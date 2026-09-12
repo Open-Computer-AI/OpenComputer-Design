@@ -339,6 +339,44 @@ describe('buildProxyMessages', () => {
   });
 });
 
+describe('streamProxyEndpoint Inferno errors', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('tags 401 INFERNO_KEY_REQUIRED so the Generate gate can open', async () => {
+    const onError = vi.fn();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        body: null,
+        text: async () => JSON.stringify({
+          error: { code: 'INFERNO_KEY_REQUIRED', message: 'Inferno API key is required' },
+        }),
+      }),
+    );
+
+    await streamProxyEndpoint(
+      '/api/proxy/inferno/stream',
+      { apiKey: '', baseUrl: '', model: 'grok-4.5' } as any,
+      'sys',
+      [{ id: '1', role: 'user', content: 'hi', createdAt: 1 }],
+      new AbortController().signal,
+      { onDelta: vi.fn(), onDone: vi.fn(), onError },
+      undefined,
+      { omitBaseUrl: true, omitApiKey: true },
+    );
+
+    expect(onError).toHaveBeenCalledTimes(1);
+    const error = onError.mock.calls[0]?.[0] as Error & { code?: string };
+    expect(error.code).toBe('INFERNO_KEY_REQUIRED');
+    expect(error.message).toContain('Inferno API key is required');
+  });
+});
+
 function userMessage(
   content: string,
   attachments: NonNullable<ChatMessage['attachments']>,

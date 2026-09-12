@@ -12,15 +12,84 @@ export interface InfernoStatusResponse {
 }
 
 export const INFERNO_MODELS_CACHE_KEY = 'inferno';
+export const INFERNO_KEY_REQUIRED_EVENT = 'od:inferno-key-required';
+export const INFERNO_STATUS_CHANGED_EVENT = 'od:inferno-status-changed';
+
+export function notifyInfernoKeyRequired(): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(INFERNO_KEY_REQUIRED_EVENT));
+}
+
+export function notifyInfernoStatusChanged(detail?: InfernoStatusResponse): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(INFERNO_STATUS_CHANGED_EVENT, { detail }));
+}
+
+function infernoErrorFromBody(status: number, body: unknown, fallback: string): Error {
+  const nested = body && typeof body === 'object' && 'error' in body
+    ? (body as { error?: { code?: unknown; message?: unknown } }).error
+    : null;
+  const code = typeof nested?.code === 'string' ? nested.code : undefined;
+  const message = typeof nested?.message === 'string' && nested.message.trim()
+    ? nested.message
+    : fallback;
+  const error = new Error(message) as Error & { code?: string; status?: number };
+  if (code) error.code = code;
+  error.status = status;
+  return error;
+}
+
+async function readInfernoJson(response: Response): Promise<unknown> {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
 
 export async function fetchInfernoStatus(
   signal?: AbortSignal,
 ): Promise<InfernoStatusResponse> {
   const response = await fetch('/api/inferno/status', { signal });
   if (!response.ok) {
-    throw new Error(`Inferno status ${response.status}`);
+    throw infernoErrorFromBody(
+      response.status,
+      await readInfernoJson(response),
+      `Inferno status ${response.status}`,
+    );
   }
   return (await response.json()) as InfernoStatusResponse;
+}
+
+export async function saveInfernoApiKey(
+  apiKey: string,
+  signal?: AbortSignal,
+): Promise<InfernoStatusResponse> {
+  const response = await fetch('/api/inferno/key', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey }),
+    signal,
+  });
+  const body = await readInfernoJson(response);
+  if (!response.ok) {
+    throw infernoErrorFromBody(response.status, body, 'Inferno key save failed');
+  }
+  return body as InfernoStatusResponse;
+}
+
+export async function clearInfernoApiKey(
+  signal?: AbortSignal,
+): Promise<InfernoStatusResponse> {
+  const response = await fetch('/api/inferno/key', {
+    method: 'DELETE',
+    signal,
+  });
+  const body = await readInfernoJson(response);
+  if (!response.ok) {
+    throw infernoErrorFromBody(response.status, body, 'Inferno key clear failed');
+  }
+  return body as InfernoStatusResponse;
 }
 
 export async function fetchInfernoProviderModels(

@@ -82,6 +82,7 @@ import { humanizeCategory } from './SkillsSection';
 import { buildCategoryCatalog, extractCategories } from './plugins-home/facets';
 import { TrustBadge } from './TrustBadge';
 import { useI18n } from '../i18n';
+import { InfernoGenerateGuard, useInfernoGenerateGate } from './InfernoKeyGate';
 import { useDismissOnOutsideInteraction } from '../hooks/useDismissOnOutsideInteraction';
 import { localizePluginDescription, localizePluginTitle } from './plugins-home/localization';
 import { copyToClipboard } from '../lib/copy-to-clipboard';
@@ -1037,6 +1038,7 @@ export function ExtensionsMarketplace({
 }: ExtensionsMarketplaceProps) {
   const { locale, t } = useI18n();
   const analytics = useAnalytics();
+  const infernoGate = useInfernoGenerateGate();
   // My own member id, to keep the Personal tab to resources I actually own.
   const {
     context: workspaceContext,
@@ -2273,11 +2275,14 @@ export function ExtensionsMarketplace({
                     </span>
 
                     {card.action.kind === 'try' && onUsePlugin ? (
+                      <InfernoGenerateGuard>
                       <button
                         type="button"
                         className="plugin-marketplace__row-action"
+                        disabled={!infernoGate.canGenerate}
                         onClick={(event) => {
                           event.stopPropagation();
+                          if (!infernoGate.requestGenerate()) return;
                           const action = card.action as { kind: 'try'; record: InstalledPluginRecord };
                           trackExtension('use', {
                             id: action.record.id,
@@ -2288,13 +2293,17 @@ export function ExtensionsMarketplace({
                       >
                         {t('pluginsView.tryIt')}
                       </button>
+                      </InfernoGenerateGuard>
                     ) : card.action.kind === 'use-skill' && onUseSkill ? (
+                      <InfernoGenerateGuard>
                       <button
                         type="button"
                         className="plugin-marketplace__row-action"
                         data-testid={`plugins-card-use-skill-${card.id}`}
+                        disabled={!infernoGate.canGenerate}
                         onClick={(event) => {
                           event.stopPropagation();
+                          if (!infernoGate.requestGenerate()) return;
                           const action = card.action as { kind: 'use-skill'; skill: SkillSummary };
                           trackExtension('use', {
                             id: action.skill.id,
@@ -2305,6 +2314,7 @@ export function ExtensionsMarketplace({
                       >
                         {t('pluginsView.tryIt')}
                       </button>
+                      </InfernoGenerateGuard>
                     ) : card.action.kind === 'install' ? (
                       <button
                         type="button"

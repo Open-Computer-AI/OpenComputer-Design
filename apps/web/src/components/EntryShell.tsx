@@ -198,7 +198,6 @@ import type { PluginLoopSubmit } from './PluginLoopHome';
 import {
   duplicatePluginAsProject,
   patchProject,
-  ProjectCreateError,
   resolvedWorkspaceContextForWrite,
   type PluginShareAction,
   type PluginShareProjectOutcome,
@@ -693,7 +692,7 @@ export function EntryShell({
   } else if (accountFooterState === 'recovering') {
     accountFooterNotice = <RailAccountRecoveryTip />;
   } else if (accountFooterState === 'sign-in') {
-    accountFooterNotice = <CloudSignInTip />;
+    accountFooterNotice = null;
   }
   const workspaceContextRef = useRef(workspaceContext);
   workspaceContextRef.current = workspaceContext;
@@ -1566,19 +1565,7 @@ export function EntryShell({
       autoSendFirstMessage: true,
       ...(amrGatePrecheckWitness ? { amrGatePrecheckWitness } : {}),
     };
-    const create = () => Promise.resolve(onCreateProject(createInput));
-    try {
-      return await create();
-    } catch (error) {
-      if (
-        error instanceof ProjectCreateError
-        && error.code === 'AMR_AUTH_REQUIRED'
-      ) {
-        navigate({ kind: 'home', view: 'onboarding' }, { replace: true });
-        return 'blocked' as const;
-      }
-      throw error;
-    }
+    return Promise.resolve(onCreateProject(createInput));
   }
 
   /**
