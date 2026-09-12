@@ -1301,7 +1301,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
         <PixelScanLogo className="home-hero__logo home-hero__logo--tiles" />
       </span>
 
-      {/* Capsule type row: the 10 top-level create-scenario types as pill chips above
+      {/* Capsule type row: top-level create-scenario types as pill chips above
           the composer (per product — replaces the fanned card carousel); the
           selected pill carries the accent tint, click switches. */}
       <TypePillRow

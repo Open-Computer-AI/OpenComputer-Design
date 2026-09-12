@@ -1255,12 +1255,19 @@ async function readImportError(resp: Response): Promise<SkillImportError> {
   };
 }
 
+function isHyperFramesPromptTemplate(
+  template: Pick<PromptTemplateSummary, 'model' | 'source'>,
+): boolean {
+  return template.model === 'hyperframes-html'
+    || template.source.repo === 'heygen-com/hyperframes';
+}
+
 export async function fetchPromptTemplates(): Promise<PromptTemplateSummary[]> {
   try {
     const resp = await fetch('/api/prompt-templates');
     if (!resp.ok) return [];
     const json = (await resp.json()) as { promptTemplates: PromptTemplateSummary[] };
-    return json.promptTemplates ?? [];
+    return (json.promptTemplates ?? []).filter(isHyperFramesPromptTemplate);
   } catch {
     return [];
   }
@@ -1276,7 +1283,9 @@ export async function fetchPromptTemplate(
     );
     if (!resp.ok) return null;
     const json = (await resp.json()) as { promptTemplate: PromptTemplateDetail };
-    return json.promptTemplate ?? null;
+    const template = json.promptTemplate ?? null;
+    if (!template || !isHyperFramesPromptTemplate(template)) return null;
+    return template;
   } catch {
     return null;
   }
@@ -1729,21 +1738,8 @@ export async function fetchLatestGithubReleaseInfo(): Promise<LatestGithubReleas
 }
 
 export async function fetchWhatsNew(): Promise<WhatsNewResponse | null> {
-  try {
-    const resp = await fetch('/api/whats-new');
-    if (!resp.ok) return null;
-    const json = (await resp.json()) as Partial<WhatsNewResponse>;
-    if (typeof json.version !== 'string') {
-      return null;
-    }
-    return {
-      version: json.version,
-      id: typeof json.id === 'string' ? json.id : null,
-      content: json.content ?? null,
-    };
-  } catch {
-    return null;
-  }
+  // Inferno-only fork: What's New advertises AMR/Cloud, so the fetch is unused.
+  return null;
 }
 
 export type SkillExampleResult =

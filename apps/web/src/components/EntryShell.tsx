@@ -655,7 +655,10 @@ export function EntryShell({
   // to /design-systems lands on that section. We derive the active
   // view from the route rather than keeping it in component state.
   const route = useRoute();
-  const view: EntryViewKind = route.kind === 'home' ? route.view : 'home';
+  const view: EntryViewKind =
+    route.kind === 'home'
+      ? (route.view === 'onboarding' && config.onboardingCompleted === true ? 'home' : route.view)
+      : 'home';
   // The one shared workspace context. Any non-null context is a real workspace
   // (personal or team); workspace surfaces gate on B's permission bits, not on
   // workspaceType.
@@ -1617,7 +1620,7 @@ export function EntryShell({
   // carries a redundant one.
 
 
-  if (view === 'onboarding') {
+  if (view === 'onboarding' && config.onboardingCompleted !== true) {
     return (
       <div className="entry-shell entry-shell--no-header entry-shell--onboarding">
         <main className="entry-onboarding-modal" aria-label={t('settings.welcomeTitle')}>
@@ -1729,7 +1732,7 @@ export function EntryShell({
               the workspace tabs bar (entryRailBridge), the updater popup host
               lives in the rail footer, and everything below is fixed-position
               or portalled so it occupies no layout space here. */}
-          <WhatsNewPopup active={view === 'home' && !goPlanSunsetMessagePending} />
+          <WhatsNewPopup active={false} />
           {/* The campaign badge lives in EntryNavRail's top-right cluster so it
               stays beside the account module across every entry tab. */}
           {amrBalanceGateBlock?.dialog === 'ask_owner' ? (

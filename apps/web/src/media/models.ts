@@ -303,6 +303,16 @@ export const MEDIA_PROVIDERS: MediaProvider[] = [
   },
 ];
 
+for (const provider of MEDIA_PROVIDERS) {
+  if (provider.id === 'hyperframes') {
+    provider.integrated = true;
+    provider.credentialsRequired = false;
+    continue;
+  }
+  provider.integrated = false;
+  provider.settingsVisible = false;
+}
+
 export interface MediaModel {
   /** Stable ID used in metadata.imageModel / videoModel / audioModel. */
   id: string;

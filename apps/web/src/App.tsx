@@ -2302,6 +2302,11 @@ function AppInner() {
         // stays actionable regardless of the active view.
         if (shouldRouteToFirstRunOnboarding(next, window.location.pathname)) {
           navigate({ kind: 'home', view: 'onboarding' }, { replace: true });
+        } else if (
+          next.onboardingCompleted === true
+          && window.location.pathname.startsWith('/onboarding')
+        ) {
+          navigate({ kind: 'home', view: 'home' }, { replace: true });
         }
         setDaemonConfigLoaded(true);
         // Only a non-null GET payload means we actually observed daemon prefs.
@@ -4869,6 +4874,12 @@ function AppInner() {
     void syncConfigToDaemon(next);
     setConfig(next);
   }, []);
+
+  useEffect(() => {
+    if (config.onboardingCompleted !== true) return;
+    if (route.kind !== 'home' || route.view !== 'onboarding') return;
+    navigate({ kind: 'home', view: 'home' }, { replace: true });
+  }, [config.onboardingCompleted, route]);
 
   // Cmd+, (mac) / Ctrl+, (win/linux) opens Settings. Capture phase so we
   // beat the browser's default Preferences dialog. Platform-gated so

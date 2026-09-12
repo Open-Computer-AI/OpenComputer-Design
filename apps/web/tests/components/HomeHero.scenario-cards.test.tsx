@@ -92,21 +92,21 @@ describe('HomeHero scenario cards', () => {
     ).toContain('Slide deck');
   });
 
-  it('uses the fixed ten-item Home creation hierarchy in product order', () => {
+  it('uses the fixed Home creation hierarchy in product order', () => {
     const ordered = orderedCreateChips();
     const ids = ordered.map((chip) => chip.id);
     expect(ids).toEqual([
       'prototype',
       'deck',
-      'image',
       'document',
       'hyperframes',
       'web-clone',
-      'video',
       'audio',
       'live-artifact',
       'webgl',
     ]);
+    expect(ids).not.toContain('image');
+    expect(ids).not.toContain('video');
     expect(ids).not.toContain('wireframe');
     expect(ids).not.toContain('mobile');
   });

@@ -84,6 +84,16 @@ export const MEDIA_PROVIDERS: MediaProvider[] = [
   { id: 'stub', label: 'Stub (placeholder)', hint: 'Deterministic local placeholder bytes', integrated: true },
 ];
 
+for (const provider of MEDIA_PROVIDERS) {
+  if (provider.id === 'hyperframes') {
+    provider.integrated = true;
+    provider.credentialsRequired = false;
+    continue;
+  }
+  provider.integrated = false;
+  provider.settingsVisible = false;
+}
+
 export const IMAGE_MODELS: MediaModel[] = [
   { id: 'vela/gpt-image-2', label: 'gpt-image-2 (Cloud)', hint: 'OpenDesign Cloud · managed image generation and editing', provider: 'vela', caps: ['t2i', 'i2i'], default: true },
   { id: 'vela/nano-banana-2', label: 'nano-banana-2 (Cloud)', hint: 'OpenDesign Cloud · managed image generation and editing', provider: 'vela', caps: ['t2i', 'i2i'] },

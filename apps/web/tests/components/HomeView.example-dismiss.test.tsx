@@ -85,6 +85,7 @@ const EXAMPLE_CARDS = [
   pluginRecord('example-eng-runbook', 'Eng Runbook', ['document', 'runbook'], { mode: 'document' }),
   pluginRecord('example-live-dashboard', 'Live Dashboard', ['live-artifact'], { mode: 'prototype' }),
   pluginRecord('example-image-template', 'Image Template', ['image', 'image-template'], { mode: 'image' }),
+  pluginRecord('example-audio-template', 'Audio Template', ['audio'], { mode: 'audio' }),
 ];
 
 const CATALOG = [...CHIP_DEFAULTS, ...EXAMPLE_CARDS];
@@ -288,12 +289,12 @@ const DISMISS_CASES: DismissCase[] = [
     pluginId: 'od-new-generation',
   },
   {
-    name: '图片 (media surface, no OD Next route)',
-    chipId: 'image',
-    cardId: 'example-image-template',
+    name: '音频 (media surface, no OD Next route)',
+    chipId: 'audio',
+    cardId: 'example-audio-template',
     automaticStrategyTaskProfile: null,
-    projectKind: 'image',
-    projectMetadata: { kind: 'image' },
+    projectKind: 'audio',
+    projectMetadata: { kind: 'audio' },
     pluginId: 'od-media-generation',
   },
   {
