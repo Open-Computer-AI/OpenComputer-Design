@@ -24,13 +24,11 @@ import {
 } from '../analytics/events';
 import { createSocialSharePayload } from '../providers/registry';
 import type { AppConfig } from '../types';
-import { formatDiscordPresenceCount, useDiscordPresence } from './useDiscordPresence';
 import { Icon } from './Icon';
 import { SocialShareGrid } from './SocialShareGrid';
 import { enterpriseUrl } from './enterpriseUrl';
 
-const DISCORD_URL = 'https://discord.gg/mHAjSMV6gz';
-const X_URL = 'https://x.com/OpenDesignHQ';
+const X_URL = 'https://tryopencomputer.com';
 const THREADS_URL = 'https://www.threads.com/@opendesign.ai';
 const YOUTUBE_URL = 'https://www.youtube.com/@Open-Design-ai';
 const INSTAGRAM_URL = 'https://www.instagram.com/opendesign.ai/';
@@ -80,18 +78,12 @@ export function EntrySettingsMenu({
   const analytics = useAnalytics();
   const t = useT();
   const { locale, setLocale } = useI18n();
-  const discordPresence = useDiscordPresence();
   const [open, setOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [openDesignShare, setOpenDesignShare] = useState<SocialShareResponse | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const langListRef = useRef<HTMLDivElement | null>(null);
-  const discordOnlineLabel = discordPresence
-    ? t('entry.discordOnlineLabel', {
-        count: formatDiscordPresenceCount(discordPresence.onlineCount),
-      })
-    : null;
   const openDesignShareRequest = useMemo<SocialShareRequest>(() => {
     const text = t('socialShare.openDesignText');
     return {
@@ -317,32 +309,6 @@ export function EntrySettingsMenu({
             </span>
             <span>{t('entry.workspaceTeamsLabel')}</span>
             <Icon name="external-link" size={12} className="entry-settings-menu__item-end" />
-          </a>
-          <a
-            className="entry-settings-menu__item"
-            href={DISCORD_URL}
-            target="_blank"
-            rel="noreferrer noopener"
-            role="menuitem"
-            onClick={() => {
-              trackSettingsPopoverClick(analytics.track, {
-                page_name: pageName,
-                area: 'settings_popover',
-                element: 'join_discord',
-              });
-              setOpen(false);
-            }}
-          >
-            <span className="entry-settings-menu__item-icon" aria-hidden>
-              <Icon name="discord" size={14} />
-            </span>
-            <span>{t('entry.discordLabel')}</span>
-            {discordOnlineLabel ? (
-              <span className="entry-settings-menu__item-meta">
-                {discordOnlineLabel}
-              </span>
-            ) : null}
-            <Icon name="external-link" size={14} className="entry-settings-menu__item-end" />
           </a>
           <a
             className="entry-settings-menu__item"

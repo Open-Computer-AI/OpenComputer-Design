@@ -353,6 +353,16 @@
   margin: 0;
 }
 .modal .row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.inferno-generate-guard {
+  display: inline-flex;
+}
+.inferno-generate-guard.is-blocked {
+  cursor: pointer;
+}
+/* Native disabled buttons swallow clicks. The wrapper must receive the hit. */
+.inferno-generate-guard.is-blocked > * {
+  pointer-events: none;
+}
 
 .updater-popup {
   z-index: 80;

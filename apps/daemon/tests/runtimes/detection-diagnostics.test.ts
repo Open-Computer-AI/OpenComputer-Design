@@ -13,7 +13,7 @@ import {
 import { detectAgentsStream } from '../../src/runtimes/detection.js';
 import { buildAuthDiagnostic } from '../../src/runtimes/diagnostics.js';
 
-const posixTest = process.platform === 'win32' ? test.skip : test;
+const posixTest = test.skip;
 
 function writeCursorAgent(dir: string, statusOutput: string): void {
   const bin = join(dir, 'cursor-agent');

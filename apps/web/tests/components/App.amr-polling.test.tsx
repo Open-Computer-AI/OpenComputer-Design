@@ -351,7 +351,7 @@ describe('App AMR polling', () => {
     expect(mockedFetchAmrModels).toHaveBeenCalledTimes(2);
   });
 
-  it('returns every authenticated surface to onboarding when Cloud auth definitively expires', async () => {
+  it('opens the Inferno key gate instead of Cloud onboarding when Cloud auth expires', async () => {
     mockedLoadConfig.mockReturnValue({
       ...baseConfig,
       mode: 'daemon',
@@ -375,12 +375,11 @@ describe('App AMR polling', () => {
 
     render(<App />);
 
-    await waitFor(() => {
-      expect(mockedNavigate).toHaveBeenCalledWith(
-        { kind: 'home', view: 'onboarding' },
-        { replace: true },
-      );
-    });
+    expect(await screen.findByTestId('inferno-key-gate')).toBeTruthy();
+    expect(mockedNavigate).not.toHaveBeenCalledWith(
+      { kind: 'home', view: 'onboarding' },
+      expect.anything(),
+    );
   });
 
   it('starts AMR preset polling before the agent probe resolves', { timeout: 10_000 }, async () => {

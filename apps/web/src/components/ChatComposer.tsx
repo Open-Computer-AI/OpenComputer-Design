@@ -38,6 +38,7 @@ import type {
 } from '@open-design/contracts/analytics';
 import { deriveUploadCohort } from '../analytics/upload-tracking';
 import { notifyCompletionFeedbackGesture } from '../utils/notifications';
+import { InfernoGenerateGuard, useInfernoGenerateGate } from './InfernoKeyGate';
 import { projectRawUrl, uploadProjectFiles, openFolderDialog, fetchRecentLinkedDirs, pushRecentLinkedDir, dirExists, applyLibraryAsset, fetchLibraryAssetElementHtml } from "../providers/registry";
 import {
   duplicatePluginAsProject,
@@ -649,6 +650,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     // into an immediate, non-interactive "Preparing..." pill instead of
     // looking like the click was lost.
     const [composedSendPending, setComposedSendPending] = useState(false);
+    const infernoGate = useInfernoGenerateGate();
     const previousSessionModeRef = useRef(sessionMode);
 
     useEffect(() => {
@@ -1672,6 +1674,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       meta?: ChatSendMeta,
     ): boolean {
       setStreamingAnnotationSendPending(false);
+      if (!infernoGate.requestGenerate()) return false;
       if (!prompt && attachments.length === 0 && nextCommentAttachments.length === 0) return false;
       const nextAttachments =
         activeFileContext && !attachments.some((attachment) => attachment.path === activeFileContext)
@@ -2615,6 +2618,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     }, [
       commentAttachments,
       draft,
+      infernoGate,
       onSend,
       projectId,
       // 引用要折进这条路发出去的正文,闭包必须拿到当下这一份。
@@ -2665,6 +2669,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     }, [
       commentAttachments,
       draft,
+      infernoGate,
       onSend,
       // 同上:延迟发的那一发也要带上此刻的引用。
       quotes,
@@ -3078,6 +3083,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       // 「这一发能不能走」只问 `canSend` 这一处 —— 见它的注释(OPEND-2551)。
       // 位置在最前面是有意的:下面的 `/hatch`、`/search` 两条支路会绕过后续流程,
       // 判据留在它们后面的话,那两条支路等于又多了一套自己的答案。
+      if (!infernoGate.requestGenerate()) return;
       if (!canSend) return;
       // Intercept `/pet …` and `/mcp` before sending so the slash command
       // never hits the agent — these are local UX hooks, not model prompts.
@@ -3254,7 +3260,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
      * 而引用**是折进正文的**,所以同一时刻它非空。同一个问题、两处各算各的,
      * 早晚会分叉;分叉之后症状出现在离原因最远的地方(用户看到的是「按钮坏了」)。
      */
-    const canSend = !sendDisabled && hasComposerPayload;
+    const canSend = !sendDisabled && hasComposerPayload && infernoGate.canGenerate;
     /**
      * 摆到台面上的那枚「已应用插件」芯片(OPEND-2412)。
      *
@@ -3898,6 +3904,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
               </button>
             ) : null}
             {showSendButton ? (
+              <InfernoGenerateGuard>
               <button
                 type="button"
                 className="composer-send od-tooltip"
@@ -3911,6 +3918,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
                   void submit();
                 }}
                 disabled={!canSend}
+                aria-disabled={!infernoGate.canGenerate ? true : undefined}
                 aria-label={t('chat.send')}
                 title={t('chat.send')}
                 data-tooltip={t('chat.send')}
@@ -3934,6 +3942,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
                     无阴影。首页那一侧的对应改动照 revert 走,两边就此分开。 */}
                 <Icon name="arrow-up-fill" size={32} />
               </button>
+              </InfernoGenerateGuard>
             ) : null}
           </div>
         </div>

@@ -18,7 +18,8 @@ describe('ElevenLabs voice options', () => {
     root = await mkdtemp(path.join(tmpdir(), 'od-elevenlabs-voices-'));
     projectRoot = path.join(root, 'project-root');
     delete process.env.OD_MEDIA_CONFIG_DIR;
-    delete process.env.OD_DATA_DIR;
+    process.env.OD_DATA_DIR = path.join(projectRoot, '.od');
+    process.env.OCD_DATA_DIR = path.join(projectRoot, '.od');
     delete process.env.OD_ELEVENLABS_API_KEY;
     delete process.env.ELEVENLABS_API_KEY;
   });
@@ -32,8 +33,10 @@ describe('ElevenLabs voice options', () => {
     }
     if (originalDataDir == null) {
       delete process.env.OD_DATA_DIR;
+      delete process.env.OCD_DATA_DIR;
     } else {
       process.env.OD_DATA_DIR = originalDataDir;
+      process.env.OCD_DATA_DIR = originalDataDir;
     }
     delete process.env.OD_ELEVENLABS_API_KEY;
     delete process.env.ELEVENLABS_API_KEY;

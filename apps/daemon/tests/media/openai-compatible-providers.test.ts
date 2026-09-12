@@ -37,7 +37,8 @@ describe('OpenAI-compatible media providers', () => {
     delete process.env.OD_IMAGEROUTER_API_KEY;
     delete process.env.OD_CUSTOM_IMAGE_API_KEY;
     delete process.env.OD_MEDIA_CONFIG_DIR;
-    delete process.env.OD_DATA_DIR;
+    process.env.OD_DATA_DIR = path.join(projectRoot, '.od');
+    process.env.OCD_DATA_DIR = path.join(projectRoot, '.od');
     delete process.env.OD_MEDIA_MODEL_ALIASES;
     delete process.env.OD_MEDIA_ALLOW_STUBS;
     for (const key of OPENAI_ENV_KEYS) {
@@ -65,8 +66,10 @@ describe('OpenAI-compatible media providers', () => {
     }
     if (originalDataDir == null) {
       delete process.env.OD_DATA_DIR;
+      delete process.env.OCD_DATA_DIR;
     } else {
       process.env.OD_DATA_DIR = originalDataDir;
+      process.env.OCD_DATA_DIR = originalDataDir;
     }
     if (originalEnvAliases == null) {
       delete process.env.OD_MEDIA_MODEL_ALIASES;

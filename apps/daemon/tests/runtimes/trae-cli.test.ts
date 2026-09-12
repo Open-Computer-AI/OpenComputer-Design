@@ -68,8 +68,9 @@ describe('Trae CLI runtime adapter', () => {
     );
   });
 
-  it('registers Trae CLI in the agent registry', () => {
-    expect(getAgentDef('trae-cli')).toBe(traeCliAgentDef);
+  it('does not ship Trae CLI in the Inferno-only registry', () => {
+    expect(getAgentDef('trae-cli')).toBeNull();
+    expect(traeCliAgentDef.id).toBe('trae-cli');
   });
 
   it('exposes public install metadata and docs without internal COCO leakage', async () => {

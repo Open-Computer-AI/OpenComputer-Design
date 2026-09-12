@@ -52,7 +52,7 @@ import {
   workspaceBillingBalanceUsd,
 } from '../collab/useWorkspaceContext';
 import { KNOWN_PROVIDERS } from '../state/config';
-import { fetchProviderModels } from '../providers/provider-models';
+import { fetchInfernoProviderModels, INFERNO_MODELS_CACHE_KEY } from '../providers/inferno-status';
 import { SUGGESTED_MODELS_BY_PROTOCOL } from '../state/apiProtocols';
 import {
   canUpgradeVelaPlan,
@@ -93,7 +93,6 @@ import {
 } from './modelOptions';
 import {
   mergeProviderModelOptions,
-  providerModelsCacheKey,
   type ProviderModelsCache,
 } from './providerModelsCache';
 import { isDeepSeekV4FlashCampaignModel } from '../campaigns/deepseek-v4-flash';
@@ -130,13 +129,7 @@ interface Props {
   ) => void;
 }
 
-const API_PROTOCOL_TABS: Array<{ id: ApiProtocol; title: string }> = [
-  { id: 'anthropic', title: 'Anthropic' },
-  { id: 'openai', title: 'OpenAI' },
-  { id: 'azure', title: 'Azure' },
-  { id: 'google', title: 'Google' },
-  { id: 'aihubmix', title: 'AIHubMix' },
-];
+
 
 const AMR_REMINDER_SEEN_KEY = 'open-design:inline-amr-cli-reminder-seen:v2';
 let amrReminderSeenFallback = false;
@@ -182,7 +175,7 @@ export function InlineModelSwitcher({
   onModeChange,
   onAgentChange,
   onAgentModelChange,
-  onApiProtocolChange,
+  onApiProtocolChange: _onApiProtocolChange,
   onApiModelChange,
   onProviderModelsCacheChange,
   onOpenSettings,
@@ -980,42 +973,19 @@ export function InlineModelSwitcher({
       ) ?? KNOWN_PROVIDERS.find((p) => p.protocol === apiProtocol),
     [apiProtocol, config.apiProviderBaseUrl],
   );
-  const providerModelsKey = useMemo(
-    () =>
-      providerModelsCacheKey(
-        apiProtocol,
-        config.baseUrl,
-        config.apiKey,
-        config.apiVersion ?? '',
-      ),
-    [apiProtocol, config.apiKey, config.apiVersion, config.baseUrl],
-  );
+  const providerModelsKey = INFERNO_MODELS_CACHE_KEY;
   const fetchedApiModelOptions = providerModelsCache?.[providerModelsKey] ?? [];
 
-  // Warm the shared provider-models cache from the home picker itself. The
-  // picker otherwise depends on Settings/onboarding having fetched first, so on
-  // a fresh load the BYOK list shows only the small static seed list instead of
-  // the live catalogue. We fetch when the panel is open in BYOK mode and the
-  // preconditions for the active protocol are met (AIHubMix's catalogue is
-  // public, so it needs no key; every other protocol needs one). Results are
-  // keyed identically to Settings (`providerModelsKey`), so a single fetch
-  // serves both surfaces and replaces any stale slot.
+  // Warm the shared Inferno catalogue from the daemon store. Do not send a
+  // client-typed URL or API key — the daemon pins the host and supplies the key.
   useEffect(() => {
     if (!open || config.mode !== 'api' || !onProviderModelsCacheChange) return;
-    if (apiProtocol === 'azure' || apiProtocol === 'ollama') return;
-    if (apiProtocol !== 'aihubmix' && !config.apiKey.trim()) return;
-    const baseUrl = config.baseUrl.trim();
-    if (!/^https?:\/\//i.test(baseUrl)) return;
     const key = providerModelsKey;
     if (fetchedApiModelOptions.length) return;
     if (providerModelsFetchingRef.current.has(key)) return;
     providerModelsFetchingRef.current.add(key);
     let active = true;
-    void fetchProviderModels({
-      protocol: apiProtocol,
-      baseUrl,
-      apiKey: config.apiKey,
-    })
+    void fetchInfernoProviderModels()
       .then((result) => {
         if (active && result.ok && result.models?.length) {
           onProviderModelsCacheChange((current) => ({
@@ -1036,9 +1006,6 @@ export function InlineModelSwitcher({
   }, [
     open,
     config.mode,
-    config.apiKey,
-    config.baseUrl,
-    apiProtocol,
     providerModelsKey,
     fetchedApiModelOptions.length,
     onProviderModelsCacheChange,
@@ -1230,71 +1197,6 @@ export function InlineModelSwitcher({
           data-testid="inline-model-switcher-popover"
           style={popoverPlacement ? { maxHeight: `${popoverPlacement.maxHeight}px`, overflowY: 'auto' } : undefined}
         >
-          {compact ? null : (
-          <div className="inline-switcher__row">
-            <span className="inline-switcher__label">
-              {t('inlineSwitcher.modeLabel')}
-            </span>
-            <div className="inline-switcher__seg" role="tablist">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={config.mode === 'daemon'}
-                className={
-                  'inline-switcher__seg-btn' +
-                  (config.mode === 'daemon' ? ' is-active' : '')
-                }
-                data-testid="inline-model-switcher-mode-daemon"
-                disabled={!daemonLive && config.mode !== 'daemon'}
-                onClick={() => {
-                  trackExecutionSettingsPopoverClick(analytics.track, {
-                    page_name: 'home',
-                    area: 'execution_settings_popover',
-                    element: 'mode_local_cli',
-                  });
-                  // Optional-call so a transient Fast Refresh state where a
-                  // parent has not yet re-rendered with the new prop signature
-                  // does not crash the entire entry view. The same defensive
-                  // pattern is applied to every callback below.
-                  onModeChange?.('daemon');
-                  if (!daemonLive) {
-                    setOpen(false);
-                    onOpenSettings?.('execution');
-                  }
-                }}
-                title={
-                  !daemonLive
-                    ? t('inlineSwitcher.daemonOffline')
-                    : t('inlineSwitcher.useCli')
-                }
-              >
-                {t('inlineSwitcher.chipCli')}
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={config.mode === 'api'}
-                className={
-                  'inline-switcher__seg-btn' +
-                  (config.mode === 'api' ? ' is-active' : '')
-                }
-                data-testid="inline-model-switcher-mode-api"
-                onClick={() => {
-                  trackExecutionSettingsPopoverClick(analytics.track, {
-                    page_name: 'home',
-                    area: 'execution_settings_popover',
-                    element: 'mode_byok',
-                  });
-                  onModeChange?.('api');
-                }}
-                title={t('inlineSwitcher.useByok')}
-              >
-                {t('inlineSwitcher.chipByok')}
-              </button>
-            </div>
-          </div>
-          )}
-
           {/* The popover body always reflects the ACTIVE execution mode:
               `compact` only chooses layout density, never which catalogue is
               on offer. A BYOK chip therefore always opens onto the BYOK
@@ -1303,47 +1205,6 @@ export function InlineModelSwitcher({
               the BYOK model). */}
           {config.mode === 'api' ? (
             <>
-              {compact ? null : (
-              <div className="inline-switcher__row">
-                <span className="inline-switcher__label">
-                  {t('inlineSwitcher.providerLabel')}
-                </span>
-                <div className="inline-switcher__chips" role="tablist">
-                  {API_PROTOCOL_TABS.map((tab) => {
-                    const active = apiProtocol === tab.id;
-                    return (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        role="tab"
-                        aria-selected={active}
-                        className={
-                          'inline-switcher__chip-tab' +
-                          (active ? ' is-active' : '')
-                        }
-                        data-testid={`inline-model-switcher-provider-${tab.id}`}
-                        onClick={() => {
-                          // Unlike Settings (which skips unmapped protocols),
-                          // report the click even when the protocol has no v2
-                          // provider_id (e.g. aihubmix) — just omit the field.
-                          trackExecutionSettingsPopoverClick(analytics.track, {
-                            page_name: 'home',
-                            area: 'execution_settings_popover',
-                            element: 'byok_provider_tab',
-                            provider_id:
-                              byokProtocolToTracking(tab.id) ?? undefined,
-                          });
-                          onApiProtocolChange?.(tab.id);
-                        }}
-                      >
-                        {tab.title}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              )}
-
               <div className="inline-switcher__row">
                 <span className="inline-switcher__label">
                   {t('inlineSwitcher.modelLabel')}

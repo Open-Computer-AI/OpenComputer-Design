@@ -11,8 +11,7 @@ import { useAnalytics } from '../analytics/provider';
 import { useI18n } from '../i18n';
 import styles from './GoPlanSunsetDialog.module.css';
 
-const GO_PLAN_PRICING_URL =
-  'https://open-design.ai/amr/dashboard?source=open_design&billing=plan';
+const GO_PLAN_PRICING_URL = 'https://tryopencomputer.com';
 
 type DismissElement = 'acknowledge' | 'close';
 

@@ -31,7 +31,8 @@ describe('xAI Grok TTS media generation', () => {
     projectsRoot = path.join(projectRoot, '.od', 'projects');
     await mkdir(projectsRoot, { recursive: true });
     delete process.env.OD_MEDIA_CONFIG_DIR;
-    delete process.env.OD_DATA_DIR;
+    process.env.OD_DATA_DIR = path.join(projectRoot, '.od');
+    process.env.OCD_DATA_DIR = path.join(projectRoot, '.od');
     delete process.env.OD_GROK_API_KEY;
     delete process.env.XAI_API_KEY;
   });
@@ -40,8 +41,13 @@ describe('xAI Grok TTS media generation', () => {
     globalThis.fetch = realFetch;
     if (originalMediaConfigDir == null) delete process.env.OD_MEDIA_CONFIG_DIR;
     else process.env.OD_MEDIA_CONFIG_DIR = originalMediaConfigDir;
-    if (originalDataDir == null) delete process.env.OD_DATA_DIR;
-    else process.env.OD_DATA_DIR = originalDataDir;
+    if (originalDataDir == null) {
+      delete process.env.OD_DATA_DIR;
+      delete process.env.OCD_DATA_DIR;
+    } else {
+      process.env.OD_DATA_DIR = originalDataDir;
+      process.env.OCD_DATA_DIR = originalDataDir;
+    }
     if (originalGrokKey == null) delete process.env.OD_GROK_API_KEY;
     else process.env.OD_GROK_API_KEY = originalGrokKey;
     if (originalXaiKey == null) delete process.env.XAI_API_KEY;

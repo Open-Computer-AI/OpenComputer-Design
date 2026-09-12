@@ -4,7 +4,7 @@
 // wide one. Opens in the external browser. The marketing site lives
 // outside this repo, so both development and production use the
 // deployed origin.
-const ENTERPRISE_BASE = 'https://open-design.ai';
+const ENTERPRISE_BASE = 'https://tryopencomputer.com';
 
 // Map the client's active locale to an active marketing-site locale segment so
 // the enterprise page opens in the same language the user is already reading.

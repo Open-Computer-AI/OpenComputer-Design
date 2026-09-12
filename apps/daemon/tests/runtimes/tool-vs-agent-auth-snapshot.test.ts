@@ -258,10 +258,13 @@ describe('tool-vs-agent auth attribution landing table', () => {
     // exactly that agent.
     const shipped = new Set<string>();
     for (const def of SHIPPED_AGENT_DEFS) {
+      // Inferno is HTTP-only and never speaks as a CLI auth principal.
+      if ((def as { synthetic?: boolean }).synthetic) continue;
       shipped.add(def.id.toLowerCase());
       const bin = (def as { bin?: unknown }).bin;
       if (typeof bin === 'string' && bin) shipped.add(bin.toLowerCase());
     }
+    expect(SHIPPED_AGENT_DEFS.map((def) => def.id)).toEqual(['inferno']);
     const missing = [...shipped].filter((name) => !OWN_AGENT_COMMAND_NAMES.has(name)).sort();
     expect(missing).toEqual([]);
   });

@@ -247,6 +247,9 @@ const MEDIA_SURFACE_LABEL_KEYS: Record<MediaSurface, keyof Dict> = {
   audio: 'newproj.surfaceAudio',
 };
 
+// Remote Image/Video create is hidden; the Media tab keeps audio only.
+const VISIBLE_MEDIA_SURFACES: MediaSurface[] = ['audio'];
+
 export function defaultDesignSystemSelection(
   defaultDesignSystemId: string | null,
   designSystems: DesignSystemSummary[],
@@ -325,7 +328,7 @@ export function NewProjectPanel({
   // which set of options + skill resolution applies; submission still maps
   // back to the existing image/video/audio ProjectKind branches so the
   // backend contract is unchanged.
-  const [mediaSurface, setMediaSurface] = useState<MediaSurface>('image');
+  const [mediaSurface, setMediaSurface] = useState<MediaSurface>('audio');
   const tabsRef = useRef<HTMLDivElement | null>(null);
   const [tabScroll, setTabScroll] = useState({ left: false, right: false });
   const [name, setName] = useState('');
@@ -973,13 +976,13 @@ export function NewProjectPanel({
           />
         ) : null}
 
-        {tab === 'media' ? (
+        {tab === 'media' && VISIBLE_MEDIA_SURFACES.length > 1 ? (
           <div
             className="newproj-media-segmented"
             role="tablist"
             aria-label={t('newproj.tabMedia')}
           >
-            {(Object.keys(MEDIA_SURFACE_LABEL_KEYS) as MediaSurface[]).map((surface) => (
+            {VISIBLE_MEDIA_SURFACES.map((surface) => (
               <button
                 key={surface}
                 type="button"

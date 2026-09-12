@@ -64,28 +64,28 @@ export const zhTW: Dict = {
   "workspaceInvite.errorUnreachable": "邀請未能送達，請稍後重試。",
   "chat.amrCard.switchTitle": "模型呼叫失敗，目前任務已暫停",
   "chat.amrCard.switchBody":
-    "可切換到 OpenDesign Cloud 官方模型服務，無需設定 API Key。完成登入、授權與儲值後，將自動重試目前任務。",
+    "可切換到 Inferno 官方模型服務，無需設定 API Key。完成登入、授權與儲值後，將自動重試目前任務。",
   "chat.amrCard.chipOfficial": "官方代管",
   "chat.amrCard.chipNoKey": "無需 API Key",
   "chat.amrCard.chipAutoRetry": "授權後自動重試",
   "chat.amrCard.switchCta": "切換到 Cloud",
   "chat.amrError.authMessage":
-    "OpenDesign Cloud 帳號尚未授權。完成授權後將自動重試目前任務。",
+    "Inferno 帳號尚未授權。完成授權後將自動重試目前任務。",
   "chat.amrError.balanceMessage":
-    "OpenDesign Cloud 額度不足。儲值後即可繼續執行目前任務。",
+    "Inferno 額度不足。儲值後即可繼續執行目前任務。",
   "chat.amrError.authorizeCta": "授權並重試",
   "chat.amrError.rechargeCta": "儲值",
   "chat.amrBalanceGate.title": "升級方案，繼續創作",
   "chat.amrBalanceGate.message": "額度不足（目前 {balance}），升級方案或儲值後，任務馬上就能開始。",
-  "chat.amrBalanceGate.benefitsTitle": "OpenDesign Cloud 為你提供",
+  "chat.amrBalanceGate.benefitsTitle": "Inferno 為你提供",
   "chat.amrBalanceGate.benefit1": "無需 API Key，海量模型任選",
   "chat.amrBalanceGate.benefit2": "自帶 SOTA Design Agent，零設定",
   "chat.amrBalanceGate.benefit3": "官方服務，穩定有保障",
   "chat.amrBalanceGate.benefit4": "持續升級：一鍵部署、多模態、團隊版等",
   "chat.amrBalanceGate.laterCta": "暫不需要",
   "chat.amrBalanceGate.plansCta": "升級方案",
-  "chat.amrBalanceGate.signedOutTitle": "登入 OpenDesign Cloud，開始創作",
-  "chat.amrBalanceGate.signedOutMessage": "目前使用的是 OpenDesign Cloud 智能體，登入後這個任務馬上就能開始。",
+  "chat.amrBalanceGate.signedOutTitle": "登入 Inferno，開始創作",
+  "chat.amrBalanceGate.signedOutMessage": "目前使用的是 Inferno 智能體，登入後這個任務馬上就能開始。",
   "chat.amrBalanceGate.signInCta": "立即登入",
   "chat.amrBalanceGate.watchingWallet": "額度更新後將自動繼續。",
   "chat.amrArtifactUpgrade.title": "用更強模型繼續完善作品",
@@ -352,7 +352,7 @@ export const zhTW: Dict = {
   "settings.onboardingGateTooltipNoRuntime":
     "後續流程由 AI 執行，請先選擇一種執行方式。",
   "settings.onboardingGateTooltipAmr":
-    "後續流程由 AI 執行，請先登入 OpenDesign Cloud。",
+    "後續流程由 AI 執行，請先登入 Inferno。",
   "settings.onboardingGateTooltipLocal":
     "後續流程由 AI 執行，請先選擇一個可用的本機 CLI。",
   "settings.onboardingGateTooltipByok":
@@ -450,7 +450,7 @@ export const zhTW: Dict = {
   "settings.modeDaemonOfflineMeta": "守護程序未執行",
   "settings.modeDaemonInstalledMeta": "已安裝 {count} 個",
   "settings.modeApi": "API 提供方",
-  "settings.cloudCalloutTitle": "使用 OpenDesign Cloud",
+  "settings.cloudCalloutTitle": "使用 Inferno",
   "settings.cloudCalloutBody": "登入雲端版本後可啟用團隊空間、共享專案、成員權限和稽核儀表板。",
   "settings.cloudCalloutButton": "登入 / 註冊",
   "settings.modeApiMeta": "API 供應商",
@@ -505,7 +505,7 @@ export const zhTW: Dict = {
   "settings.agentInstallGroup": "可安裝（{count}）",
   "settings.agentAuthRequired": "需要認證",
   "settings.agentAuthUnknown": "認證狀態未知",
-  "settings.amrCloud": "OpenDesign Cloud",
+  "settings.amrCloud": "Inferno",
   "settings.amrAuthorize": "授權",
   "settings.amrBenefitOfficial": "官方維護",
   "settings.amrBenefitLowerPrice": "價格更低",
@@ -519,7 +519,7 @@ export const zhTW: Dict = {
   "settings.amrWalletUpdatedAt": "更新於 {time}",
   "settings.amrWalletCached": "快取",
   "settings.amrWalletRefresh": "重新整理",
-  "settings.amrWalletRefreshTitle": "重新整理 OpenDesign Cloud 錢包餘額",
+  "settings.amrWalletRefreshTitle": "重新整理 Inferno 錢包餘額",
   "settings.amrNotSignedIn": "未授權",
   "settings.amrSigningIn": "登入中…",
   "settings.amrActivationHint": "沒有彈出登入頁?點擊下方按鈕重新喚起",
@@ -527,9 +527,9 @@ export const zhTW: Dict = {
     "無法自動開啟瀏覽器,請開啟下方的登入頁繼續。",
   "settings.amrActivationOpen": "開啟登入頁",
   "settings.amrCancelSignIn": "取消登入",
-  "settings.amrAccountStatus": "OpenDesign Cloud 帳戶狀態",
+  "settings.amrAccountStatus": "Inferno 帳戶狀態",
   "settings.amrConsole": "管理",
-  "settings.amrLoginErrorCompact": "OpenDesign Cloud 登入失敗。",
+  "settings.amrLoginErrorCompact": "Inferno 登入失敗。",
   "settings.advanced": "進階",
   "settings.amrLogin": "登入",
   "settings.amrLogout": "登出",
@@ -857,14 +857,14 @@ export const zhTW: Dict = {
   "entry.navBoard": "看板",
   "entry.navTeamSection": "團隊",
   "entry.teamSlotNote": "此檢視由團隊服務提供，接入中。",
-  "entry.cloudCalloutTitle": "OpenDesign Cloud 版",
+  "entry.cloudCalloutTitle": "Inferno 版",
   'entry.cloudRecovering': '帳號連線中斷，正在自動恢復…',
-  'entry.authExpiredBody': '登入狀態已過期。登入後即可繼續使用 OpenDesign Cloud。',
+  'entry.authExpiredBody': '登入狀態已過期。登入後即可繼續使用 Inferno。',
   'home.createFailed': '啟動任務失敗，請再試一次。',
   'home.daemonRecovering': '本機服務連線中斷，正在自動恢復…',
   'home.bundledScenarioMissing': '內建場景「{scenarioId}」未安裝。請重新安裝 OpenDesign，以還原預設外掛。',
   "entry.cloudCalloutBody": "登入即可享受雲端協作",
-  "entry.cloudCalloutDismissAria": "關閉 OpenDesign Cloud 版說明",
+  "entry.cloudCalloutDismissAria": "關閉 Inferno 版說明",
   "entry.workspaceLockedNote": "工作區已鎖定，恢復帳單後可繼續編輯共享專案。",
   "entry.workspaceLockedRecover": "恢復存取",
   "messageCenter.openAria": "開啟消息中心",
@@ -904,7 +904,7 @@ export const zhTW: Dict = {
   "homeHero.templatePicker.label": "創作類型",
   "homeHero.templatePicker.searchPlaceholder": "搜尋範本",
   "homeHero.templatePicker.projectTypes": "專案類型",
-  "homeHero.subtitlePrefix": "Claude Design 的原始碼可用替代方案。",
+  "homeHero.subtitlePrefix": "由 Inferno 驅動的本地優先設計工作室。",
   "homeHero.placeholder": "描述您想要產生的內容…",
   "homeHero.placeholderActive": "編輯範例查詢或撰寫您自己的查詢…",
   "homeHero.carousel.hint": "上傳檔案、連結設計系統，或描述你想創作的內容",
@@ -1070,7 +1070,7 @@ export const zhTW: Dict = {
   "handoff.frameworkPrompt.solid": "SolidJS",
   "handoff.frameworkPrompt.next": "Next.js / React",
   "handoff.frameworkPrompt.vanilla": "原生 JavaScript、HTML 和 CSS",
-  "handoff.amrWebsite": "開啟 OpenDesign Cloud 官網",
+  "handoff.amrWebsite": "開啟 Inferno 官網",
   "handoff.copyPrompt": "複製提示詞",
   "handoff.copyPromptForTarget": "複製給 {target} 的提示詞",
   "handoff.copied": "已複製",
@@ -1429,9 +1429,9 @@ export const zhTW: Dict = {
   "useEverywhere.section.overview.heading":
     "你的 Agent 在哪裡運作，OpenDesign 就在哪裡運作",
   "useEverywhere.section.overview.intro":
-    "OpenDesign 不只是一個視窗 — 它是一個本機特權 daemon（`od`），外加一個 Skills + Design-Systems + Atoms 登錄。一旦它在您的機器上執行，任何程式碼 Agent（Claude Code、Codex、Cursor、OpenCode/openclaw、Hermes、您自己的指令碼）都能透過四個可互換的介面來驅動產生作業、檢視專案並產出設計成品。",
+    "OpenDesign 不只是一個視窗 — 它是一個本機特權 daemon（`ocd`），外加一個 Skills + Design-Systems + Atoms 登錄。一旦它在您的機器上執行，任何程式碼 Agent（Claude Code、Codex、Cursor、OpenCode/openclaw、Hermes、您自己的指令碼）都能透過四個可互換的介面來驅動產生作業、檢視專案並產出設計成品。",
   "useEverywhere.section.overview.bullet1":
-    "CLI — 以 `od <command>` 用於無頭指令碼、CI 及 shell 自動化。",
+    "CLI — 以 `ocd <command>` 用於無頭指令碼、CI 及 shell 自動化。",
   "useEverywhere.section.overview.bullet2":
     "MCP server — 將 OpenDesign 接成 Model Context Protocol 伺服器，讓任何支援 MCP 的 Agent 都能列出技能、執行情境並讀取成品。",
   "useEverywhere.section.overview.bullet3":
@@ -1444,23 +1444,23 @@ export const zhTW: Dict = {
   "useEverywhere.section.overview.snippet2": "確認可正常連線",
   "useEverywhere.section.overview.snippet3": "在啟動前匯入標準成品",
   "useEverywhere.section.overview.footer":
-    "daemon 預設會寫入 `./.od/`（專案本機）。設定 `OD_DATA_DIR=~/.open-design` 即可在多個專案間共用資料。",
-  "useEverywhere.section.cli.tab": "CLI · od",
+    "daemon 預設會寫入 `./.od/`（專案本機）。設定 `OCD_DATA_DIR=~/.opencomputer-design` 即可在多個專案間共用資料。",
+  "useEverywhere.section.cli.tab": "CLI · ocd",
   "useEverywhere.section.cli.heading": "從任何 shell 操作 OpenDesign",
   "useEverywhere.section.cli.intro":
-    "`od` 執行檔隨 daemon 一起發佈，與 Claude Code / Codex 執行產生作業時所用的是同一個二進位檔。多數子指令都是精簡的用戶端，會 POST 至本機 daemon，因此無論你是透過 `pnpm tools-dev` 啟動，還是以打包後的應用程式執行，運作方式都相同。",
+    "`ocd` 執行檔隨 daemon 一起發佈，與 Claude Code / Codex 執行產生作業時所用的是同一個二進位檔。多數子指令都是精簡的用戶端，會 POST 至本機 daemon，因此無論你是透過 `pnpm tools-dev` 啟動，還是以打包後的應用程式執行，運作方式都相同。",
   "useEverywhere.section.cli.bullet1":
-    "`od`（無參數）— 啟動 daemon 並開啟網頁 UI。",
+    "`ocd`（無參數）— 啟動 daemon 並開啟網頁 UI。",
   "useEverywhere.section.cli.bullet2":
-    "`od media generate ...` — 透過統一的媒體協定產生圖片／影片／音訊位元組。",
+    "`ocd media generate ...` — 透過統一的媒體協定產生圖片／影片／音訊位元組。",
   "useEverywhere.section.cli.bullet3":
-    "`od run ...` — 從提示 + 技能啟動一次專案執行。",
+    "`ocd run ...` — 從提示 + 技能啟動一次專案執行。",
   "useEverywhere.section.cli.bullet4":
-    "`od plugin install <source>` / `od plugin apply <id>` — 安裝並套用社群外掛。",
+    "`ocd plugin install <source>` / `ocd plugin apply <id>` — 安裝並套用社群外掛。",
   "useEverywhere.section.cli.bullet5":
-    "`od skills list` / `od design-systems list` — 檢視本機可用的項目。",
+    "`ocd skills list` / `ocd design-systems list` — 檢視本機可用的項目。",
   "useEverywhere.section.cli.bullet6":
-    "`od status` / `od doctor` — 驗證 daemon 健康狀態並偵測您 PATH 上的 Agent CLI。",
+    "`ocd status` / `ocd doctor` — 驗證 daemon 健康狀態並偵測您 PATH 上的 Agent CLI。",
   "useEverywhere.section.cli.snippet1": "產生影像（委派給已設定的媒體提供者）",
   "useEverywhere.section.cli.snippet2":
     "以無頭模式執行情境外掛，並以 JSON 行的形式串流事件",
@@ -1474,15 +1474,15 @@ export const zhTW: Dict = {
   "useEverywhere.section.mcp.heading":
     "將 OpenDesign 以 MCP 伺服器形式開放給任何程式設計 Agent",
   "useEverywhere.section.mcp.intro":
-    "OpenDesign 隨附一個 Model Context Protocol 伺服器（`od mcp`），讓任何支援 MCP 的用戶端 — Cursor、Claude Code、Antigravity、VS Code Copilot Chat、openclaw、hermes — 都能探索 OpenDesign 工具（列出技能、算繪預覽、產生媒體、執行外掛），而無需手動使用 shell。daemon 透過 `GET /api/mcp/install-info` 為每個主要用戶端發布可直接貼上的安裝程式碼片段。",
+    "OpenDesign 隨附一個 Model Context Protocol 伺服器（`ocd mcp`），讓任何支援 MCP 的用戶端 — Cursor、Claude Code、Antigravity、VS Code Copilot Chat、openclaw、hermes — 都能探索 OpenDesign 工具（列出技能、算繪預覽、產生媒體、執行外掛），而無需手動使用 shell。daemon 透過 `GET /api/mcp/install-info` 為每個主要用戶端發布可直接貼上的安裝程式碼片段。",
   "useEverywhere.section.mcp.bullet1":
-    "Stdio 傳輸 — 不需額外連接埠，用戶端直接產生 `od mcp` 程序。",
+    "Stdio 傳輸 — 不需額外連接埠，用戶端直接產生 `ocd mcp` 程序。",
   "useEverywhere.section.mcp.bullet2":
     "以 sidecar 模式啟動時，會透過本機 IPC 狀態 socket 自動探索運作中的 daemon URL。",
   "useEverywhere.section.mcp.bullet3":
     "針對一般安裝，會退回使用 `--daemon-url http://127.0.0.1:<port>`，讓 MCP 程序總能找到運作中的 daemon。",
   "useEverywhere.section.mcp.bullet4":
-    "固定 `OD_DATA_DIR`，讓衍生的 MCP 程序寫入 daemon 已使用的相同位置（避免在 macOS 打包應用程式套件中發生 EPERM）。",
+    "固定 `OCD_DATA_DIR`，讓衍生的 MCP 程序寫入 daemon 已使用的相同位置（避免在 macOS 打包應用程式套件中發生 EPERM）。",
   "useEverywhere.section.mcp.snippet1":
     "通用 MCP 用戶端設定（適用於 Cursor、Claude Code、Codex、…）",
   "useEverywhere.section.mcp.snippet2":
@@ -1526,7 +1526,7 @@ export const zhTW: Dict = {
   "useEverywhere.section.skills.bullet3":
     "每個技能都可宣告連接器、原子元件、設計系統需求，以及供藝廊使用的 `preview` 範例輸出。",
   "useEverywhere.section.skills.bullet4":
-    "無頭模式：PATH 中含有 `od` 的 Agent 可呼叫 `od skills list`，接著執行任何技能；唯讀流程中 daemon 為選用。",
+    "無頭模式：PATH 中含有 `ocd` 的 Agent 可呼叫 `ocd skills list`，接著執行任何技能；唯讀流程中 daemon 為選用。",
   "useEverywhere.section.skills.bullet5":
     "`pnpm seed:test-projects` 會以預設外掛範例與社群外掛範例演練相同的成品結構，接著將產生的 `index.html` 專案儲存為可重複使用的測試資料。",
   "useEverywhere.section.skills.snippet1":
@@ -2112,7 +2112,7 @@ export const zhTW: Dict = {
   "avatar.useApi": "使用 API · BYOK",
   "avatar.codeAgent": "程式碼代理",
   "avatar.rescan": "重新掃描 PATH",
-  "avatar.amrConsole": "OpenDesign Cloud 帳戶",
+  "avatar.amrConsole": "Inferno 帳戶",
   "avatar.amrConsoleMeta": "餘額與儲值",
   "avatar.settings": "設定",
   "avatar.backToProjects": "返回專案列表",
@@ -3157,10 +3157,9 @@ export const zhTW: Dict = {
     "選好設計系統再生成，結果會與品牌風格保持一致。",
   "designFiles.usefulInfoTip5":
     "沒有想法？試試首頁「社群」的外掛模板，一鍵生成同款。",
-  "designFiles.usefulInfoTip6": "遇到問題或有建議？加入 Discord 和我們聊聊。",
-  "designFiles.usefulInfoTip7": "覺得好用？在 GitHub 給我們點個 Star。",
-  "designFiles.usefulInfoTip8":
-    "在 X 上關注 @OpenDesignHQ，第一時間了解新功能。",
+  'designFiles.usefulInfoTip6': 'Questions or feedback? Visit tryopencomputer.com.',
+  'designFiles.usefulInfoTip7': 'OpenComputer Design runs locally with Inferno — add your key in Settings.',
+  'designFiles.usefulInfoTip8': 'Learn more about OpenComputer Design at tryopencomputer.com.',
   "designFiles.usefulInfoTip9":
     "把圖片、文件甚至整個資料夾拖到目前面板，智慧體都會用作上下文。",
   "designFiles.usefulInfoTip10":
@@ -3172,16 +3171,11 @@ export const zhTW: Dict = {
   "designFiles.usefulInfoTip14":
     "滿意的專案可透過「分享」選單儲存為範本，下次直接複用。",
   "designFiles.usefulInfoTip15": "部署後可以直接生成社群分享卡片。",
-  "designFiles.usefulInfoTip16":
-    "在 Threads 上追蹤 @opendesign.ai，看團隊幕後動態。",
-  "designFiles.usefulInfoTip17":
-    "在 Instagram 上追蹤 @opendesign.ai，獲取設計靈感。",
-  "designFiles.usefulInfoTip18":
-    "在 YouTube 上訂閱 OpenDesign，觀看教學和示範。",
-  "designFiles.usefulInfoTip19":
-    "在 LinkedIn 上追蹤 OpenDesign，了解產品動態。",
-  "designFiles.usefulInfoTip20":
-    "在小紅書上追蹤 OpenDesign，獲取技巧和靈感。",
+  'designFiles.usefulInfoTip16': 'Need product updates? Visit tryopencomputer.com.',
+  'designFiles.usefulInfoTip17': 'Configure Inferno in Settings to use managed models.',
+  'designFiles.usefulInfoTip18': 'OpenComputer Design keeps projects on your machine — export anytime.',
+  'designFiles.usefulInfoTip19': 'Drive OpenComputer Design from any shell with the ocd CLI.',
+  'designFiles.usefulInfoTip20': 'Pick Inferno in Settings when you want managed models without self-hosting providers.',
   "quickSwitcher.placeholder": "開啟分頁或檔案…",
   "quickSwitcher.empty": "此專案中沒有檔案",
   "quickSwitcher.noMatches": "無符合項目",
@@ -3401,7 +3395,7 @@ export const zhTW: Dict = {
   "fileViewer.shareTeamMissingTitle": "還沒有團隊可以分享",
 
   "fileViewer.publishFileRequiresTeam": "發布公開連結需要團隊工作區。請切換到團隊工作區，或使用「部署」發布此檔案。",
-  "fileViewer.publishFileRequiresWorkspace": "產生分享連結需要登入工作區。請登入 OpenDesign Cloud，或改用「部署」分享此檔案。",
+  "fileViewer.publishFileRequiresWorkspace": "產生分享連結需要登入工作區。請登入 Inferno，或改用「部署」分享此檔案。",
   "fileViewer.publishFileFailed": "產生分享連結失敗，請稍後重試，或改用下方的部署方式。",
   "fileViewer.workspaceShareSuccess": "已分享給工作空間成員",
   "fileViewer.workspaceShareFailed": "分享到工作空間失敗",
@@ -3694,7 +3688,7 @@ export const zhTW: Dict = {
   "chat.runError.actionBlocked.billing": "還在確認這個專案由哪個工作區付費，稍後再試。",
   "chat.runError.actionBlocked.busy": "這個對話還有任務在執行，結束後才能重試。",
   "chat.support.channel.feishu": "飛書社群",
-  "chat.support.channel.discord": "Discord",
+  "chat.support.channel.discord": "Website",
   "chat.amrBalanceOwner.title": "請聯絡團隊擁有者儲值",
   "chat.amrBalanceOwner.message": "目前僅團隊擁有者可以為團隊儲值，請聯絡「{name}」完成儲值後再繼續使用。",
   "chat.amrBalanceOwner.messageNoOwnerName": "目前僅團隊擁有者可以為團隊儲值，請聯絡團隊擁有者完成儲值後再繼續使用。",

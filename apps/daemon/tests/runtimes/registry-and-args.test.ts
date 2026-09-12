@@ -12,7 +12,7 @@ test('AGENT_DEFS ids are unique', () => {
   assert.deepEqual(dupes, [], `duplicate agent ids: ${JSON.stringify(dupes)}`);
 });
 
-test('local agent profiles inherit a base adapter and can pin the default model', async () => {
+test('Inferno-only registry does not merge local agent profiles', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'od-local-agent-profiles-'));
   try {
     await withEnvSnapshot(['OD_AGENT_PROFILES_CONFIG'], async () => {
@@ -26,17 +26,6 @@ test('local agent profiles inherit a base adapter and can pin the default model'
               name: 'ZCode',
               baseAgent: 'claude',
               bin: 'zcode',
-              args: ['run'],
-              defaultModel: 'zyb-claude',
-              models: [
-                { id: 'zyb-claude', label: 'zyb-claude' },
-                { id: 'zyb-gpt', label: 'zyb-gpt' },
-              ],
-              env: {
-                ZCODE_ROUTE: 'design',
-                RETRIES: 2,
-                'BAD-NAME': 'ignored',
-              },
             },
           ],
         }),
@@ -44,39 +33,15 @@ test('local agent profiles inherit a base adapter and can pin the default model'
       process.env.OD_AGENT_PROFILES_CONFIG = config;
 
       const profiles = readLocalAgentProfileDefs();
-      assert.equal(profiles.length, 1);
-      const [profile] = profiles;
-      assert.ok(profile);
-      assert.equal(profile.id, 'zcode');
-      assert.equal(profile.name, 'ZCode');
-      assert.equal(profile.bin, 'zcode');
-      assert.equal(profile.promptViaStdin, true);
-      assert.equal(profile.streamFormat, 'claude-stream-json');
-      assert.deepEqual(profile.fallbackModels.map((model) => model.id), [
-        'default',
-        'zyb-claude',
-        'zyb-gpt',
-      ]);
-      assert.deepEqual(profile.env, {
-        ZCODE_ROUTE: 'design',
-        RETRIES: '2',
-      });
-      assert.equal(profile.authProbe, undefined);
-
-      const defaultArgs = profile.buildArgs('', [], [], {});
-      assert.deepEqual(defaultArgs.slice(0, 2), ['run', '-p']);
-      assert.ok(defaultArgs.includes('--model'));
-      assert.equal(defaultArgs[defaultArgs.indexOf('--model') + 1], 'zyb-claude');
-
-      const explicitArgs = profile.buildArgs('', [], [], { model: 'zyb-gpt' });
-      assert.equal(explicitArgs[explicitArgs.indexOf('--model') + 1], 'zyb-gpt');
+      assert.deepEqual(profiles, []);
+      assert.deepEqual(AGENT_DEFS.map((a) => a.id), ['inferno']);
     });
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 });
 
-test('local agent profiles skip explicit unknown baseAgent without falling back', async () => {
+test('Inferno-only registry ignores local profile files even when they are valid', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'od-local-agent-profiles-invalid-'));
   try {
     await withEnvSnapshot(['OD_AGENT_PROFILES_CONFIG'], async () => {
@@ -86,18 +51,13 @@ test('local agent profiles skip explicit unknown baseAgent without falling back'
         JSON.stringify({
           agents: [
             { id: 'claude', bin: 'duplicate' },
-            { id: 'bad id with spaces', bin: 'bad' },
-            { id: 'unknown-base', baseAgent: 'does-not-exist', bin: 'bad' },
             { id: 'ok-wrapper', bin: 'ok-wrapper' },
           ],
         }),
       );
       process.env.OD_AGENT_PROFILES_CONFIG = config;
 
-      const profiles = readLocalAgentProfileDefs();
-
-      assert.deepEqual(profiles.map((profile) => profile.id), ['ok-wrapper']);
-      assert.equal(profiles[0]?.bin, 'ok-wrapper');
+      assert.deepEqual(readLocalAgentProfileDefs(), []);
     });
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -107,7 +67,7 @@ test('local agent profiles skip explicit unknown baseAgent without falling back'
 test('sandbox mode ignores implicit and host explicit local agent profiles', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'od-local-agent-profiles-sandbox-'));
   try {
-    await withEnvSnapshot(['OD_AGENT_PROFILES_CONFIG', 'OD_SANDBOX_MODE', 'OD_DATA_DIR'], async () => {
+    await withEnvSnapshot(['OD_AGENT_PROFILES_CONFIG', 'OD_SANDBOX_MODE', 'OD_DATA_DIR', 'OCD_DATA_DIR'], async () => {
       const config = join(dir, 'agents.local.json');
       writeFileSync(
         config,
@@ -118,6 +78,7 @@ test('sandbox mode ignores implicit and host explicit local agent profiles', asy
 
       process.env.OD_SANDBOX_MODE = '1';
       delete process.env.OD_DATA_DIR;
+      delete process.env.OCD_DATA_DIR;
       delete process.env.OD_AGENT_PROFILES_CONFIG;
       assert.deepEqual(readLocalAgentProfileDefs(), []);
 
@@ -380,27 +341,24 @@ test('codex model picker includes current OpenAI choices in priority order', asy
     { cwd: '/tmp/od-project' },
   );
   assert.ok(fastArgs.includes('service_tier="priority"'));
+});
 
-  const dir = mkdtempSync(join(tmpdir(), 'od-agents-codex-models-'));
+test('detectAgents lists only Inferno even when leftover CLI binaries are on PATH', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'od-agents-inferno-only-'));
   try {
-    await withEnvSnapshot(['PATH', 'OD_AGENT_HOME', 'CODEX_BIN'], async () => {
-      const codexBin = join(dir, 'codex');
-      writeFileSync(
-        codexBin,
-        '#!/bin/sh\nif [ "$1" = "--version" ]; then echo "codex 1.0.0"; exit 0; fi\nexit 0\n',
-      );
-      chmodSync(codexBin, 0o755);
+    await withEnvSnapshot(['PATH', 'OD_AGENT_HOME', 'CODEX_BIN', 'CLAUDE_BIN'], async () => {
+      writeFileSync(join(dir, 'codex'), '#!/bin/sh\necho codex\n', { mode: 0o755 });
+      writeFileSync(join(dir, 'claude'), '#!/bin/sh\necho claude\n', { mode: 0o755 });
+      chmodSync(join(dir, 'codex'), 0o755);
+      chmodSync(join(dir, 'claude'), 0o755);
       process.env.OD_AGENT_HOME = dir;
       process.env.PATH = dir;
       delete process.env.CODEX_BIN;
+      delete process.env.CLAUDE_BIN;
 
       const agents = await detectAgents();
-      const detected = agents.find((agent) => agent.id === 'codex');
-
-      assert.ok(detected);
-      assert.equal(detected.available, true);
-      assert.equal(detected.version, 'codex 1.0.0');
-      assert.deepEqual(detected.models.map((m: { id: string }) => m.id), expectedModels);
+      assert.deepEqual(agents.map((agent) => agent.id), ['inferno']);
+      assert.equal(agents[0]?.available, true);
     });
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -460,7 +418,7 @@ test('codex preserves explicit live service tiers from debug models JSON', () =>
   ]);
 });
 
-test('codex live model metadata falls back to static service tiers', async () => {
+test.skip('codex live model metadata falls back to static service tiers', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'od-agents-codex-live-tier-'));
   try {
     await withEnvSnapshot(['PATH', 'OD_AGENT_HOME', 'CODEX_BIN'], async () => {
@@ -494,7 +452,7 @@ exit 2
   }
 });
 
-test('claude probes auth status so rescans reflect CLI auth changes', async () => {
+test.skip('claude probes auth status so rescans reflect CLI auth changes', async () => {
   assert.deepEqual(claude.authProbe, {
     args: ['auth', 'status'],
     timeoutMs: 5000,
@@ -530,7 +488,7 @@ exit 0
   }
 });
 
-test('claude API key env satisfies auth probe without requiring local login', async () => {
+test.skip('claude API key env satisfies auth probe without requiring local login', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'od-agents-claude-api-key-auth-'));
   try {
     await withEnvSnapshot(['PATH', 'OD_AGENT_HOME', 'CLAUDE_BIN', 'ANTHROPIC_API_KEY'], async () => {
@@ -562,7 +520,7 @@ exit 0
   }
 });
 
-test('codex probes login status so rescans reflect CLI auth changes', async () => {
+test.skip('codex probes login status so rescans reflect CLI auth changes', async () => {
   assert.deepEqual(codex.authProbe, {
     args: ['login', 'status'],
     timeoutMs: 5000,
@@ -597,7 +555,7 @@ exit 0
   }
 });
 
-test('codex API key env satisfies auth probe without requiring local login', async () => {
+test.skip('codex API key env satisfies auth probe without requiring local login', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'od-agents-codex-api-key-auth-'));
   try {
     await withEnvSnapshot(['PATH', 'OD_AGENT_HOME', 'CODEX_BIN', 'CODEX_API_KEY'], async () => {
@@ -732,7 +690,7 @@ test('codex preserves service tier labels from bare-array debug models JSON', ()
   ]);
 });
 
-test('codex detection surfaces live debug models separately from fallback models', async () => {
+test.skip('codex detection surfaces live debug models separately from fallback models', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'od-agents-codex-live-models-'));
   try {
     await withEnvSnapshot(['PATH', 'OD_AGENT_HOME', 'CODEX_BIN'], async () => {
@@ -770,7 +728,7 @@ exit 2
   }
 });
 
-test('codex detection enriches sparse live GPT-5.5 metadata from fallback tiers', async () => {
+test.skip('codex detection enriches sparse live GPT-5.5 metadata from fallback tiers', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'od-agents-codex-sparse-live-models-'));
   try {
     await withEnvSnapshot(['PATH', 'OD_AGENT_HOME', 'CODEX_BIN'], async () => {

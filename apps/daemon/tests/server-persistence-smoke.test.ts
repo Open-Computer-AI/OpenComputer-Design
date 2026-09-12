@@ -25,8 +25,13 @@ afterEach(async () => {
   await stopServer();
   if (dataDir) await rm(dataDir, { recursive: true, force: true });
   dataDir = null;
-  if (originalDataDir === undefined) delete process.env.OD_DATA_DIR;
-  else process.env.OD_DATA_DIR = originalDataDir;
+  if (originalDataDir === undefined) {
+    delete process.env.OD_DATA_DIR;
+    delete process.env.OCD_DATA_DIR;
+  } else {
+    process.env.OD_DATA_DIR = originalDataDir;
+    process.env.OCD_DATA_DIR = originalDataDir;
+  }
   serverModule = null;
   vi.resetModules();
 }, 30_000);
@@ -89,6 +94,7 @@ it('[P0] starts on an existing data dir with legacy app config and persisted pro
 
 async function startIsolatedServer(root: string): Promise<StartedServer> {
   process.env.OD_DATA_DIR = root;
+  process.env.OCD_DATA_DIR = root;
   if (!serverModule) {
     vi.resetModules();
     serverModule = await loadServerModule();

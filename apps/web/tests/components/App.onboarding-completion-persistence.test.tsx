@@ -329,8 +329,8 @@ describe('App onboarding completion persistence', () => {
     } as AppConfig;
 
     expect(resetExecutionConfigAfterSignOut(current)).toMatchObject({
-      onboardingCompleted: false,
-      mode: 'daemon',
+      onboardingCompleted: true,
+      mode: 'api',
       agentId: null,
       agentModels: {},
       agentCliEnv: {},
@@ -369,7 +369,7 @@ describe('App onboarding completion persistence', () => {
     });
   });
 
-  it('persists the Cloud reset without discarding BYOK and returns to onboarding', async () => {
+  it('persists the Cloud reset without discarding BYOK and stays on Home', async () => {
     mockedLoadConfig.mockReturnValue({
       ...returningUserConfig(),
       mode: 'api',
@@ -397,14 +397,14 @@ describe('App onboarding completion persistence', () => {
       await entryViewCapture.activeSignOut?.();
     });
 
-    expect(screen.getByTestId('onboarding-completed').textContent).toBe('false');
+    expect(screen.getByTestId('onboarding-completed').textContent).toBe('true');
     expect(screen.getByTestId('agent-id').textContent).toBe('none');
     expect(screen.getByTestId('api-key').textContent).toBe('persisted-key');
     expect(screen.getByTestId('api-model').textContent).toBe('gpt-5');
-    expect(mockedSyncConfigToDaemon).toHaveBeenLastCalledWith(
+    expect(mockedSyncConfigToDaemon).toHaveBeenCalledWith(
       expect.objectContaining({
-        onboardingCompleted: false,
-        mode: 'daemon',
+        onboardingCompleted: true,
+        mode: 'api',
         agentId: null,
         apiKey: 'persisted-key',
         model: 'gpt-5',
@@ -417,9 +417,14 @@ describe('App onboarding completion persistence', () => {
           },
         },
       }),
-      { allowOnboardingReset: true },
     );
-    expect(await navigatedToOnboarding()).toBe(true);
+    expect(await navigatedToOnboarding()).toBe(false);
+    const { navigate } = await import('../../src/router');
+    expect(vi.mocked(navigate).mock.calls.some(
+      ([route]) =>
+        (route as { kind?: string; view?: string } | undefined)?.kind === 'home' &&
+        (route as { kind?: string; view?: string } | undefined)?.view === 'home',
+    )).toBe(true);
   });
 
   it('keeps a completed user out of onboarding when the daemon copy still says false', async () => {
@@ -512,7 +517,7 @@ describe('App onboarding completion persistence', () => {
     );
   });
 
-  it('owns explicit reset in App and can persist completion again', async () => {
+  it('keeps onboarding completed and stays on Home after Settings reset', async () => {
     const completed = returningUserConfig();
     routerState.current = { kind: 'home', view: 'settings' };
     mockedLoadConfig.mockReturnValue(completed);
@@ -533,12 +538,12 @@ describe('App onboarding completion persistence', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId('onboarding-completed').textContent).toBe('false');
+      expect(screen.getByTestId('onboarding-completed').textContent).toBe('true');
     });
     expect(mockedSyncConfigToDaemon).toHaveBeenLastCalledWith(
-      expect.objectContaining({ onboardingCompleted: false }),
-      { allowOnboardingReset: true },
+      expect.objectContaining({ onboardingCompleted: true }),
     );
+    expect(await navigatedToOnboarding()).toBe(false);
 
     act(() => {
       entryViewCapture.firstCompleteOnboarding?.();

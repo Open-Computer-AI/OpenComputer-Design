@@ -85,6 +85,39 @@ const IMAGE_TEMPLATE = plugin({
   },
 });
 
+const VIDEO_TEMPLATE = plugin({
+  id: 'video-template-promo',
+  title: 'Product Promo',
+  manifest: {
+    description: 'A short product promo clip.',
+    tags: ['promo'],
+    od: { mode: 'video', preview: { type: 'video', poster: 'https://assets.test/promo.jpg' } },
+  },
+});
+
+const HYPERFRAMES_TEMPLATE = plugin({
+  id: 'example-hyperframes',
+  title: 'Kinetic Captions',
+  manifest: {
+    description: 'A caption-led HyperFrames motion loop.',
+    tags: ['hyperframes'],
+    od: {
+      mode: 'video',
+      preview: { type: 'image', poster: 'https://assets.test/hyperframes.jpg' },
+    },
+  },
+});
+
+const AUDIO_TEMPLATE = plugin({
+  id: 'audio-template-voiceover',
+  title: 'Brand Voiceover',
+  manifest: {
+    description: 'A concise product voiceover.',
+    tags: ['voiceover'],
+    od: { mode: 'audio', preview: { type: 'audio' } },
+  },
+});
+
 // Neither of these belongs in the gallery: hidden plugins are filtered by
 // listPlugins(), and design-system plugins resolve to no artifact category.
 const HIDDEN_PLUGIN = plugin({
@@ -99,7 +132,17 @@ const DESIGN_SYSTEM_PLUGIN = plugin({
   manifest: { od: { mode: 'design-system' } },
 });
 
-const CATALOGUE = [PITCH_DECK, SALES_DECK, LANDING_PROTOTYPE, IMAGE_TEMPLATE, HIDDEN_PLUGIN, DESIGN_SYSTEM_PLUGIN];
+const CATALOGUE = [
+  PITCH_DECK,
+  SALES_DECK,
+  LANDING_PROTOTYPE,
+  IMAGE_TEMPLATE,
+  VIDEO_TEMPLATE,
+  HYPERFRAMES_TEMPLATE,
+  AUDIO_TEMPLATE,
+  HIDDEN_PLUGIN,
+  DESIGN_SYSTEM_PLUGIN,
+];
 
 let fetchMock: ReturnType<typeof vi.fn>;
 
@@ -204,7 +247,9 @@ describe('CommunityView catalogue source', () => {
     // Prototype leads, followed by Slides; both come from the daemon-served
     // plugin catalogue rather than a bundled demo array.
     const facets = readFacets();
-    expect(facets.map((facet) => facet.label)).toEqual(['Prototype', 'Slides', 'Image']);
+    expect(facets.map((facet) => facet.label)).toEqual(['Prototype', 'Slides', 'HyperFrames', 'Audio']);
+    expect(facets.map((facet) => facet.label)).not.toContain('Image');
+    expect(facets.map((facet) => facet.label)).not.toContain('Video');
 
     // The card footer reads "<type> · <sub-facet>", both resolved from the
     // shared plugins-home taxonomy. Asserted before the tab walk below, which
@@ -212,7 +257,7 @@ describe('CommunityView catalogue source', () => {
     expect(renderedCards().map((card) => card.querySelector('.community-template-card__foot span')?.textContent))
       .toEqual(['Prototype · Landing / marketing']);
 
-    expect(readFacetCardCounts()).toEqual([1, 2, 1]);
+    expect(readFacetCardCounts()).toEqual([1, 2, 1, 1]);
   });
 
   it('falls back to the first available type when the catalogue has no Prototype templates', async () => {
@@ -234,10 +279,12 @@ describe('CommunityView catalogue source', () => {
   it('leaves hidden and design-system plugins out of the gallery', async () => {
     await renderCommunity();
 
-    // Neither plugin has a home in the artifact taxonomy, so no tab may render
-    // them — the four eligible plugins are the whole gallery.
+    // Hidden and design-system plugins stay out. Remote Image/Video templates
+    // are also omitted from Community even when the catalogue still contains them.
     const total = readFacetCardCounts().reduce((sum, count) => sum + count, 0);
-    expect(total).toBe(4);
+    expect(total).toBe(5);
+    expect(screen.queryByText(/Typographic Poster/)).toBeNull();
+    expect(screen.queryByText(/Product Promo/)).toBeNull();
     expect(screen.queryByText(/Airbnb/)).toBeNull();
     expect(screen.queryByText(/Hidden Utility/)).toBeNull();
   });
@@ -308,15 +355,13 @@ describe('CommunityView previews', () => {
     expect(video!.getAttribute('loop')).not.toBeNull();
   });
 
-  it('leaves a still-image template on its poster, with no clip to play', async () => {
-    // Only baked previews ship a clip; an image-template plugin must not grow a
-    // <video> just because the tile now routes through the shared surface.
+  it('leaves a still poster template on its poster, with no clip to play', async () => {
     await renderCommunity();
 
-    fireEvent.click(readFacets().find((facet) => facet.label === 'Image')!.tab);
+    fireEvent.click(readFacets().find((facet) => facet.label === 'HyperFrames')!.tab);
     const card = renderedCards()[0]!;
     expect(card.querySelector('img.plugins-home__media-img')?.getAttribute('src'))
-      .toBe('https://assets.test/poster.jpg');
+      .toBe('https://assets.test/hyperframes.jpg');
     expect(card.querySelector('video')).toBeNull();
   });
 
@@ -334,16 +379,14 @@ describe('CommunityView previews', () => {
   it('carries a media template\'s poster into the full details modal stage', async () => {
     await renderCommunity();
 
-    fireEvent.click(readFacets().find((facet) => facet.label === 'Image')!.tab);
+    fireEvent.click(readFacets().find((facet) => facet.label === 'HyperFrames')!.tab);
     fireEvent.click(renderedCards()[0]!);
 
-    // Image templates dispatch to the media detail surface of the full
-    // modal, which stages the plugin's own poster.
     await waitFor(() => {
       expect(document.querySelector('img.plugin-media-stage__image')).not.toBeNull();
     });
     expect(document.querySelector('img.plugin-media-stage__image')?.getAttribute('src'))
-      .toBe('https://assets.test/poster.jpg');
+      .toBe('https://assets.test/hyperframes.jpg');
     expect(document.querySelector('.community-template-preview')).toBeNull();
   });
 });
@@ -356,26 +399,26 @@ describe('CommunityView remix', () => {
       renderedCards()[0]!.querySelectorAll<HTMLButtonElement>('.community-template-card__actions button'),
     ).map((button) => button.textContent?.trim())).toEqual(['Remix', 'Use']);
 
-    fireEvent.click(readFacets().find((facet) => facet.label === 'Image')!.tab);
+    fireEvent.click(readFacets().find((facet) => facet.label === 'Audio')!.tab);
     expect(Array.from(
       renderedCards()[0]!.querySelectorAll<HTMLButtonElement>('.community-template-card__actions button'),
     ).map((button) => button.textContent?.trim())).toEqual(['Use']);
     expect(screen.queryByRole('button', { name: 'Copy prompt' })).toBeNull();
   });
 
-  it('applies a media template as the active composer driver when Use is clicked', async () => {
+  it('applies a HyperFrames template as the active composer driver when Use is clicked', async () => {
     const onUsePlugin = vi.fn();
     const onUsePrompt = vi.fn();
     await renderCommunity({ onUsePlugin, onUsePrompt });
 
-    fireEvent.click(readFacets().find((facet) => facet.label === 'Image')!.tab);
+    fireEvent.click(readFacets().find((facet) => facet.label === 'HyperFrames')!.tab);
     fireEvent.click(screen.getByRole('button', { name: 'Use' }));
 
-    expect(onUsePlugin).toHaveBeenCalledWith(IMAGE_TEMPLATE, 'use-with-query', {
-      templateId: 'image-template-poster',
-      prompt: 'A typography-led key art poster.',
-      chipId: 'image',
-      projectKind: 'image',
+    expect(onUsePlugin).toHaveBeenCalledWith(HYPERFRAMES_TEMPLATE, 'use-with-query', {
+      templateId: 'example-hyperframes',
+      prompt: 'A caption-led HyperFrames motion loop.',
+      chipId: 'hyperframes',
+      projectKind: 'video',
     });
     expect(onUsePrompt).not.toHaveBeenCalled();
   });
@@ -527,7 +570,9 @@ describe('CommunityView facet counts', () => {
         (card) => card.querySelector('.community-template-card__foot span')?.textContent ?? '',
       );
       expect(footers.length).toBeGreaterThan(0);
-      for (const footer of footers) expect(footer.startsWith(`${label} ·`)).toBe(true);
+      for (const footer of footers) {
+        expect(footer === label || footer.startsWith(`${label} ·`)).toBe(true);
+      }
     }
   });
 
@@ -539,6 +584,6 @@ describe('CommunityView facet counts', () => {
 
     const renderedTotal = readFacetCardCounts().reduce((sum, count) => sum + count, 0);
 
-    expect(renderedTotal).toBe(4);
+    expect(renderedTotal).toBe(5);
   });
 });

@@ -126,6 +126,7 @@ function forensicsEnvelopeOfSize(bytes: number): string {
 beforeEach(async () => {
   dataDir = await mkdtemp(path.join(os.tmpdir(), 'od-forensics-body-limit-'));
   process.env.OD_DATA_DIR = dataDir;
+  process.env.OCD_DATA_DIR = dataDir;
 
   // Dynamic import AFTER OD_DATA_DIR is set: RUNTIME_DATA_DIR resolves at
   // module-eval time, so a static import would pin the real data dir.
@@ -152,8 +153,13 @@ afterEach(async () => {
   daemon = undefined;
   daemonShutdown = undefined;
   await rm(dataDir, { recursive: true, force: true }).catch(() => {});
-  if (PREV_DATA_DIR === undefined) delete process.env.OD_DATA_DIR;
-  else process.env.OD_DATA_DIR = PREV_DATA_DIR;
+  if (PREV_DATA_DIR === undefined) {
+    delete process.env.OD_DATA_DIR;
+    delete process.env.OCD_DATA_DIR;
+  } else {
+    process.env.OD_DATA_DIR = PREV_DATA_DIR;
+    process.env.OCD_DATA_DIR = PREV_DATA_DIR;
+  }
 }, 20_000);
 
 describe('chat-scroll forensics body limit, through the real express app', () => {

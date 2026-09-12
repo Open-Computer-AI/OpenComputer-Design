@@ -43,13 +43,13 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     heading: 'OpenDesign works wherever your agent works',
     intro:
       'OpenDesign is more than a window — it is a local privileged daemon ' +
-      "(`od`) plus a Skills + Design-Systems + Atoms registry. Once it's " +
+      "(`ocd`) plus a Skills + Design-Systems + Atoms registry. Once it's " +
       'running on your machine, any code agent (Claude Code, Codex, Cursor, ' +
       'OpenCode/openclaw, Hermes, your own script) can drive generations, ' +
       'inspect projects, and produce design artifacts through four ' +
       'interchangeable surfaces.',
     bullets: [
-      'CLI — `od <command>` for headless scripts, CI, and shell automation.',
+      'CLI — `ocd <command>` for headless scripts, CI, and shell automation.',
       'MCP server — wires OpenDesign as a Model Context Protocol server so any MCP-capable agent can list skills, run scenarios, and read artifacts.',
       'HTTP API — `http://127.0.0.1:7456/api/*` REST + SSE endpoints; the same surface the web UI uses.',
       'Skills — drop-in `SKILL.md` packs (Claude-compatible) that any agent already on your PATH can invoke without OpenDesign at all.',
@@ -59,7 +59,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       {
         label: 'Start the daemon (and web UI) locally',
         language: 'bash',
-        body: 'pnpm tools-dev\n# or, if `od` is on your PATH (packaged install):\nod --port 7456',
+        body: 'pnpm tools-dev\n# or, if `ocd` is on your PATH (packaged install):\nocd --port 7456',
       },
       {
         label: 'Confirm it is reachable',
@@ -77,32 +77,31 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       },
     ],
     footer:
-      'The daemon writes to `./.od/` (project-local) by default. Set ' +
-      '`OD_DATA_DIR=~/.open-design` to share data across projects.',
+      'The daemon writes to `~/.opencomputer-design` by default. Set ' +
+      '`OCD_DATA_DIR` to override the data directory.',
   },
   {
     id: 'cli',
-    tabLabel: 'CLI · od',
-    heading: 'Drive OpenDesign from any shell',
+    tabLabel: 'CLI · ocd',
+    heading: 'Drive OpenComputer Design from any shell',
     intro:
-      'The `od` bin ships with the daemon and is the same binary used by ' +
-      'Claude Code / Codex when they run a generation. Most subcommands are ' +
+      'The `ocd` bin ships with the daemon. Most subcommands are ' +
       'thin clients that POST to the local daemon, so they work the same ' +
       'whether you launched it via `pnpm tools-dev` or as a packaged app.',
     bullets: [
-      '`od` (no args) — boots the daemon and opens the web UI.',
-      '`od media generate ...` — produce image / video / audio bytes through the unified media protocol.',
-      '`od project create` + `od run start` — create a project, send a message, and stream the run.',
-      '`od plugin install <source>` / `od plugin apply <id>` — install and apply community plugins.',
-      '`od skills list` / `od design-systems list` — inspect what is available locally.',
-      '`od status` / `od doctor` — verify daemon health and detect agent CLIs on your PATH.',
+      '`ocd` (no args) — boots the daemon and opens the web UI.',
+      '`ocd media generate ...` — produce image / video / audio bytes through the unified media protocol.',
+      '`ocd project create` + `ocd run start` — create a project, send a message, and stream the run.',
+      '`ocd plugin install <source>` / `ocd plugin apply <id>` — install and apply community plugins.',
+      '`ocd skills list` / `ocd design-systems list` — inspect what is available locally.',
+      '`ocd status` / `ocd doctor` — verify daemon health.',
     ],
     snippets: [
       {
         label: 'Generate an image (delegates to the configured media provider)',
         language: 'bash',
         body:
-          'od media generate \\\n' +
+          'ocd media generate \\\n' +
           '  --surface image \\\n' +
           '  --model gpt-image-1 \\\n' +
           '  --aspect 1:1 \\\n' +
@@ -126,7 +125,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
         language: 'bash',
         body:
           'DAEMON_URL=${DAEMON_URL:-http://127.0.0.1:7456}\n' +
-          'PROJECT_JSON=$(od project create \\\n' +
+          'PROJECT_JSON=$(ocd project create \\\n' +
           '  --name "Investor pitch" \\\n' +
           '  --skill frontend-design \\\n' +
           '  --design-system clean \\\n' +
@@ -135,7 +134,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
           'PROJECT_ID=$(jq -r \'.project.id\' <<<"$PROJECT_JSON")\n' +
           'CONVERSATION_ID=$(jq -r \'.conversationId\' <<<"$PROJECT_JSON")\n' +
           '\n' +
-          'od run start \\\n' +
+          'ocd run start \\\n' +
           '  --project "$PROJECT_ID" \\\n' +
           '  --conversation "$CONVERSATION_ID" \\\n' +
           '  --plugin od-new-generation \\\n' +
@@ -148,7 +147,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
         label: 'Answer a discovery question form from the CLI',
         language: 'bash',
         body:
-          'od run start \\\n' +
+          'ocd run start \\\n' +
           '  --project "$PROJECT_ID" \\\n' +
           '  --conversation "$CONVERSATION_ID" \\\n' +
           '  --agent codex \\\n' +
@@ -164,32 +163,32 @@ export const GUIDE_SECTIONS: GuideSection[] = [
         label: 'Verify generated files after the stream completes',
         language: 'bash',
         body:
-          'od files list "$PROJECT_ID" --daemon-url "$DAEMON_URL" --json\n' +
-          'od files read "$PROJECT_ID" index.html --daemon-url "$DAEMON_URL" | head',
+          'ocd files list "$PROJECT_ID" --daemon-url "$DAEMON_URL" --json\n' +
+          'ocd files read "$PROJECT_ID" index.html --daemon-url "$DAEMON_URL" | head',
       },
       {
         label: 'Inventory locally available skills and design systems',
         language: 'bash',
-        body: 'od skills list --json\nod design-systems list --json',
+        body: 'ocd skills list --json\nocd design-systems list --json',
       },
       {
         label: 'Check seeded artifacts through the CLI',
         language: 'bash',
         body:
-          'od project list --daemon-url http://127.0.0.1:7456\n' +
-          'od files list <seed-project-id> --daemon-url http://127.0.0.1:7456\n' +
-          'od files read <seed-project-id> index.html --daemon-url http://127.0.0.1:7456 | head',
+          'ocd project list --daemon-url http://127.0.0.1:7456\n' +
+          'ocd files list <seed-project-id> --daemon-url http://127.0.0.1:7456\n' +
+          'ocd files read <seed-project-id> index.html --daemon-url http://127.0.0.1:7456 | head',
       },
       {
         label: 'Verify environment + detected agents (Claude, Codex, Cursor, …)',
         language: 'bash',
-        body: 'od doctor\nod status --json',
+        body: 'ocd doctor\nocd status --json',
       },
     ],
     footer:
       'All subcommands accept `--daemon-url http://127.0.0.1:<port>` to ' +
       'target a specific running daemon — useful when running a sandboxed ' +
-      'second instance for tests. From a source checkout, replace `od` with ' +
+      'second instance for tests. From a source checkout, replace `ocd` with ' +
       '`"$OD_NODE_BIN" "$OD_BIN"` after exporting those variables.',
   },
   {
@@ -197,17 +196,17 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     tabLabel: 'MCP server',
     heading: 'Expose OpenDesign as an MCP server to any coding agent',
     intro:
-      'OpenDesign ships with a Model Context Protocol server (`od mcp`) ' +
+      'OpenDesign ships with a Model Context Protocol server (`ocd mcp`) ' +
       'that lets any MCP-capable client — Cursor, Claude Code, Antigravity, ' +
       'VS Code Copilot Chat, openclaw, hermes — discover OpenDesign tools ' +
       '(list skills, render previews, generate media, run plugins) without ' +
       'shelling out manually. The daemon publishes a ready-to-paste install ' +
       'snippet via `GET /api/mcp/install-info` for each major client.',
     bullets: [
-      'Stdio transport — no extra port, the client spawns `od mcp` directly.',
+      'Stdio transport — no extra port, the client spawns `ocd mcp` directly.',
       'Auto-discovers the live daemon URL via the local IPC status socket when launched as a sidecar.',
       'Falls back to `--daemon-url http://127.0.0.1:<port>` for plain installs so the MCP process always finds a running daemon.',
-      'Pins `OD_DATA_DIR` so the spawned MCP process writes to the same place the daemon already uses (avoids EPERM in packaged macOS app bundles).',
+      'Pins `OCD_DATA_DIR` so the spawned MCP process writes to the same place the daemon already uses (avoids EPERM in packaged macOS app bundles).',
     ],
     snippets: [
       {
@@ -217,9 +216,9 @@ export const GUIDE_SECTIONS: GuideSection[] = [
           '{\n' +
           '  "mcpServers": {\n' +
           '    "open-design": {\n' +
-          '      "command": "od",\n' +
+          '      "command": "ocd",\n' +
           '      "args": ["mcp", "--daemon-url", "http://127.0.0.1:7456"],\n' +
-          '      "env": { "OD_DATA_DIR": "~/.open-design" }\n' +
+          '      "env": { "OCD_DATA_DIR": "~/.opencomputer-design" }\n' +
           '    }\n' +
           '  }\n' +
           '}',
@@ -232,7 +231,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       {
         label: 'Live-artifacts MCP variant (read & refresh dashboards)',
         language: 'bash',
-        body: 'od mcp live-artifacts',
+        body: 'ocd mcp live-artifacts',
       },
     ],
     footer:
@@ -305,7 +304,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       'Discovery: `./.claude/skills/` → `./skills/` → `~/.claude/skills/` (project wins).',
       'Symlink one skill into multiple projects to share it without copying.',
       'Each skill can declare connectors, atoms, design-system requirements, and a `preview` example output for the gallery.',
-      'Headless: an agent with `od` on its PATH can call `od skills list` then run any skill; the daemon is optional for read-only flows.',
+      'Headless: an agent with `ocd` on its PATH can call `ocd skills list` then run any skill; the daemon is optional for read-only flows.',
       '`pnpm seed:test-projects` exercises the same artifact shape with default plugin examples and community plugin examples, then stores the resulting `index.html` projects as reusable test data.',
     ],
     snippets: [
@@ -341,7 +340,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       {
         label: 'Headless: list skills the daemon sees right now',
         language: 'bash',
-        body: 'od skills list --json | jq \'.skills[].name\'',
+        body: 'ocd skills list --json | jq \'.skills[].name\'',
       },
       {
         label: 'Headless artifact fixture bundle',
@@ -353,7 +352,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
           '# Shell 1: start OpenDesign after ingesting.\n' +
           'pnpm tools-dev\n' +
           '# Shell 2: inspect the produced projects.\n' +
-          'od project list --json --daemon-url http://127.0.0.1:7456',
+          'ocd project list --json --daemon-url http://127.0.0.1:7456',
       },
     ],
     footer:

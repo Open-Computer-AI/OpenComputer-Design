@@ -1,5 +1,5 @@
 // Capsule type row — the pill replacement for the fanned type carousel
-// (per product: all 10 top-level creation types use capsules). ONE line exactly as wide as the
+// (per product: top-level creation types use capsules). ONE line exactly as wide as the
 // composer card below it, EVERY gap identical (8px): the pills that fit
 // render inline, then the All button, and the remaining ordered suffix folds
 // into the 全部 popover. Fit is computed against an invisible

@@ -151,6 +151,8 @@ export type RuntimeAgentDef = {
   id: string;
   name: string;
   bin: string;
+  /** HTTP-only runtime; never spawned. Detection skips PATH/version probes. */
+  synthetic?: boolean;
   versionArgs: string[];
   fallbackModels: RuntimeModelOption[];
   buildArgs: (

@@ -1,6 +1,6 @@
 # Docker deployment
 
-This deployment ships OpenDesign as a single Alpine-based runtime image. The
+This deployment ships OpenComputer Design as a single Alpine-based runtime image. The
 daemon serves both the API and the built Next.js static export, so there is no
 separate nginx container.
 
@@ -117,37 +117,9 @@ OPEN_DESIGN_IMAGE=open-design-local
 docker compose -f docker-compose.yml -f docker-compose.linux.yml up -d --no-build
 ```
 
-Common install paths:
-
-| CLI | Install / default path |
-|-----|------------------------|
-| Claude Code | `~/.local/bin/claude` (symlink) + `~/.local/share/claude` (binaries) |
-| opencode | `~/.opencode/bin/opencode` |
-| Codex | `~/.local/bin/codex` |
-| Vela / AMR | npm package `@powerformer/vela-cli`; [Open Design AMR](https://open-design.ai/amr) is the browser account/wallet page |
-
-Vela is published as the `@powerformer/vela-cli` npm package. The Open Design
-AMR URL above is not a shell installer. For Linux Docker, install Vela under a
-dedicated prefix so its launcher and platform package can be mounted together:
-
-```bash
-VELA_PREFIX="$HOME/.local/share/vela"
-npm install --global --prefix "$VELA_PREFIX" @powerformer/vela-cli
-export PATH="$VELA_PREFIX/bin:$PATH"
-which vela
-vela --version
-```
-
-Mount that complete prefix into the container, then expose its `bin` directory
-through `PATH` (or set `VELA_BIN` to the container-visible launcher):
-
-```yaml
-environment:
-  PATH: /mnt/host-vela/bin:/mnt/host-local-bin:/mnt/host-opencode:/usr/local/bin:/usr/bin:/bin
-  VELA_BIN: /mnt/host-vela/bin/vela
-volumes:
-  - ${HOME}/.local/share/vela:/mnt/host-vela:ro
-```
+This distribution does not spawn Claude Code, Codex, Vela, or AMR. Inferno is
+the only model backend. Paste the Inferno API key in Settings after the UI
+loads. `OD_API_TOKEN` is only the daemon auth token.
 
 Once the container is running, inspect both `PATH` discovery and any explicit
 Vela override:

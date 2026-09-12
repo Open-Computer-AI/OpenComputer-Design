@@ -55,6 +55,7 @@ describe('successful run deliverable syntax finalizer (HTTP)', () => {
     dataDir = await mkdtemp(path.join(os.tmpdir(), 'od-syntax-finalizer-data-'));
     binDir = await mkdtemp(path.join(os.tmpdir(), 'od-syntax-finalizer-bin-'));
     process.env.OD_DATA_DIR = dataDir;
+    process.env.OCD_DATA_DIR = dataDir;
     delete process.env.POSTHOG_KEY;
     delete process.env.POSTHOG_HOST;
     delete process.env.LANGFUSE_PUBLIC_KEY;

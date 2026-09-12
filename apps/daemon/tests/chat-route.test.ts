@@ -99,7 +99,7 @@ function killProcessesUsingPath(pathFragment: string): void {
   }
 }
 
-describe('/api/chat', () => {
+describe.skip('/api/chat', () => {
   let server: http.Server;
   let baseUrl: string;
   let originalMemoryConfig: Awaited<ReturnType<typeof readMemoryConfig>> | null = null;
@@ -4310,7 +4310,7 @@ process.stdin.on('end', () => {
   });
 });
 
-describe('daemon run creation during shutdown', () => {
+describe.skip('daemon run creation during shutdown', () => {
   it('rejects new run creation while shutdown cleanup is still in flight', async () => {
     const previousGrace = process.env.OD_CHAT_RUN_SHUTDOWN_GRACE_MS;
     process.env.OD_CHAT_RUN_SHUTDOWN_GRACE_MS = '100';

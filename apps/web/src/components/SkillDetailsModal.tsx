@@ -10,6 +10,7 @@ import {
 } from '../i18n/content';
 import { fetchSkill } from '../providers/registry';
 import { Icon } from './Icon';
+import { InfernoGenerateGuard, useInfernoGenerateGate } from './InfernoKeyGate';
 import { useWorkspaceContext } from '../collab/useWorkspaceContext';
 
 interface Props {
@@ -26,6 +27,7 @@ interface Props {
 
 export function SkillDetailsModal({ skillId, summary, onClose, onUse }: Props) {
   const { locale, t } = useI18n();
+  const infernoGate = useInfernoGenerateGate();
   const { context: workspaceContext } = useWorkspaceContext();
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const [detail, setDetail] = useState<SkillDetail | null>(null);
@@ -190,14 +192,21 @@ export function SkillDetailsModal({ skillId, summary, onClose, onUse }: Props) {
           {t('common.close')}
         </button>
         {onUse ? (
+          <InfernoGenerateGuard>
           <button
             type="button"
             className="plugin-details-modal__primary"
-            onClick={onUse}
+            disabled={!infernoGate.canGenerate}
+            aria-disabled={!infernoGate.canGenerate ? true : undefined}
+            onClick={() => {
+              if (!infernoGate.requestGenerate()) return;
+              onUse();
+            }}
             data-testid="skill-details-use"
           >
             {t('pluginsView.tryIt')}
           </button>
+          </InfernoGenerateGuard>
         ) : null}
       </footer>
     </Dialog>

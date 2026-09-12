@@ -109,6 +109,7 @@ describe('run failure telemetry smoke', () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'od-run-failure-smoke-data-'));
     dataDirs.push(root);
     process.env.OD_DATA_DIR = root;
+    process.env.OCD_DATA_DIR = root;
     const serverModule = await import('../../src/server.js') as unknown as {
       startServer(options: { port: number; returnServer: true }): Promise<StartedServer>;
     };

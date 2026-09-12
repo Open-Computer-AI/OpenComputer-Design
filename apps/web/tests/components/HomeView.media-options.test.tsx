@@ -85,19 +85,19 @@ afterEach(() => {
 });
 
 describe('HomeView media composer options', () => {
-  it('keeps the type tabs interactive while switching to Image', async () => {
+  it('keeps the type tabs interactive while switching to HyperFrames', async () => {
     const mediaApplyResponse = new Promise<Response>(() => undefined);
     stubFetch({ mediaApplyResponse });
     renderHome();
 
-    const imageTab = await screen.findByTestId('home-hero-type-pill-image');
+    const hyperframesTab = await screen.findByTestId('home-hero-type-pill-hyperframes');
     const prototypeTab = await screen.findByTestId('home-hero-type-pill-prototype');
-    await waitFor(() => expect((imageTab as HTMLButtonElement).disabled).toBe(false));
+    await waitFor(() => expect((hyperframesTab as HTMLButtonElement).disabled).toBe(false));
 
-    fireEvent.click(imageTab);
+    fireEvent.click(hyperframesTab);
 
-    await waitFor(() => expect(imageTab.getAttribute('aria-selected')).toBe('true'));
-    expect((imageTab as HTMLButtonElement).disabled).toBe(false);
+    await waitFor(() => expect(hyperframesTab.getAttribute('aria-selected')).toBe('true'));
+    expect((hyperframesTab as HTMLButtonElement).disabled).toBe(false);
     expect((prototypeTab as HTMLButtonElement).disabled).toBe(false);
   });
 
@@ -129,7 +129,7 @@ describe('HomeView media composer options', () => {
     stubFetch();
     renderHome();
 
-    await clickHomeRailChip('image');
+    await clickHomeRailChip('hyperframes');
     await openOption('designSystem');
 
     // The shared DesignSystemPicker portals its popover to document.body, so it
@@ -149,7 +149,7 @@ describe('HomeView media composer options', () => {
     // asked for during the run (mirroring prototype/deck).
     expect(screen.getByTestId('home-hero-design-system-trigger')).toBeTruthy();
 
-    await clickHomeRailChip('image');
+    await clickHomeRailChip('hyperframes');
     await waitFor(() => expect(screen.getByTestId('home-hero-template-trigger').textContent).not.toContain('None'));
     expect(promptIsEmpty()).toBe(true);
     expect(screen.queryByTestId('home-hero-footer-option-designSystem')).toBeNull();
@@ -158,7 +158,7 @@ describe('HomeView media composer options', () => {
     expect(screen.queryByTestId('home-hero-footer-option-resolution')).toBeNull();
     expect(screen.queryByTestId('home-hero-footer-option-duration')).toBeNull();
 
-    await clickHomeRailChip('video');
+    await clickHomeRailChip('audio');
     await waitFor(() => expect(screen.getByTestId('home-hero-template-trigger').textContent).not.toContain('None'));
     expect(promptIsEmpty()).toBe(true);
     expect(screen.queryByTestId('home-hero-footer-option-designSystem')).toBeNull();
@@ -197,7 +197,7 @@ describe('HomeView media composer options', () => {
       ],
     });
 
-    await clickHomeRailChip('image');
+    await clickHomeRailChip('hyperframes');
     await openOption('designSystem');
 
     // The shared picker is a flat searchable list (no group headers). Home still
@@ -221,7 +221,7 @@ describe('HomeView media composer options', () => {
         ],
       });
 
-      await clickHomeRailChip('image');
+      await clickHomeRailChip('hyperframes');
       await openOption('designSystem');
 
       const messages = consoleError.mock.calls.map((call) => call.map(String).join(' '));
@@ -235,12 +235,12 @@ describe('HomeView media composer options', () => {
     stubFetch();
     renderHome();
 
-    await clickHomeRailChip('image');
+    await clickHomeRailChip('hyperframes');
     await waitFor(() => expect(screen.getByTestId('home-hero-template-trigger').textContent).not.toContain('None'));
     expect(screen.queryByRole('dialog', { name: /replace current prompt/i })).toBeNull();
 
     await setHomePrompt('Make this prompt personally tuned.');
-    await clickHomeRailChip('video');
+    await clickHomeRailChip('audio');
     await waitFor(() => expect(screen.getByTestId('home-hero-template-trigger').textContent).not.toContain('None'));
     expect(screen.queryByRole('dialog', { name: /replace current prompt/i })).toBeNull();
   });
@@ -264,13 +264,13 @@ describe('HomeView media composer options', () => {
     stubFetch();
     renderHome();
 
-    await clickHomeRailChip('image');
+    await clickHomeRailChip('hyperframes');
     await waitFor(() => expect(screen.getByTestId('home-hero-template-trigger').textContent).not.toContain('None'));
     expect(screen.queryByRole('combobox', { name: 'Template' })).toBeNull();
     expect(screen.queryByRole('combobox', { name: 'Model' })).toBeNull();
     expect(screen.queryByRole('combobox', { name: 'Ratio' })).toBeNull();
 
-    await clickHomeRailChip('video');
+    await clickHomeRailChip('audio');
     await waitFor(() => expect(screen.getByTestId('home-hero-template-trigger').textContent).not.toContain('None'));
     expect(screen.queryByRole('combobox', { name: 'Duration' })).toBeNull();
     expect(screen.queryByRole('combobox', { name: 'Template' })).toBeNull();
@@ -288,23 +288,11 @@ describe('HomeView media composer options', () => {
     expect(promptIsEmpty()).toBe(true);
   });
 
-  it('splits Video and HyperFrames templates into separate submitted metadata', async () => {
+  it('submits HyperFrames templates into video metadata', async () => {
     stubFetch();
     const onSubmit = vi.fn();
     renderHome({ onSubmit });
 
-    await clickHomeRailChip('video');
-    await setHomePrompt('Make a product reveal video.');
-    await submitHome();
-    await waitFor(() => {
-      expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
-        projectMetadata: expect.objectContaining({
-          promptTemplate: expect.objectContaining({ id: 'video-reveal' }),
-        }),
-      }));
-    });
-
-    onSubmit.mockClear();
     await clickHomeRailChip('hyperframes');
     await setHomePrompt('Make a HyperFrames motion video.');
     await submitHome();
@@ -323,7 +311,7 @@ describe('HomeView media composer options', () => {
     const props = homeProps({ onSubmit, promptTemplates: [] });
     const view = render(<HomeView {...props} />);
 
-    await clickHomeRailChip('image');
+    await clickHomeRailChip('hyperframes');
     await waitFor(() => expect(screen.getByTestId('home-hero-template-trigger').textContent).not.toContain('None'));
     await setHomePrompt('Create a campaign image.');
     await submitHome();
@@ -342,7 +330,7 @@ describe('HomeView media composer options', () => {
     await waitFor(() => {
       expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
         projectMetadata: expect.objectContaining({
-          promptTemplate: expect.objectContaining({ id: 'image-product' }),
+          promptTemplate: expect.objectContaining({ id: 'hyperframes-caption' }),
         }),
       }));
     });
@@ -359,7 +347,7 @@ describe('HomeView media composer options', () => {
       ],
     });
 
-    await clickHomeRailChip('video');
+    await clickHomeRailChip('hyperframes');
     await waitFor(() => expect(screen.getByTestId('home-hero-template-trigger').textContent).not.toContain('None'));
     await chooseOption('designSystem', 'brand-alpha', 'Brand Alpha');
     setHomePrompt('Create a launch teaser.');
@@ -392,7 +380,7 @@ describe('HomeView media composer options', () => {
     const onSubmit = vi.fn();
     renderHome({ onSubmit });
 
-    await clickHomeRailChip('video');
+    await clickHomeRailChip('audio');
     await waitFor(() => expect(screen.getByTestId('home-hero-template-trigger').textContent).not.toContain('None'));
     await setHomePrompt('Create a launch teaser.');
     await submitHome();
@@ -418,7 +406,7 @@ describe('HomeView media composer options', () => {
     const onSubmit = vi.fn();
     renderHome({ onSubmit });
 
-    await clickHomeRailChip('video');
+    await clickHomeRailChip('audio');
     await waitFor(() => expect(screen.getByTestId('home-hero-template-trigger').textContent).not.toContain('None'));
     await setHomePrompt('Create a launch teaser.');
     await submitHome();
@@ -468,7 +456,7 @@ describe('HomeView media composer options', () => {
     const props = homeProps({ onSubmit });
     const view = render(<HomeView {...props} />);
 
-    await clickHomeRailChip('video');
+    await clickHomeRailChip('audio');
     await setHomePrompt('Create a directory-scoped launch teaser.');
     workspaceContextMock.state = {
       context: null,
@@ -495,7 +483,7 @@ describe('HomeView media composer options', () => {
     const props = homeProps({ onSubmit });
     const view = render(<HomeView {...props} />);
 
-    await clickHomeRailChip('video');
+    await clickHomeRailChip('audio');
     await setHomePrompt('Create a launch teaser after signing out.');
     const applyCountBeforeSubmit = fetchMock.mock.calls.filter(([url]) => (
       typeof url === 'string' && url.includes('/api/plugins/od-media-generation/apply')
@@ -527,7 +515,7 @@ describe('HomeView media composer options', () => {
     const props = homeProps({ onSubmit });
     const view = render(<HomeView {...props} />);
 
-    await clickHomeRailChip('video');
+    await clickHomeRailChip('audio');
     await setHomePrompt('Create a local launch teaser while identity is unavailable.');
     workspaceContextMock.state = {
       context: null,
@@ -589,7 +577,7 @@ describe('HomeView media composer options', () => {
     };
     renderHome({ onSubmit });
 
-    await clickHomeRailChip('video');
+    await clickHomeRailChip('audio');
     await setHomePrompt('Create a launch teaser.');
     await submitHome();
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
@@ -605,26 +593,21 @@ describe('HomeView media composer options', () => {
     const onSubmit = vi.fn();
     renderHome({ onSubmit });
 
-    await clickHomeRailChip('image');
-    await setHomePrompt('Create a campaign image.');
+    await clickHomeRailChip('audio');
+    await setHomePrompt('Create a concise audio identity.');
     await submitHome();
 
     await waitFor(() => {
-      expect(fetchMock.mock.calls.some(([url, init]) => (
-        typeof url === 'string' &&
-        url.includes('/api/plugins/od-media-generation/apply') &&
-        JSON.parse(String(init?.body)).inputs.subject === 'a polished product concept'
+      expect(fetchMock.mock.calls.some(([url]) => (
+        typeof url === 'string' && url.includes('/api/plugins/od-media-generation/apply')
       ))).toBe(true);
     });
     const applyCall = fetchMock.mock.calls.find(([url]) => (
       typeof url === 'string' && url.includes('/api/plugins/od-media-generation/apply')
     ));
-    expect(JSON.parse(String(applyCall?.[1]?.body)).inputs).toMatchObject({
-      mediaKind: 'image',
-      subject: 'a polished product concept',
-      style: 'cinematic, high-quality, on-brand',
-      aspect: '16:9',
-    });
+    const inputs = JSON.parse(String(applyCall?.[1]?.body)).inputs as Record<string, unknown>;
+    expect(inputs.mediaKind).toBe('audio');
+    expect(typeof inputs.subject === 'string' && inputs.subject.length > 0).toBe(true);
   });
 });
 

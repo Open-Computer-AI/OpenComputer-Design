@@ -58,9 +58,18 @@ import {
   type ProjectNameAuthorityResolution,
 } from './components/ProjectView';
 import { ProjectCreationPendingView } from './components/ProjectCreationPendingView';
-import { AmrArtifactUpgradeGate } from './components/AmrArtifactUpgradeGate';
-import { AmrArtifactUpgradeHomeCard } from './components/AmrArtifactUpgradeHomeCard';
 import { ExperienceSurvey } from './components/ExperienceSurvey';
+import {
+  canGenerateWithInferno,
+  InfernoGenerateGateProvider,
+  InfernoKeyGate,
+  INFERNO_KEY_REQUIRED_EVENT,
+  INFERNO_STATUS_CHANGED_EVENT,
+} from './components/InfernoKeyGate';
+import {
+  fetchInfernoStatus,
+  type InfernoStatusResponse,
+} from './providers/inferno-status';
 import { TooltipLayer } from './components/TooltipLayer';
 import { UpdateDialog } from './components/UpdateDialog';
 import { UpdaterPopup } from './components/UpdaterPopup';
@@ -141,7 +150,7 @@ import {
   projectResourceReadsCanStart,
   useProjectRouteWorkspaceContext,
 } from './collab/useProjectRouteWorkspaceContext';
-import { resolvePlanTier } from './collab/team-plan';
+
 import { deriveTabIdentityScope, UNSET_ACCOUNT_BUCKET } from './collab/tab-scope';
 import { CommunityView } from './components/CommunityView';
 import { seedHomeComposerPrompt } from './components/HomeView';
@@ -173,10 +182,6 @@ import { isMacPlatform } from './utils/platform';
 import { randomUUID } from './utils/uuid';
 import { summarizeProjectNameFromPrompt } from './utils/projectName';
 import { armCompletionFeedbackOnFirstGesture } from './utils/notifications';
-import {
-  amrArtifactUpgradeHomeMockOffer,
-  type AmrArtifactUpgradeHomeOffer,
-} from './runtime/amr-artifact-upgrade';
 import {
   amrBalanceGateScopeForWorkspaceContext,
   amrBalanceGateScopesMatch,
@@ -410,13 +415,12 @@ function clearStaleAmrModelChoiceOnProfileChange(
 /**
  * Active Cloud sign-out is an account boundary for Cloud-owned execution
  * state. Local BYOK credentials and provider choices belong to this install,
- * not the signed-in Cloud account, so keep them available when onboarding asks
- * the user to choose an execution path again.
+ * not the signed-in Cloud account. Do not reopen Cloud/AMR onboarding; the
+ * Inferno key gate already handles missing keys on Home.
  */
 export function resetExecutionConfigAfterSignOut(config: AppConfig): AppConfig {
   return {
     ...config,
-    onboardingCompleted: false,
     mode: DEFAULT_CONFIG.mode,
     agentId: null,
     agentModels: {},
@@ -1015,14 +1019,14 @@ function AppInner() {
     });
   }, [config.notifications?.desktopEnabled, config.notifications?.soundEnabled]);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [amrArtifactUpgradeHomeMockConfig] = useState<AmrArtifactUpgradeHomeOffer | null>(
-    () => process.env.NODE_ENV === 'development' && typeof window !== 'undefined'
-      ? amrArtifactUpgradeHomeMockOffer(window.location.search)
-      : null,
-  );
-  const amrArtifactUpgradeHomeMock = amrArtifactUpgradeHomeMockConfig !== null;
-  const [amrArtifactUpgradeHomeOffer, setAmrArtifactUpgradeHomeOffer] =
-    useState<AmrArtifactUpgradeHomeOffer | null>(() => amrArtifactUpgradeHomeMockConfig);
+  const [infernoStatus, setInfernoStatus] = useState<InfernoStatusResponse>({
+    ready: false,
+    models: [],
+    apiKeyConfigured: false,
+    apiKeyTail: null,
+  });
+  const [infernoGateOpen, setInfernoGateOpen] = useState(false);
+  const infernoCanGenerate = canGenerateWithInferno(infernoStatus);
   // Surfaced when a Home-picked working dir could not be applied to a freshly
   // created project (expired/invalid desktop token, daemon rejection). Without
   // this the failure was swallowed and the user believed their folder was in
@@ -1040,6 +1044,44 @@ function AppInner() {
   const [settingsHighlight, setSettingsHighlight] = useState<SettingsHighlight>(null);
   const [integrationInitialTab, setIntegrationInitialTab] = useState<IntegrationTab>('mcp');
   const [daemonLive, setDaemonLive] = useState(false);
+  useEffect(() => {
+    if (!daemonLive) return undefined;
+    let cancelled = false;
+    const applyStatus = (status: InfernoStatusResponse) => {
+      if (cancelled) return;
+      setInfernoStatus(status);
+      if (canGenerateWithInferno(status)) setInfernoGateOpen(false);
+    };
+    const refresh = () => {
+      void fetchInfernoStatus()
+        .then(applyStatus)
+        .catch(() => {
+          applyStatus({
+            ready: false,
+            models: [],
+            apiKeyConfigured: false,
+            apiKeyTail: null,
+          });
+        });
+    };
+    refresh();
+    const onKeyRequired = () => setInfernoGateOpen(true);
+    const onStatusChanged = (event: Event) => {
+      const detail = (event as CustomEvent<InfernoStatusResponse>).detail;
+      if (detail && typeof detail === 'object' && 'ready' in detail && Array.isArray(detail.models)) {
+        applyStatus(detail);
+        return;
+      }
+      refresh();
+    };
+    window.addEventListener(INFERNO_KEY_REQUIRED_EVENT, onKeyRequired);
+    window.addEventListener(INFERNO_STATUS_CHANGED_EVENT, onStatusChanged);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(INFERNO_KEY_REQUIRED_EVENT, onKeyRequired);
+      window.removeEventListener(INFERNO_STATUS_CHANGED_EVENT, onStatusChanged);
+    };
+  }, [daemonLive]);
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const amrModelsRef = useRef<AmrModelsResponse | null>(null);
   const amrPollGenerationRef = useRef(0);
@@ -2005,13 +2047,13 @@ function AppInner() {
         )
       );
     if (!cloudIdentityRejected) return;
-    if (route.kind === 'home' && route.view === 'onboarding') return;
-    navigate({ kind: 'home', view: 'onboarding' }, { replace: true });
+    // Inferno-only: never bounce to Open Design Cloud onboarding on reauth.
+    if (!canGenerateWithInferno(infernoStatus)) setInfernoGateOpen(true);
   }, [
     amrLoginStatus,
     config.agentId,
     config.mode,
-    route,
+    infernoStatus,
     workspaceContextState.failure,
   ]);
 
@@ -2259,6 +2301,11 @@ function AppInner() {
         // stays actionable regardless of the active view.
         if (shouldRouteToFirstRunOnboarding(next, window.location.pathname)) {
           navigate({ kind: 'home', view: 'onboarding' }, { replace: true });
+        } else if (
+          next.onboardingCompleted === true
+          && window.location.pathname.startsWith('/onboarding')
+        ) {
+          navigate({ kind: 'home', view: 'home' }, { replace: true });
         }
         setDaemonConfigLoaded(true);
         // Only a non-null GET payload means we actually observed daemon prefs.
@@ -2757,8 +2804,8 @@ function AppInner() {
   );
 
   const handleModeChange = useCallback(
-    (mode: AppConfig['mode']) => {
-      const next = { ...latestPersistedConfigRef.current, mode };
+    (_mode: AppConfig['mode']) => {
+      const next = { ...latestPersistedConfigRef.current, mode: 'api' as const };
       latestPersistedConfigRef.current = next;
       saveConfig(next);
       setConfig(next);
@@ -2945,6 +2992,10 @@ function AppInner() {
     async (
       input: AppCreateProjectInput,
     ): Promise<boolean> => {
+      if (input.autoSendFirstMessage && !canGenerateWithInferno(infernoStatus)) {
+        setInfernoGateOpen(true);
+        return false;
+      }
       // Honor an explicit `null` design system — the create panel defaults
       // to "None" for every kind now, and the user expects that to land
       // as a no-design-system project rather than silently inheriting the
@@ -3365,7 +3416,7 @@ function AppInner() {
       }
       return true;
     },
-    [analytics.track, clearLocalProject, rememberLocalProject],
+    [analytics.track, clearLocalProject, infernoStatus, rememberLocalProject],
   );
 
   const handleCreateProjectFromDesignSystem = useCallback(
@@ -4445,36 +4496,6 @@ function AppInner() {
     ? projectRouteWorkspaceContext.context
     : null;
   projectRouteWorkspaceContextRef.current = activeProjectWorkspaceContext;
-  // The post-generation upgrade gate belongs to the project that owns the
-  // conversation, not whichever Workspace the navigation shell currently
-  // selects. A bound project stays fail-closed until its exact membership and
-  // billing snapshot resolve; borrowing the ambient/account Free plan here is
-  // what interrupted paid Team members with the Free upsell.
-  const amrUpgradeWorkspaceContext = activeProject?.workspaceId
-    ? activeProjectWorkspaceContext
-    : workspaceContext;
-  const amrUpgradeWorkspaceContextLoading = activeProject?.workspaceId
-    ? activeProjectWorkspaceContext === null
-    : workspaceContextLoading;
-  const amrUpgradeBillingResponse = useWorkspaceBillingResponse({
-    context: amrUpgradeWorkspaceContext,
-    loading: amrUpgradeWorkspaceContextLoading,
-  });
-  const amrUpgradeBilling = workspaceBillingSummaryForContext(
-    amrUpgradeBillingResponse,
-    amrUpgradeWorkspaceContext,
-  );
-  const resolvedAmrPlan = resolvePlanTier({
-    billing: amrUpgradeBilling,
-    context: amrUpgradeWorkspaceContext,
-    accountPlan:
-      amrUpgradeWorkspaceContextLoading
-      || amrUpgradeWorkspaceContext?.workspaceType === 'team'
-        ? null
-        : amrLoginStatus?.account?.plan?.trim()
-          || amrLoginStatus?.user?.plan?.trim()
-          || null,
-  });
   useEffect(() => {
     const pending = amrAuthRetryContinuationRef.current;
     if (!pending) return;
@@ -4853,6 +4874,12 @@ function AppInner() {
     setConfig(next);
   }, []);
 
+  useEffect(() => {
+    if (config.onboardingCompleted !== true) return;
+    if (route.kind !== 'home' || route.view !== 'onboarding') return;
+    navigate({ kind: 'home', view: 'home' }, { replace: true });
+  }, [config.onboardingCompleted, route]);
+
   // Cmd+, (mac) / Ctrl+, (win/linux) opens Settings. Capture phase so we
   // beat the browser's default Preferences dialog. Platform-gated so
   // meta/ctrl don't conflict across OS.
@@ -5007,14 +5034,15 @@ function AppInner() {
   };
 
   const handleResetOnboarding = useCallback((next: AppConfig) => {
-    latestPersistedConfigRef.current = next;
-    saveConfig(next);
-    void syncConfigToDaemon(next, { allowOnboardingReset: true });
-    setConfig(next);
+    const kept: AppConfig = { ...next, onboardingCompleted: true };
+    latestPersistedConfigRef.current = kept;
+    saveConfig(kept);
+    void syncConfigToDaemon(kept);
+    setConfig(kept);
     setSettingsOpen(false);
     settingsDraftConfigRef.current = null;
     setSettingsHighlight(null);
-    navigate({ kind: 'home', view: 'onboarding' });
+    navigate({ kind: 'home', view: 'home' });
   }, []);
 
   const handleActiveCloudSignOut = useCallback(async () => {
@@ -5026,8 +5054,8 @@ function AppInner() {
     setSettingsOpen(false);
     settingsDraftConfigRef.current = null;
     setSettingsHighlight(null);
-    navigate({ kind: 'home', view: 'onboarding' });
-    await syncConfigToDaemon(next, { allowOnboardingReset: true });
+    navigate({ kind: 'home', view: 'home' });
+    await syncConfigToDaemon(next);
   }, []);
 
   const renderSettingsSurface = (presentation: 'modal' | 'page') => (
@@ -5456,44 +5484,26 @@ function AppInner() {
         onCompleteOnboarding={handleCompleteOnboarding}
         onSignedOut={handleActiveCloudSignOut}
         onAmrLoginStatusChange={handleAmrLoginStatusChange}
-        artifactUpgradeSlot={
-          amrArtifactUpgradeHomeOffer ? (
-            <AmrArtifactUpgradeHomeCard
-              key={amrArtifactUpgradeHomeOffer.sessionKey}
-              profile={amrLoginStatus?.profile ?? null}
-              metricsConsent={config.telemetry?.metrics === true}
-              installationId={config.installationId}
-              onViewArtifact={() => {
-                if (
-                  !amrArtifactUpgradeHomeOffer.projectId
-                  || !amrArtifactUpgradeHomeOffer.conversationId
-                ) {
-                  navigate({ kind: 'home', view: 'projects' });
-                  return;
-                }
-                navigate({
-                  kind: 'project',
-                  projectId: amrArtifactUpgradeHomeOffer.projectId,
-                  conversationId: amrArtifactUpgradeHomeOffer.conversationId,
-                  fileName: amrArtifactUpgradeHomeOffer.fileName,
-                });
-              }}
-              onDismiss={() => {
-                if (amrArtifactUpgradeHomeMock) return;
-                setAmrArtifactUpgradeHomeOffer((current) =>
-                  current?.sessionKey === amrArtifactUpgradeHomeOffer.sessionKey
-                    ? null
-                    : current,
-                );
-              }}
-            />
-          ) : undefined
-        }
       />
     );
   }
+  const openInfernoGate = useCallback(() => {
+    setInfernoGateOpen(true);
+  }, []);
+  const closeInfernoGate = useCallback(() => {
+    setInfernoGateOpen(false);
+    navigate({ kind: 'home', view: 'home' });
+  }, []);
+  const openInfernoSettings = useCallback(() => {
+    setInfernoGateOpen(false);
+    openSettings('execution');
+  }, [openSettings]);
+
   return (
-    <>
+    <InfernoGenerateGateProvider
+      canGenerate={infernoCanGenerate}
+      onOpenGate={openInfernoGate}
+    >
       <div
         className={`workspace-shell workspace-shell--${clientType}`}
         data-client-type={clientType}
@@ -5582,27 +5592,10 @@ function AppInner() {
         onDismiss={() => trackExperienceSurveyDismissed(analytics.track)}
         onSubmit={(answers) => trackExperienceSurveySent(analytics.track, answers)}
       />
-      <AmrArtifactUpgradeGate
-        cloudModelSelected={config.mode === 'daemon' && config.agentId === 'amr'}
-        homeVisible={route.kind === 'home' && route.view === 'home'}
-        activeProjectId={route.kind === 'project' ? route.projectId : null}
-        activeConversationId={
-          route.kind === 'project' ? route.conversationId ?? null : null
-        }
-        activeFileName={route.kind === 'project' ? route.fileName : null}
-        plan={resolvedAmrPlan}
-        planResolved={
-          amrLoginStatus !== null
-          && (!isAmrSessionAuthenticated(amrLoginStatus) || resolvedAmrPlan !== null)
-        }
-        profile={amrLoginStatus?.profile ?? null}
-        metricsConsent={config.telemetry?.metrics === true}
-        installationId={config.installationId}
-        onHomeOfferChange={
-          amrArtifactUpgradeHomeMock
-            ? undefined
-            : setAmrArtifactUpgradeHomeOffer
-        }
+      <InfernoKeyGate
+        open={infernoGateOpen}
+        onOpenSettings={openInfernoSettings}
+        onClose={closeInfernoGate}
       />
       <AnimatePresence>
       {settingsOpen ? (
@@ -5677,7 +5670,7 @@ function AppInner() {
       </motion.div>
       ) : null}
       </AnimatePresence>
-    </>
+    </InfernoGenerateGateProvider>
   );
 }
 

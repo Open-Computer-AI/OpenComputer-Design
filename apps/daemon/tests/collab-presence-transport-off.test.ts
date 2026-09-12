@@ -331,6 +331,7 @@ async function startIsolatedServer(): Promise<{
 }> {
   const root = await ensureScratch();
   process.env.OD_DATA_DIR = join(root, 'data');
+  process.env.OCD_DATA_DIR = join(root, 'data');
   if (!serverModule) {
     vi.resetModules();
     serverModule = (await import('../src/server.js')) as unknown as ServerModule;

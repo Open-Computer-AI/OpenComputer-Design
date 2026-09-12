@@ -315,10 +315,9 @@ If you've been contributing consistently and want to know what the path to becom
 - There are **no quotas, no SLAs, and no fixed term.** Stepping down is easy and reversible (Emeritus → return when life calms down).
 - All the thresholds, the nomination flow, the step-down rules, and the early-project waiver are in [`MAINTAINERS.md`](MAINTAINERS.md). Read that document if any of the above interests you.
 
-The tl;dr: ship good PRs, review thoughtfully, hang out in [Discussions][discussions] / [Discord][discord], and the rest takes care of itself.
+The tl;dr: ship good PRs, review thoughtfully, hang out in [Discussions][discussions], and the rest takes care of itself.
 
-[discussions]: https://github.com/nexu-io/open-design/discussions
-[discord]: https://discord.gg/mHAjSMV6gz
+[discussions]: https://github.com/Open-Computer-AI/OpenComputer-Design/discussions
 
 ---
 

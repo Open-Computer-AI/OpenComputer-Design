@@ -15,11 +15,10 @@ import {
 import { orderModelOptionsByAvailability } from './modelOptions';
 import {
   mergeProviderModelOptions,
-  providerModelsCacheKey,
 } from './providerModelsCache';
 import { KNOWN_PROVIDERS } from '../state/config';
 import { SUGGESTED_MODELS_BY_PROTOCOL } from '../state/apiProtocols';
-import { fetchProviderModels } from '../providers/provider-models';
+import { fetchInfernoProviderModels, INFERNO_MODELS_CACHE_KEY } from '../providers/inferno-status';
 import {
   canReachWorkspaceBillingEntrance,
   workspaceBillingAuthorityContext,
@@ -439,12 +438,7 @@ export function AvatarMenu({
       ) ?? KNOWN_PROVIDERS.find((provider) => provider.protocol === apiProtocol),
     [apiProtocol, config.apiProviderBaseUrl],
   );
-  const byokModelsKey = providerModelsCacheKey(
-    apiProtocol,
-    config.baseUrl ?? '',
-    config.apiKey ?? '',
-    config.apiVersion ?? '',
-  );
+  const byokModelsKey = INFERNO_MODELS_CACHE_KEY;
   const [discoveredByokModels, setDiscoveredByokModels] = useState<
     Record<string, ProviderModelOption[]>
   >({});
@@ -456,18 +450,9 @@ export function AvatarMenu({
   useEffect(() => {
     if (!open || config.mode !== 'api') return;
     if (fetchedByokModels.length > 0) return;
-    if (apiProtocol === 'azure' || apiProtocol === 'ollama') return;
-    const baseUrl = config.baseUrl?.trim() ?? '';
-    if (!/^https?:\/\//i.test(baseUrl)) return;
-    // AIHubMix's catalogue is public; every other protocol needs a key.
-    if (apiProtocol !== 'aihubmix' && !(config.apiKey ?? '').trim()) return;
     const key = byokModelsKey;
     let cancelled = false;
-    void fetchProviderModels({
-      protocol: apiProtocol,
-      baseUrl,
-      apiKey: config.apiKey ?? '',
-    })
+    void fetchInfernoProviderModels()
       .then((result) => {
         if (cancelled || !result.ok || !result.models?.length) return;
         setDiscoveredByokModels((current) => ({
@@ -484,9 +469,6 @@ export function AvatarMenu({
   }, [
     open,
     config.mode,
-    apiProtocol,
-    config.baseUrl,
-    config.apiKey,
     byokModelsKey,
     fetchedByokModels.length,
   ]);

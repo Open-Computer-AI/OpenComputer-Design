@@ -20,6 +20,9 @@ import { validateHtmlArtifact } from '../artifacts/validate';
 import { recoverHtmlDocumentFromMarkdownFence, recoverStandaloneHtmlDocument, resolvePersistedArtifactHtml } from '../artifacts/recover';
 import { createArtifactParser } from '../artifacts/parser';
 import { useI18n } from '../i18n';
+import { streamMessage } from '../providers/anthropic';
+import { composeInfernoSystemPrompt } from '../providers/inferno-prompt';
+import { useInfernoGenerateGate } from './InfernoKeyGate';
 import {
   type DaemonAgentReconnectState,
   type DaemonAgentRetryState,
@@ -927,8 +930,6 @@ const BYOK_OPENCODE_UNAVAILABLE_MESSAGE =
   'BYOK API runs require OpenCode. Install OpenCode, then rescan local agents in Settings before retrying.';
 const BYOK_PROVIDER_REQUIRED_MESSAGE =
   'BYOK OpenCode requires a provider, API key, and model. Complete BYOK settings before starting a run.';
-const BEDROCK_BYOK_UNSUPPORTED_MESSAGE =
-  'AWS Bedrock BYOK chat requires AWS credential signing and is not supported by the current API-key proxy.';
 const CHAT_PANEL_KEYBOARD_STEP = 16;
 const DESIGN_SYSTEM_AUDIT_AUTO_REPAIR_ATTEMPTS = 2;
 // The conversations list 404s while a project is not yet in the local daemon DB.
@@ -2169,6 +2170,7 @@ export function ProjectView({
   onRunActivityChange,
 }: Props) {
   const { locale, t } = useI18n();
+  const infernoGate = useInfernoGenerateGate();
   const amrAuthRetryMountIdRef = useRef<string | null>(null);
   if (amrAuthRetryMountIdRef.current === null) {
     amrAuthRetryMountIdRef.current = randomUUID();
@@ -8108,6 +8110,7 @@ export function ProjectView({
         attachments.length === 0 &&
         commentAttachments.length === 0
       ) return false;
+      if (!infernoGate.requestGenerate()) return false;
       // AMR must resolve this project's persisted billing principal before a
       // run can start. Local CLI and BYOK runtimes do not consume the Vela
       // wallet, so old daemons without this endpoint and directory outages
@@ -8121,8 +8124,7 @@ export function ProjectView({
       );
       const byokOpenCodeProvider = byokOpenCodeProviderFromConfig(config);
       const requiresByokPreflight =
-        (config.mode === 'api' && config.apiProtocol !== 'bedrock') ||
-        (config.mode === 'daemon' && config.agentId === 'byok-opencode');
+        config.mode === 'daemon' && config.agentId === 'byok-opencode';
       if (requiresByokPreflight && !byokOpenCodeProvider) {
         const blockReason = byokPreflightBlockReason(config) ?? 'config_invalid';
         const recoveryActionInstanceId = `blocked:${taskAnalytics.taskExecutionId}`;
@@ -9952,38 +9954,7 @@ export function ProjectView({
         });
         return true;
       } else {
-        if (config.apiProtocol === 'bedrock') {
-          handlers.onError(new Error(BEDROCK_BYOK_UNSUPPORTED_MESSAGE));
-          return true;
-        }
-        if (!agentsById.get('byok-opencode')?.available) {
-          handlers.onError(new Error(BYOK_OPENCODE_UNAVAILABLE_MESSAGE));
-          return true;
-        }
-        // Mirror the daemon chat-route memory hook for BYOK chats. The
-        // CLI path runs `extractFromMessage` BEFORE composing the prompt
-        // (so an explicit "remember: X" / "我是 X" marker in this turn's
-        // user message lands in memory in time for this turn's system
-        // prompt), then queues `extractWithLLM` on child close (so the
-        // small-model pass picks up implicit facts from the full
-        // user+assistant exchange). BYOK chats never hit that route, so
-        // we replicate both phases here against `/api/memory/extract`.
-        // Without this, the Memory tab / model picker is a no-op for
-        // BYOK users even though the UI saves model + index + entries
-        // for that mode.
         const userText = (userMsg.content ?? '').trim();
-        // Forward the per-call BYOK provider snapshot so "Same as chat"
-        // memory extraction uses the same vendor, endpoint, key and model as
-        // the run. The daemon consumes it for this request only.
-        const byokChatProvider = byokOpenCodeProvider
-          ? {
-              provider: byokOpenCodeProvider.protocol,
-              apiKey: byokOpenCodeProvider.apiKey,
-              baseUrl: byokOpenCodeProvider.baseUrl,
-              apiVersion: byokOpenCodeProvider.apiVersion,
-              model: byokOpenCodeProvider.model,
-            }
-          : undefined;
         if (userText.length > 0) {
           try {
             await fetch('/api/memory/extract', {
@@ -9993,7 +9964,6 @@ export function ProjectView({
                 userMessage: userText,
                 projectId: project.id,
                 conversationId: runConversationId,
-                byokChatProvider,
               }),
             });
           } catch {
@@ -10003,7 +9973,7 @@ export function ProjectView({
           }
         }
         pushEvent({ kind: 'status', label: 'requesting', detail: config.model });
-        const byokOpenCodeHistory = await historyWithApiAttachmentContext(
+        const infernoHistory = await historyWithApiAttachmentContext(
           historyWithCommentAttachmentContext(
             historyWithWorkspaceContext(nextHistory, userMsg.id, runContext),
             userMsg.id,
@@ -10016,155 +9986,30 @@ export function ProjectView({
             workspaceContext: projectRunWorkspaceContext,
           },
         );
-        // Session-dimension hints on the BYOK-OpenCode path too, so
-        // run_created / run_finished carry the same session-global and
-        // project-scoped run sequence on every runtime (cli / amr / byok).
-        const byokSessionTurn = claimRunTurnIndex();
-        const byokProjectTurn = claimProjectTurnIndex(project.id);
-        const byokHasExistingArtifact = projectFilesRef.current.some(
-          (file) => Boolean(file.artifactManifest),
-        );
-        void streamViaDaemon({
-          agentId: 'byok-opencode',
-          history: byokOpenCodeHistory,
-          signal: controller.signal,
-          cancelSignal: cancelController.signal,
-          handlers,
-          projectId: project.id,
-          conversationId: runConversationId,
-          userMessageId: userMsg.id,
-          assistantMessageId: assistantId,
-          clientRequestId,
-          skillId: project.skillId ?? null,
-          skillIds: Array.isArray(meta?.skillIds) ? meta.skillIds : [],
-          context: runContext,
-          designSystemId: runtimeDesignSystemId ?? null,
-          workspaceContext: projectRunWorkspaceContext,
-          attachments: runAttachments.map((a) => a.path),
-          commentAttachments: runCommentAttachments,
-          sessionMode: runSessionMode,
-          appliedPluginSnapshotId:
-            meta?.appliedPluginSnapshotId ?? meta?.appliedPluginSnapshot?.snapshotId ?? null,
-          research: meta?.research,
-          mediaExecution: mediaExecutionPolicyForProjectMetadata(project.metadata),
-          model: config.model,
-          reasoning: null,
-          serviceTier: null,
-          ...(byokOpenCodeProvider ? { byokProvider: byokOpenCodeProvider } : {}),
-          byokMediaDefaults: byokMediaDefaultsForRun({
-            imageModelOverride: byokImageModelOverride,
-            videoModelOverride: byokVideoModelOverride,
-            speechModelOverride: byokSpeechModelOverride,
-            speechVoiceOverride: byokSpeechVoiceOverride,
-            config,
-            imageModelOptions: byokImageModelOptionsPV,
-            videoModelOptions: byokVideoModelOptionsPV,
-            speechModelOptions: byokSpeechModelOptionsPV,
-          }),
-          titleGeneration: isFirstTurn ? { enabled: true } : undefined,
+        const infernoSystemPrompt = await composeInfernoSystemPrompt({
           locale,
-          ...(meta?.strategyTaskExecutionId
-            ? { taskExecutionId: meta.strategyTaskExecutionId }
-            : {}),
-          analyticsHints: {
-            ...(meta?.entryFrom ? { entryFrom: meta.entryFrom } : {}),
-            ...(byokSessionTurn
-              ? { turnIndex: byokSessionTurn.turnIndex, isFirstRun: byokSessionTurn.isFirstRun }
-              : {}),
-            ...(byokProjectTurn ? { projectTurnIndex: byokProjectTurn.projectTurnIndex } : {}),
-            hasExistingArtifact: byokHasExistingArtifact,
-            runtimeType: 'byok',
-            taskExecutionId: taskAnalytics.taskExecutionId,
-            initialRunId: taskAnalytics.initialRunId,
-            sourceRunId: taskAnalytics.sourceRunId,
-            taskRunIndex: taskAnalytics.taskRunIndex,
-            recoveryActionType: taskAnalytics.recoveryActionType,
-            recoveryActionInstanceId: taskAnalytics.recoveryActionInstanceId,
-          },
-          onRunCreated: (runId, strategyTask) => {
-            textBuffer.flush();
-            const resolvedTaskAnalytics = {
-              ...taskAnalytics,
-              initialRunId: taskAnalytics.initialRunId ?? runId,
-            };
-            const strategyTaskExecutionId = strategyTask?.taskExecutionId
-              ?? meta?.strategyTaskExecutionId;
-            const isTaskSuccessor = Boolean(
-              strategyTask
-              && latestAssistantMsg.runId
-              && latestAssistantMsg.runId !== runId,
-            );
-            const pinnedAssistant = {
-              ...latestAssistantMsg,
-              runId,
-              runStatus: 'queued' as const,
-              taskAnalytics: resolvedTaskAnalytics,
-              ...(strategyTaskExecutionId ? { strategyTaskExecutionId } : {}),
-              ...(isTaskSuccessor
-                ? {
-                    strategyTaskPrefixLength: latestAssistantMsg.content.length,
-                    strategyTaskPrefixEventCount: latestAssistantMsg.events?.length ?? 0,
-                  }
-                : {}),
-              lastRunEventId: undefined,
-            };
-            latestAssistantMsg = pinnedAssistant;
-            void saveMessage(project.id, runConversationId, pinnedAssistant, {
-              workspaceContext: projectRunWorkspaceContext,
-            });
-            updateMessageById(assistantId, (prev) => ({
-              ...prev,
-              runId,
-              runStatus: 'queued',
-              taskAnalytics: resolvedTaskAnalytics,
-              ...(strategyTaskExecutionId ? { strategyTaskExecutionId } : {}),
-              ...(isTaskSuccessor
-                ? {
-                    strategyTaskPrefixLength: prev.content.length,
-                    strategyTaskPrefixEventCount: prev.events?.length ?? 0,
-                  }
-                : {}),
-              lastRunEventId: undefined,
-            }));
-          },
-          onRunStatus: (runStatus) => {
-            const endedAt = isTerminalRunStatus(runStatus) ? Date.now() : undefined;
-            const runMayFinalize = !supersededRunsRef.current.has(controller);
-            // 见 CLI / AMR 路径同名回调:落终态就把重连那一行让出去。
-            if (currentRunId) {
-              pushReconnectSignal({ kind: 'settled', runId: currentRunId, status: runStatus });
-            }
-            updateMessageById(
-              assistantId,
-              (prev) => ({
-                ...prev,
-                runStatus,
-                endedAt: endedAt === undefined ? prev.endedAt : prev.endedAt ?? endedAt,
-              }),
-              true,
-              runStatus === 'canceled' ? { telemetryFinalized: true } : undefined,
-            );
-            if (!runMayFinalize) return;
-            updateConversationLatestRun(runStatus, endedAt);
-            if (isTerminalRunStatus(runStatus)) {
-              clearCurrentRunStreamingMarker(runConversationId, controller, cancelController);
-              scheduleConversationMessageRefresh(runConversationId);
-            }
-          },
-          /*
-           * 「这一轮是谁停的」——只在服务端答得出来时才落到消息上。
-           * 交付稿第 81 格那一行「已手动暂停任务」只认 `user_stop`;
-           * 存进消息(而不是只留在 run 对象里)是因为刷新之后那一行还得在,
-           * 而且还得是同一个来源(盘点 R8)。
-           */
-          onCancelOrigin: (cancelOrigin) => {
-            updateMessageById(assistantId, (prev) => ({ ...prev, cancelOrigin }), true);
-          },
-          onRunEventId: (lastRunEventId) => {
-            updateMessageById(assistantId, (prev) => ({ ...prev, lastRunEventId }));
-            persistAssistantSoon();
-          },
+          sessionMode: runSessionMode,
+          metadata: project.metadata,
+          skillId: project.skillId ?? config.skillId,
+          designSystemId: runtimeDesignSystemId ?? project.designSystemId,
+          workspaceContext: projectRunWorkspaceContext,
         });
+        if (controller.signal.aborted) return true;
+        void streamMessage(
+          config,
+          infernoSystemPrompt,
+          infernoHistory,
+          controller.signal,
+          handlers,
+          {
+            projectId: project.id,
+            workspaceContext: projectRunWorkspaceContext,
+            byokImageModel: byokImageModelOverride,
+            byokVideoModel: byokVideoModelOverride,
+            byokSpeechModel: byokSpeechModelOverride,
+            byokSpeechVoice: byokSpeechVoiceOverride,
+          },
+        );
         return true;
       }
     },
@@ -10216,6 +10061,7 @@ export function ProjectView({
       projectRunHasBillableAmrPrincipal,
       projectMutationReadOnly,
       projectWorkspaceScopeState.scope,
+      infernoGate,
     ],
   );
 
@@ -10710,7 +10556,7 @@ export function ProjectView({
           originMountId: amrAuthRetryMountIdRef.current,
         });
       }
-      onModeChange('daemon');
+      onModeChange('api');
       onAgentChange('amr');
       onOpenAmrSettings?.();
     },
@@ -13511,19 +13357,8 @@ export function ProjectView({
               amrBalanceCardAnchorMessageId={amrBalanceCardAnchorId}
               amrBalanceCardUnavailable={amrBalanceFailureWalletUnavailable}
               onAmrBalanceUpgrade={handleAmrBalanceCardUpgrade}
-              showByokRecoveryAction={
-                config.mode === 'api' &&
-                daemonLive &&
-                (
-                  !config.apiKey.trim() ||
-                  !config.baseUrl.trim() ||
-                  !config.model.trim()
-                )
-              }
-              onSwitchToLocalCli={() => {
-                setError(null);
-                onModeChange('daemon');
-              }}
+              showByokRecoveryAction={false}
+              onSwitchToLocalCli={undefined}
               onOpenAmrSettings={onOpenAmrSettings}
               onSwitchToAmrAndRetry={handleSwitchToAmrAndRetry}
               onLaunchAntigravityOauth={handleLaunchAntigravityOauth}

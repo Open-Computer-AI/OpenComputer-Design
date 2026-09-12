@@ -47,11 +47,11 @@ describe("@open-design/release", () => {
   });
 
   it("centralizes release identity and namespace derivation", () => {
-    expect(releaseChannelDescriptor("prerelease").productName).toBe("Open Design Prerelease");
+    expect(releaseChannelDescriptor("prerelease").productName).toBe("OpenComputer Design Prerelease");
     expect(releaseInstallIdentity("prerelease")).toEqual({
       appId: "io.open-design.desktop.prerelease",
-      executableName: "Open Design Prerelease",
-      productName: "Open Design Prerelease",
+      executableName: "OpenComputer Design Prerelease",
+      productName: "OpenComputer Design Prerelease",
     });
     expect(releaseNamespace("prerelease")).toBe("release-prerelease");
     expect(releaseNamespace("prerelease", "win")).toBe("release-prerelease-win");
@@ -59,7 +59,7 @@ describe("@open-design/release", () => {
     expect(releaseChannelDescriptor("qa2")).toMatchObject({
       appId: "io.open-design.desktop.qa2",
       channel: "qa2",
-      productName: "Open Design Qa2",
+      productName: "OpenComputer Design Qa2",
       storagePrefix: "qa2",
     });
   });

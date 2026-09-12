@@ -98,7 +98,7 @@ import {
 } from '../utils/pluginRequiredInputs';
 import { HomeHero, type ExamplePromptInfo, type HomeHeroHandle } from './HomeHero';
 import { AppWashKineticGrid } from './AppWashKineticGrid';
-import { findChip, HOME_HERO_CHIPS, type HomeHeroChip } from './home-hero/chips';
+import { findChip, HOME_HERO_CHIPS, isHiddenRemoteMediaCreateChip, type HomeHeroChip } from './home-hero/chips';
 import {
   legacyPrototypeSceneForChipId,
   prototypeSceneProjectMetadata,
@@ -439,6 +439,7 @@ function readHomeComposerChipDraft(): HomeComposerChipDraft | null {
     const parsed = JSON.parse(raw) as Partial<HomeComposerChipDraft> | null;
     if (!parsed || typeof parsed.pluginId !== 'string' || !parsed.pluginId) return null;
     const parsedChipId = typeof parsed.chipId === 'string' ? parsed.chipId : null;
+    if (isHiddenRemoteMediaCreateChip(parsedChipId)) return null;
     // Drafts written before the creation hierarchy moved Mobile app and
     // Wireframe under Prototype persist their retired top-level chip ids, and
     // they outlive the release that removed those chips. Fold them onto the
@@ -1104,6 +1105,7 @@ export function HomeView({
     consumedHandoffIdRef.current = promptHandoff.id;
     setError(null);
     if (promptHandoff.source === 'plugin-use') {
+      if (isHiddenRemoteMediaCreateChip(promptHandoff.chipId)) return;
       setPendingPluginUseHandoff({
         pluginId: promptHandoff.pluginId,
         action: promptHandoff.action ?? 'use',
@@ -1865,6 +1867,10 @@ export function HomeView({
     const restore = pendingChipRestore;
     setPendingChipRestore(null);
     if (active || pendingPluginUseHandoff) return;
+    if (isHiddenRemoteMediaCreateChip(restore.chipId)) {
+      writeHomeComposerChipDraft(null);
+      return;
+    }
     const record = plugins.find((plugin) => plugin.id === restore.pluginId);
     if (!record) {
       // The persisted plugin was uninstalled/removed since the last visit —
@@ -2691,6 +2697,7 @@ export function HomeView({
       pickPrototypeSubtype(legacyScene);
       return;
     }
+    if (isHiddenRemoteMediaCreateChip(chipId)) return;
     const chip = findChip(chipId);
     if (chip) pickChip(chip);
     // pickChip / selectedDesignSystemTitle are recreated each render; this effect

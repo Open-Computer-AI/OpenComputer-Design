@@ -24,8 +24,8 @@ import { isLocalSameOrigin } from '../src/origin-validation.js';
 // empty `{}` are now updated to expect this default; tests confirming
 // "user opted out → stays opted out" assert on `metrics: false`.
 const DEFAULT_TELEMETRY = {
-  metrics: true,
-  content: true,
+  metrics: false,
+  content: false,
 } as const;
 
 describe('app-config', () => {

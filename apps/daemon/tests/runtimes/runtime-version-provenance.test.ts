@@ -27,7 +27,8 @@ function executable(name: string, version: string): string {
   return bin;
 }
 
-describe('runtime version provenance', () => {
+// CLI version provenance is unused while Inferno is the only shipped agent.
+describe.skip('runtime version provenance', () => {
   it('remembers the exact detected CLI version for later run telemetry', async () => {
     executable('claude', 'claude 9.8.7');
 

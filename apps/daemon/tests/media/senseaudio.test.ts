@@ -43,7 +43,8 @@ describe('senseaudio media generation', () => {
     projectsRoot = path.join(projectRoot, '.od', 'projects');
     await mkdir(projectsRoot, { recursive: true });
     delete process.env.OD_MEDIA_CONFIG_DIR;
-    delete process.env.OD_DATA_DIR;
+    process.env.OD_DATA_DIR = path.join(projectRoot, '.od');
+    process.env.OCD_DATA_DIR = path.join(projectRoot, '.od');
     delete process.env.OD_SENSEAUDIO_API_KEY;
     delete process.env.SENSEAUDIO_API_KEY;
   });
@@ -57,8 +58,10 @@ describe('senseaudio media generation', () => {
     }
     if (originalDataDir == null) {
       delete process.env.OD_DATA_DIR;
+      delete process.env.OCD_DATA_DIR;
     } else {
       process.env.OD_DATA_DIR = originalDataDir;
+      process.env.OCD_DATA_DIR = originalDataDir;
     }
     delete process.env.OD_SENSEAUDIO_API_KEY;
     delete process.env.SENSEAUDIO_API_KEY;

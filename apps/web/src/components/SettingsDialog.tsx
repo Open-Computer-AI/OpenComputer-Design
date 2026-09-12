@@ -32,7 +32,6 @@ import {
   trackSettingsDesignReviewClick,
   trackSettingsLanguageClick,
   trackSettingsLocalCliClick,
-  trackSettingsExecutionModeTabClick,
   trackSettingsMediaProvidersClick,
   trackSettingsNotificationsClick,
   trackSettingsPrivacyClick,
@@ -92,15 +91,19 @@ import type { KnownProvider } from '../state/config';
 import { navigate as navigateRoute, useRoute } from '../router';
 import {
   API_PROTOCOL_TABS,
-  DEFAULT_BASE_URL_BY_PROTOCOL,
   API_PROTOCOL_LABELS,
   isFixedOriginGateway,
   resolveFixedOriginBaseUrl,
   SUGGESTED_MODELS_BY_PROTOCOL,
 } from '../state/apiProtocols';
 import {
+  fetchInfernoProviderModels,
+  INFERNO_MODELS_CACHE_KEY,
+  testInfernoConnection,
+} from '../providers/inferno-status';
+import { InfernoSettingsCard } from './InfernoSettingsCard';
+import {
   mergeProviderModelOptions,
-  providerModelsCacheKey,
   type ProviderModelsCache,
 } from './providerModelsCache';
 export {
@@ -130,9 +133,7 @@ import type {
 } from '../types';
 import {
   testAgent,
-  testApiProvider,
 } from '../providers/connection-test';
-import { fetchProviderModels } from '../providers/provider-models';
 import {
   fetchConnectors,
   fetchDesignTemplates,
@@ -1853,24 +1854,7 @@ export function SettingsDialog({
       ? onProviderModelsCacheChange!
       : setLocalProviderModelsCache;
   const [providerModelsCommittedKey, setProviderModelsCommittedKey] =
-    useState<string | null>(() => {
-      const protocol = initial.apiProtocol ?? 'anthropic';
-      if (
-        initial.mode !== 'api' ||
-        protocol === 'azure' ||
-        protocol === 'ollama' ||
-        missingByokModelFetchFields(initial, protocol).length > 0 ||
-        !isValidApiBaseUrl(initial.baseUrl)
-      ) {
-        return null;
-      }
-      return providerModelsCacheKey(
-        protocol,
-        initial.baseUrl,
-        initial.apiKey,
-        initial.apiVersion ?? '',
-      );
-    });
+    useState<string | null>(INFERNO_MODELS_CACHE_KEY);
   const agentTestAbortRef = useRef<AbortController | null>(null);
   const providerTestAbortRef = useRef<AbortController | null>(null);
   const providerModelsAbortRef = useRef<AbortController | null>(null);
@@ -2184,31 +2168,6 @@ export function SettingsDialog({
     };
   }, []);
 
-  const installedCount = useMemo(
-    () => agents.filter((a) => a.available && isVisibleLocalCliAgent(a)).length,
-    [agents],
-  );
-
-  const setMode = (mode: ExecMode) => {
-    setCfg((c) => {
-      const modeBefore = executionModeToTracking(c.mode);
-      const modeAfter = executionModeToTracking(mode);
-      if (modeBefore !== modeAfter) {
-        trackSettingsExecutionModeTabClick(analytics.track, {
-          page_name: 'settings',
-          area: 'configure_execution_mode',
-          element: 'execution_mode_tab',
-          action: 'switch_execution_mode',
-          mode_before: modeBefore,
-          mode_after: modeAfter,
-        });
-      }
-      if (mode === 'api' && c.mode !== 'api') {
-        return restorePendingByokProviderDraft({ ...c, mode });
-      }
-      return { ...c, mode };
-    });
-  };
   const setByokProvider = (provider: ByokProviderPreset) => {
     const currentDraftKey = byokProviderKeyForConfig(cfg);
     const currentApiConfig = currentApiProtocolConfig(cfg);
@@ -2368,7 +2327,7 @@ export function SettingsDialog({
         (agent) => agent.id === 'deepseek-harness' && agent.available,
       );
       if (!installed) throw new Error(t('settings.dshSetupRequired'));
-      setCfg((current) => ({ ...current, agentId: installed.id, mode: 'daemon' }));
+      setCfg((current) => ({ ...current, agentId: 'inferno', mode: 'api' }));
       setDshSetup(null);
       setAgentTestState({ status: 'running' });
       const choice = cfg.agentModels?.[installed.id] ?? {};
@@ -2592,8 +2551,10 @@ export function SettingsDialog({
     if (providerTestState.status === 'running') {
       return;
     }
-    const blockingIssues = blockingByokDraftIssues(byokDraftValidation);
-    const hasFirstPartyHostTypo = Boolean(byokFirstPartyBaseUrl?.hostTypo);
+    const blockingIssues = blockingByokDraftIssues(byokDraftValidation).filter(
+      (issue) => issue.field === 'model',
+    );
+    const hasFirstPartyHostTypo = false;
     const currentConfigKey = providerConnectionTestKey(apiProtocol, cfg);
     const lastUnsuccessfulConfigKey = byokLastUnsuccessfulTestKeyRef.current;
     const configKeyChanged = lastUnsuccessfulConfigKey !== null &&
@@ -2644,19 +2605,7 @@ export function SettingsDialog({
       }
     };
     try {
-      const result = await testApiProvider(
-        {
-          protocol: apiProtocol,
-          baseUrl: cfg.baseUrl,
-          apiKey: cleanByokApiKey(cfg.apiKey),
-          model: cfg.model,
-          apiVersion:
-            apiProtocol === 'azure'
-              ? cfg.apiVersion?.trim() || undefined
-              : undefined,
-        },
-        controller.signal,
-      );
+      const result = await testInfernoConnection(cfg.model, controller.signal);
       if (controller.signal.aborted) return;
       if (providerTestRevisionRef.current !== revision) {
         clearIfStale();
@@ -2725,10 +2674,9 @@ export function SettingsDialog({
     if (providerTestState.status === 'running') {
       return;
     }
-    if (byokFirstPartyBaseUrl?.hostTypo) {
-      return;
-    }
-    if (blockingByokDraftIssues(byokDraftValidation).length > 0) {
+    if (
+      blockingByokDraftIssues(byokDraftValidation).some((issue) => issue.field === 'model')
+    ) {
       return;
     }
     const key = providerConnectionTestKey(apiProtocol, cfg);
@@ -2764,84 +2712,7 @@ export function SettingsDialog({
     if (providerModelsState.status === 'running') {
       return;
     }
-    if (apiProtocol === 'azure') {
-      trackModelsFetchResult({
-        result: 'failed',
-        error_code: 'unsupported_azure',
-        error_kind: 'unsupported_azure',
-        duration_ms: 0,
-      });
-      if (!options.silent) {
-        setByokPreconditionNotice({
-          action: 'test',
-          message: t('settings.fetchModelsUnsupportedAzure'),
-        });
-      }
-      return;
-    }
-    if (apiProtocol === 'ollama') {
-      trackModelsFetchResult({
-        result: 'failed',
-        error_code: 'unsupported_ollama',
-        error_kind: 'unsupported_ollama',
-        duration_ms: 0,
-      });
-      if (!options.silent) {
-        setByokPreconditionNotice({
-          action: 'test',
-          message: t('settings.fetchModelsUnsupportedOllama'),
-        });
-      }
-      return;
-    }
-    if (isProviderModelDiscoveryUnsupported(apiProtocol, cfg.baseUrl)) {
-      trackModelsFetchResult({
-        result: 'failed',
-        error_code: 'unsupported_provider_models',
-        error_kind: 'unsupported_provider_models',
-        duration_ms: 0,
-      });
-      if (!options.silent) {
-        setByokPreconditionNotice({
-          action: 'test',
-          message: t('settings.fetchModelsUnsupported'),
-        });
-      }
-      return;
-    }
-    const modelFetchBlockingIssues = blockingByokDraftIssues(
-      byokModelFetchDraftValidation,
-    );
-    if (byokFirstPartyBaseUrl?.hostTypo) {
-      if (!options.silent) {
-        setByokPreconditionNotice({
-          action: 'test',
-          field: 'base_url',
-          message: t('settings.testInvalidBaseUrl'),
-        });
-        focusByokRequiredField('base_url');
-      }
-      return;
-    }
-    if (modelFetchBlockingIssues.length > 0) {
-      trackModelsFetchResult({
-        result: 'failed',
-        error_code: byokErrorKindFromIssues(modelFetchBlockingIssues),
-        error_kind: byokErrorKindFromIssues(modelFetchBlockingIssues),
-        field_missing: byokFieldMissingFromIssues(modelFetchBlockingIssues),
-        duration_ms: 0,
-      });
-      if (!options.silent) {
-        showByokDraftValidationNotice('test', byokModelFetchDraftValidation);
-      }
-      return;
-    }
-    const cacheKey = providerModelsCacheKey(
-      apiProtocol,
-      cfg.baseUrl,
-      cfg.apiKey,
-      cfg.apiVersion ?? '',
-    );
+    const cacheKey = INFERNO_MODELS_CACHE_KEY;
     const cachedModels = activeProviderModelsCache[cacheKey];
     if (cachedModels) {
       trackModelsFetchResult(
@@ -2875,14 +2746,7 @@ export function SettingsDialog({
       }
     };
     try {
-      const result = await fetchProviderModels(
-        {
-          protocol: apiProtocol,
-          baseUrl: cfg.baseUrl,
-          apiKey: cleanByokApiKey(cfg.apiKey),
-        },
-        controller.signal,
-      );
+      const result = await fetchInfernoProviderModels(controller.signal);
       if (controller.signal.aborted) return;
       if (providerModelsRevisionRef.current !== revision) {
         clearIfStale();
@@ -3026,57 +2890,15 @@ export function SettingsDialog({
     setAgentTestState({ status: 'idle' });
   };
 
-  const apiProtocol = cfg.apiProtocol ?? 'anthropic';
+  const apiProtocol = cfg.apiProtocol ?? 'openai';
   const defaultApiKeyConsoleLink = API_KEY_CONSOLE_LINKS[apiProtocol];
-  const byokProviderPresets: ReadonlyArray<ByokProviderPreset> = [
-    ...BYOK_PROVIDER_PRESETS,
-    {
-      id: 'custom',
-      title: t('settings.customProvider'),
-      protocol: apiProtocol,
-      baseUrl: cfg.baseUrl,
-      preferredModels: cfg.model ? [cfg.model] : [],
-      custom: true,
-    },
-  ];
-  const customByokProvider = byokProviderPresets.find((provider) => provider.custom) ?? {
-    id: 'custom',
-    title: t('settings.customProvider'),
-    protocol: apiProtocol,
-    baseUrl: cfg.baseUrl,
-    preferredModels: cfg.model ? [cfg.model] : [],
-    custom: true,
-  };
-  const byokPresetProtocols = new Set(
-    byokProviderPresets
-      .filter((provider) => !provider.custom)
-      .map((provider) => provider.protocol),
-  );
-  const byokProviderOptions: ReadonlyArray<ByokProviderPreset> = [
-    ...byokProviderPresets.filter((provider) => !provider.custom),
-    ...API_PROTOCOL_TABS.filter((tab) => !byokPresetProtocols.has(tab.id)).map((tab) => {
-      const fallback = defaultApiProtocolConfig(tab.id);
-      return {
-        id: `protocol-${tab.id}`,
-        title: tab.title,
-        protocol: tab.id,
-        baseUrl: fallback.baseUrl || DEFAULT_BASE_URL_BY_PROTOCOL[tab.id],
-        preferredModels: [
-          fallback.model || SUGGESTED_MODELS_BY_PROTOCOL[tab.id][0] || '',
-        ].filter(Boolean),
-      };
-    }),
-    customByokProvider,
-  ];
+  const byokProviderOptions: ReadonlyArray<ByokProviderPreset> = BYOK_PROVIDER_PRESETS;
   const selectedByokProvider =
-    cfg.apiProviderBaseUrl === null
-      ? customByokProvider
-      : byokProviderOptions.find(
-        (provider) =>
-          !provider.custom &&
-          provider.protocol === apiProtocol &&
-          provider.baseUrl === cfg.apiProviderBaseUrl,
-      ) ?? customByokProvider;
+    byokProviderOptions.find(
+      (provider) =>
+        provider.protocol === apiProtocol &&
+        provider.baseUrl === cfg.apiProviderBaseUrl,
+    ) ?? byokProviderOptions[0];
   const baseUrlValid = isValidApiBaseUrl(cfg.baseUrl);
   const baseUrlInvalid = Boolean(cfg.baseUrl.trim() && !baseUrlValid);
   const byokRequiredLabel = (field: ByokRequiredField): string => {
@@ -3255,7 +3077,7 @@ export function SettingsDialog({
       autosaveRetryTimerRef.current = null;
     }
     claimAutosaveStatus('idle');
-    onResetOnboarding({ ...cfg, onboardingCompleted: false });
+    onResetOnboarding({ ...cfg, onboardingCompleted: true });
   }, [cfg, claimAutosaveStatus, onResetOnboarding]);
 
   useEffect(() => {
@@ -3475,10 +3297,9 @@ export function SettingsDialog({
   const apiKeyConsoleLink =
     selectedProvider?.apiKeyConsoleLink ?? defaultApiKeyConsoleLink;
   const showProviderPreset =
-    protocolProviders.length > 0 && !isFixedOriginGateway(apiProtocol);
-  // Fixed-origin gateways resolve their Base URL automatically; nothing for the
-  // user to edit, so hide the field entirely.
-  const showBaseUrlField = !isFixedOriginGateway(apiProtocol);
+    protocolProviders.length > 1 && !isFixedOriginGateway(apiProtocol);
+  // Inferno's origin is pinned on the daemon. Never show a user-editable URL.
+  const showBaseUrlField = false;
   const byokRequiresApiKey = byokProviderRequiresApiKey(
     apiProtocol,
     selectedProvider,
@@ -3587,15 +3408,7 @@ export function SettingsDialog({
       cfg.model,
     ],
   );
-  const providerModelsKey = useMemo(
-    () => providerModelsCacheKey(
-      apiProtocol,
-      cfg.baseUrl,
-      cfg.apiKey,
-      cfg.apiVersion ?? '',
-    ),
-    [apiProtocol, cfg.baseUrl, cfg.apiKey, cfg.apiVersion],
-  );
+  const providerModelsKey = INFERNO_MODELS_CACHE_KEY;
   const providerModelDiscoveryUnavailable =
     apiProtocol !== 'azure' &&
     apiProtocol !== 'ollama' &&
@@ -3700,13 +3513,11 @@ export function SettingsDialog({
     if (cfg.mode !== 'api') return;
     if (visualStabilityMode) return;
     if (providerTestState.status === 'running') return;
-    if (byokFirstPartyBaseUrl?.hostTypo) return;
-    if (blockingByokDraftIssues(byokDraftValidation).length > 0) return;
+    if (
+      blockingByokDraftIssues(byokDraftValidation).some((issue) => issue.field === 'model')
+    ) return;
     if (providerModelDiscoverySupported) {
-      if (
-        apiProtocol !== 'aihubmix' &&
-        providerModelsCommittedKey !== providerModelsKey
-      ) {
+      if (providerModelsCommittedKey !== providerModelsKey) {
         const timer = window.setTimeout(() => {
           setProviderModelsCommittedKey(providerModelsKey);
         }, 200);
@@ -3751,14 +3562,6 @@ export function SettingsDialog({
   useEffect(() => {
     if (cfg.mode !== 'api') return;
     if (visualStabilityMode) return;
-    if (isProviderModelDiscoveryUnsupported(apiProtocol, cfg.baseUrl)) return;
-    if (byokFirstPartyBaseUrl?.hostTypo) return;
-    if (blockingByokDraftIssues(byokModelFetchDraftValidation).length > 0) return;
-    // AIHubMix needs no key and prefills its base URL, so there's nothing to
-    // debounce-commit — fetch as soon as the tab is selected. Every other
-    // protocol waits until the key/baseUrl inputs are committed (on blur) so we
-    // don't fire on each keystroke.
-    if (apiProtocol !== 'aihubmix' && providerModelsCommittedKey !== providerModelsKey) return;
     const timer = window.setTimeout(() => {
       void handleFetchProviderModels({ silent: true });
     }, 300);
@@ -4367,7 +4170,7 @@ export function SettingsDialog({
               <Icon name="sliders" size={18} />
               <span>
                 <strong>{t('settings.envConfigure')}</strong>
-                <small>{`${t('settings.localCli')} / ${t('settings.modeApiMeta')}`}</small>
+                <small>Inferno</small>
               </span>
             </button>
             <button
@@ -4416,17 +4219,6 @@ export function SettingsDialog({
             </button>
             <button
               type="button"
-              className={`settings-nav-item${activeSection === 'media' ? ' active' : ''}`}
-              onClick={() => setActiveSection('media')}
-            >
-              <Icon name="image" size={18} />
-              <span>
-                <strong>{t('settings.mediaProviders')}</strong>
-                <small>Image / video / audio</small>
-              </span>
-            </button>
-            <button
-              type="button"
               className={`settings-nav-item${activeSection === 'integrations' ? ' active' : ''}`}
               onClick={() => setActiveSection('integrations')}
             >
@@ -4461,1414 +4253,13 @@ export function SettingsDialog({
           </aside>
           <div className="settings-content" ref={settingsContentRef}>
           {activeSection === 'execution' ? (
-            <>
-              {/* Sticky shell: the 本机 CLI / API 提供商 switch stays pinned
-                  while the agent list scrolls. The wrapper (not .seg-control
-                  itself) is sticky so it can paint an opaque full-width strip
-                  behind the pill — otherwise cards would show through around
-                  the pill's rounded corners mid-scroll. */}
-              <div className="settings-execution-sticky">
-              <div
-                className="seg-control"
-                role="tablist"
-                aria-label={t('settings.modeAria')}
-                style={{ ['--seg-cols' as string]: 2 } as CSSProperties}
-              >
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={cfg.mode === 'daemon'}
-                  className={
-                    'seg-btn seg-btn--inline' +
-                    (cfg.mode === 'daemon' ? ' active' : '')
-                  }
-                  disabled={!daemonLive}
-                  onClick={() => setMode('daemon')}
-                  title={
-                    daemonLive
-                      ? t('settings.modeDaemonHelp')
-                      : t('settings.modeDaemonOffline')
-                  }
-                >
-                  <span className="seg-title">{t('settings.localCli')}</span>
-                  <span className="seg-meta">
-                    {daemonLive
-                      ? t('settings.modeDaemonInstalledMeta', { count: installedCount })
-                      : t('settings.modeDaemonOfflineMeta')}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={cfg.mode === 'api'}
-                  className={
-                    'seg-btn seg-btn--inline' +
-                    (cfg.mode === 'api' ? ' active' : '')
-                  }
-                  onClick={() => setMode('api')}
-                >
-                  <span className="seg-title">{t('settings.modeApiMeta')}</span>
-                  <span className="seg-meta">{t('settings.modeApi')}</span>
-                </button>
-              </div>
-              </div>
-              {cfg.mode === 'daemon' && !amrCardSignedIn ? (
-                // Only prompt to sign into OpenDesign Cloud when NOT already
-                // signed in — the AMR/vela session IS the cloud identity (one
-                // session drives both), so a logged-in user has nothing to do
-                // here and the callout was showing spuriously.
-                <div className="settings-cloud-signin-callout">
-                  <div>
-                    <strong>{t('settings.cloudCalloutTitle')}</strong>
-                    <p>{t('settings.cloudCalloutBody')}</p>
-                  </div>
-                  {/* Same device-auth flow as the 授权 button on the OpenDesign
-                      agent card below — the AMR/vela session IS the cloud
-                      identity, so signing in here is that one flow. This used to
-                      navigate to onboarding, which walked the user through the
-                      whole first-run tour to reach the same authorization. */}
-                  <AmrLoginPill
-                    className="settings-cloud-signin-callout__button"
-                    hideSignedOutStatus
-                    hideSignedInStatus
-                    initialStatus={amrCardStatus}
-                    skipInitialRefresh
-                    signInLabel={t('settings.cloudCalloutButton')}
-                    signInIcon="log-in"
-                    amrEntrySourceDetail="settings_cloud_callout"
-                    metricsConsent={cfg.telemetry?.metrics === true}
-                    installationId={cfg.installationId}
-                    onStatusChange={setAmrCardStatus}
-                    onSignedOut={onAmrSignedOut}
-                  />
-                </div>
-              ) : null}
-              {cfg.mode === 'api' ? (
-                <div
-                  className="protocol-chips protocol-chips--providers"
-                  role="tablist"
-                  aria-label={t('settings.protocolAria')}
-                >
-                  <div className="protocol-chip-group protocol-chip-group--providers">
-                    <div className="protocol-chip-group-options">
-                      {byokProviderOptions.map((provider) => {
-                        const active = selectedByokProvider?.id === provider.id;
-                        const configured = byokProviderConfigured(provider);
-                        const statusLabel = configured
-                          ? t('settings.mediaProviderConfigured')
-                          : t('settings.mediaProviderUnset');
-                        return (
-                          <button
-                            key={provider.id}
-                            type="button"
-                            role="tab"
-                            aria-selected={active}
-                            aria-label={provider.title}
-                            className={'protocol-chip protocol-chip--provider' + (active ? ' active' : '')}
-                            title={`${provider.title} - ${statusLabel}`}
-                            onClick={() => {
-                              const byokProviderId = byokProtocolToTracking(provider.protocol);
-                              if (byokProviderId) {
-                                trackSettingsByokProviderOptionClick(analytics.track, {
-                                  page_name: 'settings',
-                                  area: 'configure_execution_mode_byok',
-                                  element: 'byok_provider_option',
-                                  action: 'select_byok_provider',
-                                  provider_id: byokProviderId,
-                                  is_selected: active,
-                                });
-                              }
-                              if (!active) {
-                                setByokProvider(provider);
-                              }
-                            }}
-                          >
-                            <span
-                              className={`protocol-chip-status${configured ? ' is-configured' : ' is-unset'}`}
-                              aria-hidden
-                            />
-                            <span>{provider.title}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-          {cfg.mode === 'daemon' ? (
-            <section className="settings-section">
-              <div className="section-head">
-                <div>
-                  <p className="hint">{t('settings.codeAgentHint')}</p>
-                </div>
-              </div>
-              {initialAgentScanRunning ? (
-                <div className="agent-scan-card" role="status" aria-live="polite">
-                  <div className="agent-scan-card__stage">
-                    <span className="agent-scan-card__ring" aria-hidden />
-                    <strong>{t('settings.rescanRunning')}</strong>
-                    <span>{t('settings.codeAgentHint')}</span>
-                    <div className="agent-scan-card__progress" aria-hidden>
-                      <span />
-                    </div>
-                  </div>
-                  <div className="agent-scan-card__rows" aria-hidden>
-                    <span><i /><b /><em /></span>
-                    <span><i /><b /><em /></span>
-                    <span><i /><b /><em /></span>
-                  </div>
-                </div>
-              ) : agents.length === 0 ? (
-                <div className="empty-card">
-                  {t('settings.noAgentsDetected')}
-                </div>
-              ) : (
-                <>
-                  <div className="agent-group">
-                    <div className="agent-group-head">
-                      <h4>
-                        {t('settings.agentInstalledGroup', {
-                          count: installedAgents.length,
-                        })}
-                      </h4>
-                      <div className="agent-group-head-actions">
-                        {agentRescanNotice ? (
-                          <span
-                            className={
-                              'settings-rescan-status settings-rescan-status-inline ' +
-                              agentRescanNotice.kind
-                            }
-                            role={
-                              agentRescanNotice.kind === 'error'
-                                ? 'alert'
-                                : 'status'
-                            }
-                          >
-                            {agentRescanNotice.kind === 'success'
-                              ? t('settings.rescanSuccess', {
-                                  count: agentRescanNotice.count,
-                                })
-                              : t('settings.rescanFailed')}
-                          </span>
-                        ) : null}
-                        <button
-                          type="button"
-                          className={
-                            'ghost icon-btn settings-rescan-btn agent-group-rescan-btn' +
-                            (agentRescanRunning ? ' loading' : '')
-                          }
-                          onClick={() => void handleRefreshAgents()}
-                          disabled={agentRescanRunning}
-                          title={t('settings.rescanTitle')}
-                        >
-                          {agentRescanRunning ? (
-                            <>
-                              <Icon
-                                name="spinner"
-                                size={13}
-                                className="icon-spin"
-                              />
-                              <span>{t('settings.rescanRunning')}</span>
-                            </>
-                          ) : (
-                            t('settings.rescan')
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    {installedAgents.length > 0 ? (
-                      <div className="agent-grid agent-grid-installed">
-                        {installedAgents.map((a) => {
-                          const needsSetup = deepSeekHarnessNeedsSetup(a);
-                          const active = !needsSetup && cfg.agentId === a.id;
-                          const running =
-                            active && agentTestState.status === 'running';
-                          const isAmrAgent = a.id === 'amr';
-                          const description = AGENT_SHORT_DESCRIPTIONS[a.id];
-                          const agentName = displayAgentName(a);
-                          const diagnosticHandlers = diagnosticHandlersForAgent(a);
-                          const modelSummary = agentModelSummary(a);
-                          const amrBenefits = [
-                            t('settings.amrBenefitOfficial'),
-                            t('settings.amrBenefitManyModels'),
-                          ];
-                          const versionLabel =
-                            isAmrAgent
-                              ? ''
-                              : cleanAgentVersionLabel(a.name, a.version);
-                          const metaLabel =
-                            a.authStatus === 'missing'
-                              ? t('settings.agentAuthRequired')
-                              : a.authStatus === 'unknown'
-                                ? t('settings.agentAuthUnknown')
-                                : versionLabel
-                                  ? versionLabel
-                                  : a.id === 'amr'
-                                    ? ''
-                                    : t('common.installed');
-                          const metaTitle =
-                            a.authStatus === 'missing' ||
-                            a.authStatus === 'unknown'
-                              ? (a.authMessage ?? a.path ?? '')
-                              : (a.path ?? '');
-                          const amrHighlighted = isAmrAgent && amrHighlightActive;
-                          const amrCardEmail =
-                            isAmrAgent && active && amrCardSignedIn
-                              ? amrCardStatus?.user?.email || t('settings.amrSignedIn')
-                              : '';
-                          const amrCardProfileBadge =
-                            isAmrAgent && active && amrCardSignedIn
-                              ? amrProfileBadgeLabel(amrCardStatus?.profile)
-                              : null;
-                          const amrWalletVisible =
-                            isAmrAgent && active && amrCardSignedIn;
-                          const amrStatusBalance =
-                            amrWalletVisible
-                              ? formatVelaBalanceUsd(amrCardStatus?.account?.balanceUsd)
-                              : null;
-                          const amrWalletBalance =
-                            amrWalletVisible && amrWalletSnapshot?.status === 'available'
-                              ? formatVelaBalanceUsd(amrWalletSnapshot.balanceUsd)
-                              : null;
-                          // recvqakgSc1Pwd: this must read `balanceUsd` — the
-                          // dollar figure vela already computed — not
-                          // `totalAvailableCredits`, a raw credits COUNT on a
-                          // completely different scale (vela reports
-                          // thousands of credits per dollar). Formatting the
-                          // credits count as a dollar amount is what put
-                          // "Balance $388307.00" on a workspace whose real
-                          // balance was under $39.
-                          const workspaceBalanceUsd = workspaceBillingBalanceUsd(
-                            workspaceBillingResponse,
-                            workspaceContext,
-                          );
-                          const amrWorkspaceBalance =
-                            amrWalletVisible && workspaceBalanceUsd
-                              ? formatVelaBalanceUsd(workspaceBalanceUsd)
-                              : null;
-                          const amrCardIsTeam =
-                            workspaceContext?.workspaceType === 'team';
-                          const amrCardBalanceLabel =
-                            isAmrAgent &&
-                            active &&
-                            amrCardSignedIn &&
-                            !workspaceContextLoading
-                              ? amrCardIsTeam
-                                ? amrWorkspaceBalance
-                                : amrWorkspaceBalance ?? amrStatusBalance ?? amrWalletBalance
-                              : null;
-                          const amrCardBalanceReady =
-                            !workspaceContextLoading &&
-                            (amrCardIsTeam
-                              ? Boolean(workspaceBillingResponse) || Boolean(amrWorkspaceBalance)
-                              : amrWalletReady || Boolean(amrCardBalanceLabel));
-                          // vela's `account.plan` is ACCOUNT-scoped, so a member
-                          // whose plan is held by the team workspace reads
-                          // `free` there — the workspace context wins.
-                          //
-                          // The badge names the plan FAMILY, so a TEAM workspace
-                          // reads `team` at every tier — free through max —
-                          // while the personal ladder keeps its tier word
-                          // (product ruling; 「设置中的这里应该一样的逻辑」, so
-                          // this goes through the SAME helper as the nav-rail
-                          // account row and cannot drift from it). An id outside
-                          // the badge set still renders verbatim.
-                          const amrCardResolvedPlan =
-                            isAmrAgent && active && amrCardSignedIn
-                              ? resolvePlanTier({
-                                  billing: workspaceBilling,
-                                  context: workspaceContext,
-                                  accountPlan: amrCardStatus?.account?.plan,
-                                })
-                              : null;
-                          const amrCardPlanLabel = amrCardResolvedPlan
-                            ? planBadgeTierForWorkspace({
-                                tier: amrCardResolvedPlan,
-                                workspaceType: workspaceContext?.workspaceType,
-                              }) ?? amrCardResolvedPlan
-                            : null;
-                          // recvqfYKutwWlQ: a team member without billing
-                          // permission (owner-only) can't act on an upgrade
-                          // even when the plan tier itself is upgradeable, so
-                          // the entry point must not render for them. Personal
-                          // workspaces always resolve `canManageBilling` true
-                          // (the user is their own owner), so this does not
-                          // affect the personal-workspace upgrade path.
-                          //
-                          // The TIER half asks `canUpgradeFromPlanTier` — the
-                          // one rule the account menu's billing card shares —
-                          // about `amrCardResolvedPlan`, the SAME resolved tier
-                          // the badge above renders. It used to ask a
-                          // personal-ladder question about
-                          // `account.plan` instead: that projection is
-                          // ACCOUNT-scoped and reports `free` for a user whose
-                          // entitlement is held by a team workspace, so a
-                          // 团队版 Max owner was measured as "free" and offered
-                          // an upgrade to the top tier they already hold, while
-                          // the badge beside it correctly read Max.
-                          const amrCardCanUpgrade =
-                            isAmrAgent && active && amrCardSignedIn
-                              ? canUpgradeFromPlanTier(amrCardResolvedPlan) &&
-                                Boolean(workspaceContext?.permissions?.canManageBilling)
-                              : false;
-                          const amrRevealPendingCancelAction =
-                            isAmrAgent &&
-                            active &&
-                            hoveredAgentCardId === a.id &&
-                            !amrCardSignedIn &&
-                            amrCardStatus?.loginInFlight === true;
-                          const cardEl = (
-                            <div
-                              key={a.id}
-                              ref={isAmrAgent ? amrCardRef : undefined}
-                              data-testid={`settings-agent-card-${a.id}`}
-                              className={
-                                'agent-card agent-card-installed' +
-                                (active ? ' active' : '') +
-                                (needsSetup ? ' agent-card-needs-setup' : '') +
-                                (amrHighlighted ? ' agent-card--amr-highlight' : '')
-                              }
-                              onMouseEnter={() => {
-                                if (!isAmrAgent || !active) return;
-                                setHoveredAgentCardId(a.id);
-                              }}
-                              onMouseLeave={() => {
-                                if (hoveredAgentCardId !== a.id) return;
-                                setHoveredAgentCardId(null);
-                              }}
-                            >
-                              <div className="agent-card-main">
-                                <button
-                                  type="button"
-                                  className="agent-card-select"
-                                  data-testid={`settings-agent-select-${a.id}`}
-                                  onClick={() => {
-                                    trackSettingsLocalCliClick(analytics.track, {
-                                      page_name: 'settings',
-                                      area: 'configure_execution_mode_local_cli',
-                                      element: 'cli_provider',
-                                      cli_provider_id: agentIdToTracking(a.id),
-                                      install_status: 'installed',
-                                    });
-                                    if (needsSetup) {
-                                      setDshSetup({ busy: false, error: null });
-                                      return;
-                                    }
-                                    if (isAmrAgent) {
-                                      recordAmrEntry(
-                                        analytics.track,
-                                        'settings_amr_agent_card',
-                                        new Date(),
-                                        {
-                                          metricsConsent:
-                                            cfg.telemetry?.metrics === true,
-                                        },
-                                      );
-                                    }
-                                    setCfg((c) => ({ ...c, agentId: a.id }));
-                                  }}
-                                  aria-pressed={active}
-                                  >
-                                    <AgentIcon id={a.id} size={32} />
-                                    <div className="agent-card-body">
-                                      <div
-                                        className={
-                                          'agent-card-name' +
-                                          (isAmrAgent
-                                            ? ' agent-card-name--amr'
-                                            : '')
-                                        }
-                                      >
-                                        <span className="agent-card-title">
-                                          {agentName}
-                                        </span>
-                                        {isAmrAgent ? (
-                                          <span
-                                            className="agent-card-benefits"
-                                            aria-hidden="true"
-                                          >
-                                            {amrBenefits.map((benefit) => (
-                                              <span
-                                                key={benefit}
-                                                className="agent-card-benefit"
-                                              >
-                                                {benefit}
-                                              </span>
-                                            ))}
-                                          </span>
-                                        ) : description ? (
-                                          <>
-                                            <span
-                                              className="agent-card-name-divider"
-                                              aria-hidden="true"
-                                            >
-                                              ·
-                                            </span>
-                                            <span className="agent-card-tagline">
-                                              {description}
-                                            </span>
-                                          </>
-                                        ) : null}
-                                        {isAmrAgent && amrCardPlanLabel ? (
-                                          <VisuallyHidden>
-                                            {`, ${t('settings.amrPlan')} ${amrCardPlanLabel}`}
-                                          </VisuallyHidden>
-                                        ) : null}
-                                      </div>
-                                      {needsSetup ? (
-                                        <div className="agent-card-meta">
-                                          <span>{t('settings.dshSetupRequired')}</span>
-                                        </div>
-                                      ) : metaLabel ? (
-                                        <div className="agent-card-meta">
-                                          <span title={metaTitle}>
-                                            {metaLabel}
-                                          </span>
-                                        </div>
-                                      ) : null}
-                                      {amrCardEmail ? (
-                                        <div className="agent-card-amr-email">
-                                          <span className="agent-card-amr-email-text" title={amrCardEmail}>
-                                            {amrCardEmail}
-                                          </span>
-                                          {amrCardPlanLabel ? (
-                                            <span
-                                              className="agent-card-plan-badge-slot"
-                                              aria-hidden="true"
-                                            >
-                                              <PlanBadge
-                                                plan={amrCardPlanLabel}
-                                                size="sm"
-                                                className="agent-card-plan-badge"
-                                                title={
-                                                  amrCardPlanLabel
-                                                    ? `${t('settings.amrPlan')} ${amrCardPlanLabel}`
-                                                    : undefined
-                                                }
-                                              />
-                                            </span>
-                                          ) : null}
-                                          {amrCardProfileBadge ? (
-                                            <span className="agent-card-amr-profile-badge">
-                                              {amrCardProfileBadge}
-                                            </span>
-                                          ) : null}
-                                          {amrWalletVisible ? (
-                                            <span className="agent-card-amr-balance">
-                                              <span className="agent-card-amr-balance-label">
-                                                {t('settings.amrBalance')}
-                                              </span>
-                                              <span className="agent-card-amr-balance-value">
-                                                {amrWalletValueLabel({
-                                                  balance: amrCardBalanceLabel,
-                                                  loadingLabel: t('common.loading'),
-                                                  ready: amrCardBalanceReady,
-                                                  snapshot: amrCardIsTeam ? null : amrWalletSnapshot,
-                                                  unavailableLabel: t('settings.amrWalletUnavailable'),
-                                                })}
-                                              </span>
-                                            </span>
-                                          ) : null}
-                                        </div>
-                                      ) : null}
-                                      {!active && modelSummary ? (
-                                        <div className="agent-card-model-summary">
-                                          <span>{t('settings.modelPicker')}</span>
-                                          <strong>{modelSummary}</strong>
-                                        </div>
-                                      ) : null}
-                                  </div>
-                                </button>
-                                {isAmrAgent ? (
-                                  active && amrCardStatusReady ? (
-                                    <span
-                                      className="amr-auth-anchor"
-                                      onMouseEnter={() => setAmrCoachmarkDismissed(true)}
-                                    >
-                                      {amrCoachmarkArmed &&
-                                      !amrCardSignedIn &&
-                                      !amrCoachmarkDismissed ? (
-                                        <span className="amr-coachmark" aria-hidden="true">
-                                          <span className="amr-coachmark__ring" />
-                                          <svg
-                                            className="amr-coachmark__cursor"
-                                            width="22"
-                                            height="22"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                          >
-                                            <path
-                                              d="M9.4 13V8a1.8 1.8 0 0 1 3.6 0v4.6c.35-.55 1-.95 1.75-.95.65 0 1.25.32 1.6.85.32-.5.9-.8 1.55-.8.8 0 1.5.5 1.78 1.2.35-.3.8-.5 1.3-.5 1.1 0 2 .9 2 2v3.05a5.6 5.6 0 0 1-5.6 5.6h-2.5a5 5 0 0 1-3.75-1.7l-4.2-4.75a1.85 1.85 0 0 1 2.65-2.6L9.4 16Z"
-                                              fill="#fff"
-                                              stroke="#1a1a1a"
-                                              strokeWidth="1.1"
-                                              strokeLinejoin="round"
-                                            />
-                                          </svg>
-                                        </span>
-                                      ) : null}
-                                      {amrCardCanUpgrade ? (
-                                        <button
-                                          type="button"
-                                          className="agent-card-amr-upgrade"
-                                          data-testid="settings-agent-card-amr-upgrade"
-                                          onClick={() => {
-                                            const upgradeUrl = amrUpgradeUrl(
-                                              amrCardStatus?.profile,
-                                            );
-                                            if (!upgradeUrl) return;
-                                            void openExternalUrl(
-                                              attributedAmrSettingsUrl(
-                                                upgradeUrl,
-                                                'settings_amr_upgrade',
-                                              ),
-                                            );
-                                          }}
-                                        >
-                                          <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 24 24"
-                                            fill="currentColor"
-                                            width={14}
-                                            height={14}
-                                            aria-hidden
-                                          >
-                                            <path d="M10.6144 17.7956 11.492 15.7854C12.2731 13.9966 13.6789 12.5726 15.4325 11.7942L17.8482 10.7219C18.6162 10.381 18.6162 9.26368 17.8482 8.92277L15.5079 7.88394C13.7092 7.08552 12.2782 5.60881 11.5105 3.75894L10.6215 1.61673C10.2916.821765 9.19319.821767 8.8633 1.61673L7.97427 3.75892C7.20657 5.60881 5.77553 7.08552 3.97685 7.88394L1.63658 8.92277C.868537 9.26368.868536 10.381 1.63658 10.7219L4.0523 11.7942C5.80589 12.5726 7.21171 13.9966 7.99275 15.7854L8.8704 17.7956C9.20776 18.5682 10.277 18.5682 10.6144 17.7956ZM19.4014 22.6899 19.6482 22.1242C20.0882 21.1156 20.8807 20.3125 21.8695 19.8732L22.6299 19.5353C23.0412 19.3526 23.0412 18.7549 22.6299 18.5722L21.9121 18.2532C20.8978 17.8026 20.0911 16.9698 19.6586 15.9269L19.4052 15.3156C19.2285 14.8896 18.6395 14.8896 18.4628 15.3156L18.2094 15.9269C17.777 16.9698 16.9703 17.8026 15.956 18.2532L15.2381 18.5722C14.8269 18.7549 14.8269 19.3526 15.2381 19.5353L15.9985 19.8732C16.9874 20.3125 17.7798 21.1156 18.2198 22.1242L18.4667 22.6899C18.6473 23.104 19.2207 23.104 19.4014 22.6899Z" />
-                                          </svg>
-                                          {t('settings.amrUpgrade')}
-                                        </button>
-                                      ) : null}
-                                      <AmrLoginPill
-                                        className="agent-card-amr-auth"
-                                        hideSignedOutStatus
-                                        hideSignedInStatus
-                                        initialStatus={amrCardStatus}
-                                        skipInitialRefresh
-                                        signInLabel={t('settings.amrAuthorize')}
-                                        showConsoleAction={amrCardSignedIn}
-                                        iconOnlySignOut
-                                        amrEntrySourceDetail="settings_amr_authorize"
-                                        metricsConsent={cfg.telemetry?.metrics === true}
-                                        installationId={cfg.installationId}
-                                        revealPendingCancelAction={amrRevealPendingCancelAction}
-                                        onStatusChange={setAmrCardStatus}
-                                        onSignedOut={onAmrSignedOut}
-                                      />
-                                    </span>
-                                  ) : (
-                                    <div
-                                      className="agent-card-amr-auth agent-card-amr-auth--placeholder"
-                                      aria-hidden="true"
-                                    />
-                                  )
-                                ) : null}
-                                {active && !isAmrAgent ? (
-                                  <button
-                                    type="button"
-                                    className={
-                                      'ghost icon-btn settings-test-btn agent-card-test-btn' +
-                                      (running ? ' loading' : '')
-                                    }
-                                    onClick={() => void handleTestAgent()}
-                                    disabled={running}
-                                    title={t('settings.testTitle')}
-                                  >
-                                    {running ? (
-                                      <>
-                                        <Icon
-                                          name="spinner"
-                                          size={13}
-                                          className="icon-spin"
-                                        />
-                                        <span>{t('settings.test')}</span>
-                                      </>
-                                    ) : (
-                                      t('settings.test')
-                                    )}
-                                  </button>
-                                ) : null}
-                              </div>
-                              {/* Diagnostics belong to the expanded card only:
-                                  collapsed cards all present the same compact
-                                  summary regardless of agent health. */}
-                              {active
-                                ? (a.diagnostics ?? []).map((diagnostic, i) => (
-                                    <AgentDiagnosticRow
-                                      key={`${diagnostic.reason}-${i}`}
-                                      diagnostic={diagnostic}
-                                      handlers={diagnosticHandlers}
-                                      className="agent-card-diagnostic"
-                                    />
-                                  ))
-                                : null}
-                              {active ? renderAgentModelConfig(a) : null}
-                            </div>
-                          );
-                          if (active && agentTestState.status !== 'idle') {
-                            const resultRow = (
-                              <div
-                                key={`${a.id}__test-result`}
-                                className="agent-test-result-row"
-                              >
-                                {agentTestState.status === 'running' ? (
-                                  <p
-                                    className="settings-test-status running"
-                                    role="status"
-                                    aria-live="polite"
-                                  >
-                                    {t('settings.testRunning')}
-                                  </p>
-                                ) : (
-                                  <>
-                                    <p
-                                      className={
-                                        'settings-test-status ' +
-                                        testStatusVariant(agentTestState.result)
-                                      }
-                                      role={
-                                        agentTestState.result.ok
-                                          ? 'status'
-                                          : 'alert'
-                                      }
-                                    >
-                                      {renderTestMessage(
-                                        agentTestState.result,
-                                        'cli',
-                                      )}
-                                    </p>
-                                    {!agentTestState.result.ok ? (
-                                      <div className="settings-test-actions">
-                                        <div className="settings-test-actions-row">
-                                          <button
-                                            type="button"
-                                            className="ghost icon-btn settings-test-btn"
-                                            onClick={() => void handleTestAgent()}
-                                          >
-                                            <Icon name="reload" size={13} />
-                                            <span>{t('settings.testRetry')}</span>
-                                          </button>
-                                        </div>
-                                      </div>
-                                    ) : null}
-                                    {cfg.agentId === 'codex' && (() => {
-                                      const repair = codexPathRepairState(
-                                        agentTestState.result,
-                                      );
-                                      if (!repair) return null;
-                                      const codexStrings = codexPathStrings(locale);
-                                      return (
-                                        <div className="settings-test-actions">
-                                          <span className="settings-test-actions-hint">
-                                            {codexStrings.repairHint}
-                                          </span>
-                                          <div className="settings-test-actions-row">
-                                            {repair.canUseDetected ? (
-                                              <button
-                                                type="button"
-                                                className="settings-test-btn"
-                                                onClick={() =>
-                                                  applyCodexDetectedPath(
-                                                    repair.detectedPath,
-                                                  )
-                                                }
-                                              >
-                                                {codexStrings.useDetected}
-                                              </button>
-                                            ) : null}
-                                            <button
-                                              type="button"
-                                              className="ghost icon-btn settings-rescan-btn"
-                                              onClick={clearCodexCustomPath}
-                                            >
-                                              {codexStrings.clearCustom}
-                                            </button>
-                                          </div>
-                                        </div>
-                                      );
-                                    })()}
-                                  </>
-                                )}
-                              </div>
-                            );
-                            return [cardEl, resultRow];
-                          }
-                          return [cardEl];
-                        })}
-                      </div>
-                    ) : (
-                      <div className="empty-card">
-                        {t('settings.noAgentsDetected')}
-                      </div>
-                    )}
-                  </div>
-                  {unavailableAgents.length > 0 ? (
-                    <details
-                      className="agent-install-collapse"
-                      open={installedAgents.length > 0 ? undefined : true}
-                    >
-                      <summary className="agent-install-collapse-summary">
-                        <span>
-                          {t('settings.agentInstallGroup', {
-                            count: unavailableAgents.length,
-                          })}
-                        </span>
-                      </summary>
-                      <div className="agent-grid agent-grid-unavailable">
-                        {unavailableAgents.map((a) => {
-                          const installUrl = sanitizeHttpsUrl(a.installUrl);
-                          const docsUrl = sanitizeHttpsUrl(a.docsUrl);
-                          const description = AGENT_SHORT_DESCRIPTIONS[a.id];
-                          const agentName = displayAgentName(a);
-                          const diagnosticHandlers = diagnosticHandlersForAgent(a);
-                          const cardLabel = `${agentName} · ${t('common.notInstalled')}`;
-                          return (
-                            <div
-                              key={a.id}
-                              className="agent-card disabled agent-card-unavailable"
-                              role="group"
-                              aria-label={cardLabel}
-                            >
-                              <div className="agent-card-unavailable-row">
-                                <AgentIcon id={a.id} size={30} />
-                                <div className="agent-card-body">
-                                  <div className="agent-card-name">
-                                    {agentName}
-                                  </div>
-                                  {description ? (
-                                    <div className="agent-card-description">
-                                      {description}
-                                    </div>
-                                  ) : null}
-                                </div>
-                              </div>
-                              {/* Why is it unavailable? not-on-path vs a broken
-                                  shim vs a bad *_BIN override each get a
-                                  distinct, actionable line, full-width below the
-                                  logo/name. Rendered message-only: the fix
-                                  actions are hoisted into the shared footer bar
-                                  so every control lives on one row. */}
-                              {(a.diagnostics ?? []).map((diagnostic, i) => (
-                                <AgentDiagnosticRow
-                                  key={`${diagnostic.reason}-${i}`}
-                                  diagnostic={diagnostic}
-                                />
-                              ))}
-                              {/* Every action for the card collapses into one
-                                  horizontal bar at the foot, fenced from the
-                                  content above by a hair divider: Docs + Rescan
-                                  as quiet icon buttons, Install as the primary
-                                  labelled CTA holding the right edge. */}
-                              <div className="agent-card-footer">
-                                {docsUrl ? (
-                                  <a
-                                    href={docsUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="agent-card-link agent-card-link--muted agent-card-link--icon"
-                                    onClick={markAgentInstallIntent}
-                                    title={t('settings.agentInstall.docs')}
-                                    aria-label={t('settings.agentInstall.docs')}
-                                  >
-                                    <Icon name="file" size={15} />
-                                  </a>
-                                ) : null}
-                                <button
-                                  type="button"
-                                  className="agent-card-link agent-card-link--muted agent-card-link--icon"
-                                  onClick={() => diagnosticHandlers.onRescan?.()}
-                                  title={t('settings.rescan')}
-                                  aria-label={t('settings.rescan')}
-                                >
-                                  <Icon name="reload" size={15} />
-                                </button>
-                                {installUrl ? (
-                                  <a
-                                    href={installUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="agent-card-link agent-card-link--ghost"
-                                    onClick={(event) => {
-                                      markAgentInstallIntent();
-                                      if (a.id === 'amr') {
-                                        event.currentTarget.href = attributedAmrSettingsUrl(
-                                          installUrl,
-                                          'settings_amr_install',
-                                        );
-                                      }
-                                    }}
-                                  >
-                                    {t('settings.agentInstall.install')}
-                                  </a>
-                                ) : null}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </details>
-                  ) : null}
-                  {/*
-                    Show the install guide only when the user has *no*
-                    working agent picked yet. Older logic surfaced it
-                    whenever any agent on the support list was missing,
-                    which fired for almost everyone (few people install
-                    all 14 supported CLIs) — the four-step quickstart
-                    then sat between the agent grid and the model picker
-                    forever, even after the user had successfully picked
-                    Claude Code months ago. Once a working agent is
-                    selected, the guide has done its job and only adds
-                    noise.
-                  */}
-                  {!agents.find(
-                    (a) => a.id === cfg.agentId && a.available,
-                  ) ? (
-                    <div className="agent-install-guide">
-                      <p className="hint agent-install-path-hint">
-                        {t('settings.agentInstall.pathHint')}
-                      </p>
-                      <ol className="agent-install-steps">
-                        <li>{t('settings.agentInstall.stepOpenLinks')}</li>
-                        <li>{t('settings.agentInstall.stepAuth')}</li>
-                        <li>{t('settings.agentInstall.stepRescan')}</li>
-                        <li>{t('settings.agentInstall.stepSelect')}</li>
-                      </ol>
-                    </div>
-                  ) : null}
-                </>
-              )}
-              {(() => {
-                const selected = agents.find(
-                  (a) => a.id === cfg.agentId && a.available,
-                );
-                if (!selected) return null;
-                const hasModels =
-                  Array.isArray(selected.models) && selected.models.length > 0;
-                const choice = cfg.agentModels?.[selected.id] ?? {};
-                const knownModelIds = selected.models?.map((m) => m.id) ?? [];
-                const configuredModel =
-                  typeof choice.model === 'string' && choice.model
-                    ? choice.model
-                    : null;
-                const modelValue =
-                  selected.id === 'amr' &&
-                  configuredModel &&
-                  !knownModelIds.includes(configuredModel)
-                    ? selected.models?.[0]?.id ?? ''
-                    : configuredModel ?? selected.models?.[0]?.id ?? '';
-                return (
-                  <details className="agent-cli-env settings-memory-advanced">
-                    <summary className="agent-cli-env-summary">
-                      <span className="agent-cli-env-summary-title">
-                        {t('settings.memoryModelInlineLabel')}
-                      </span>
-                    </summary>
-                    <div className="agent-cli-env-body">
-                      <MemoryModelInline
-                        mode="daemon"
-                        apiProtocol={apiProtocol}
-                        chatApiKey={cfg.apiKey}
-                        chatBaseUrl={cfg.baseUrl}
-                        chatApiVersion={cfg.apiVersion ?? ''}
-                        chatModel={modelValue}
-                        cliAgentId={selected.id}
-                        cliModelOptions={
-                          hasModels ? selected.models!.map((m) => m.id) : []
-                        }
-                      />
-                    </div>
-                  </details>
-                );
-              })()}
-              {(() => {
-                /*
-                  Per-agent CLI environment overrides — proxy URLs, custom
-                  config dirs, and a binary path override. The previous
-                  layout listed every supported agent's variables in one
-                  long always-expanded block; for users on Claude Code
-                  the Codex fields were just visual filler (and vice
-                  versa), and the section hijacked Settings real estate
-                  on every open even though nine in ten users never
-                  touch it. Now: filtered to the *currently selected*
-                  agent only, and folded into a collapsed disclosure
-                  that opens to "Advanced: proxy & custom paths" — power
-                  users who route through LiteLLM or installed the
-                  binary out-of-PATH still have one click access; new
-                  users no longer wonder "are these fields I forgot to
-                  fill in?".
-                */
-                const cliEnvFields = AGENT_CLI_ENV_FIELDS.filter(
-                  (field) => field.agentId === cfg.agentId,
-                );
-                if (cliEnvFields.length === 0) return null;
-                return (
-                  <details
-                    className="agent-cli-env"
-                    data-testid="settings-cli-env"
-                  >
-                    <summary className="agent-cli-env-summary">
-                      <span className="agent-cli-env-summary-title">
-                        {t('settings.cliEnvTitle')}
-                      </span>
-                    </summary>
-                    <div className="agent-cli-env-body">
-                      <p className="hint">{t('settings.cliEnvHint')}</p>
-                      <div className="agent-cli-env-grid">
-                        {cliEnvFields.map((field) => (
-                          <label
-                            className="field"
-                            key={`${field.agentId}:${field.envKey}`}
-                          >
-                            <span className="field-label">
-                              {t(field.labelKey)}
-                              {'labelSuffix' in field
-                                ? ` (${field.labelSuffix})`
-                                : ''}
-                            </span>
-                            <input
-                              type={
-                                'secret' in field && field.secret
-                                  ? 'password'
-                                  : 'text'
-                              }
-                              value={
-                                cfg.agentCliEnv?.[field.agentId]?.[
-                                  field.envKey
-                                ] ?? ''
-                              }
-                              placeholder={field.placeholder}
-                              spellCheck={false}
-                              autoComplete="off"
-                              onChange={(e) =>
-                                setCfg((c) =>
-                                  updateAgentCliEnvValue(
-                                    c,
-                                    field.agentId,
-                                    field.envKey,
-                                    e.target.value,
-                                  ),
-                                )
-                              }
-                            />
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  </details>
-                );
-              })()}
-            </section>
-          ) : (
-            /*
-              BYOK panel — wrap the per-protocol form in a bordered card so
-              the chips above (Anthropic / OpenAI / Azure / Gemini / Ollama)
-              visually own the content below. Without the card, the chip
-              row and the form looked like two unrelated stripes; users
-              had no anchor for "this is what I configured for the active
-              tab", and switching tabs felt like the whole right column
-              just reshuffled. The card lives on the same white-with-soft-
-              border pattern as `.agent-model-row` so the two BYOK / CLI
-              panels feel like the same family.
-            */
-            <section className="settings-section settings-section-card settings-section-byok">
-              <div className="section-head">
-                <div>
-                  <div className="settings-byok-title">
-                    <h3>{API_PROTOCOL_LABELS[apiProtocol]}</h3>
-                    <span className="settings-byok-info-wrap">
-                      <button
-                        type="button"
-                        className="settings-byok-info-button"
-                        aria-label={t('settings.byokNoFileToolsNotice')}
-                        aria-describedby="settings-byok-no-file-tools-tooltip"
-                        data-testid="settings-byok-no-file-tools-trigger"
-                      >
-                        <Icon name="info" size={13} />
-                      </button>
-                      <span
-                        id="settings-byok-no-file-tools-tooltip"
-                        className="settings-byok-info-tooltip"
-                        role="tooltip"
-                        data-testid="settings-byok-no-file-tools-notice"
-                      >
-                        {t('settings.byokNoFileToolsNotice')}
-                      </span>
-                    </span>
-                  </div>
-                </div>
-                <ByokConnectionTestControl
-                  baseUrlValid={baseUrlValid}
-                  canRunConnectionTest={
-                    !byokFirstPartyBaseUrl?.hostTypo &&
-                    canRunProviderConnectionTest(cfg, {
-                      requiresApiKey: byokRequiresApiKey,
-                    })
-                  }
-                  labels={{
-                    readyToTest: t('settings.byokReadyToTest'),
-                    test: t('settings.test'),
-                    testRetry: t('settings.testRetry'),
-                    testRunning: t('settings.testRunning'),
-                    testTitle: t('settings.testTitle'),
-                  }}
-                  providerTestState={providerTestState}
-                  renderTestMessage={(result) => renderTestMessage(result, 'api')}
-                  suppressResultStatus={
-                    providerTestBaseUrlInvalid || providerTestApiKeyAuthFailed
-                  }
-                  suppressReadyState={Boolean(
-                    byokPreconditionNotice ||
-                      apiKeyFieldAuthFailed ||
-                      providerTestBaseUrlInvalid ||
-                      byokBlockingDraftIssues.length > 0,
-                  )}
-                  onTestProvider={() => handleTestProvider()}
-                />
-              </div>
-              {byokActivationPreflightReason ? (
-                <p
-                  className="settings-test-status warn"
-                  role="status"
-                  data-testid="settings-byok-draft-notice"
-                >
-                  {t('settings.byokDraftNotice')}
-                </p>
-              ) : null}
-              {byokPreconditionNotice && !byokPreconditionNotice.field ? (
-                <p
-                  className="settings-test-status error"
-                  role="alert"
-                  aria-live="polite"
-                  data-action={byokPreconditionNotice.action}
-                >
-                  {byokPreconditionNotice.message}
-                </p>
-              ) : null}
-              {showProviderPreset ? (
-                <ByokProviderPicker
-                  label={t('settings.providerPreset')}
-                  customProviderLabel={t('settings.customProvider')}
-                  providers={protocolProviders}
-                  selectedProviderIndex={selectedProviderIndex}
-                  onCustomProviderSelect={() => {
-                    setApiModelCustomEditing(false);
-                    updateApiConfig({
-                      baseUrl: '',
-                      model: '',
-                      apiProviderBaseUrl: null,
-                    });
-                  }}
-                  onProviderSelect={(p) => {
-                    setApiModelCustomEditing(false);
-                    updateApiConfig({
-                      baseUrl: p.baseUrl,
-                      model: defaultKnownProviderModel(p),
-                      apiProviderBaseUrl: p.baseUrl,
-                    });
-                  }}
-                />
-              ) : null}
-              <ByokKeyField
-                apiKey={cfg.apiKey}
-                apiKeyConsoleLink={apiKeyConsoleLink}
-                apiProtocol={apiProtocol}
-                inputRef={apiKeyInputRef}
-                labels={{
-                  apiHint: t('settings.apiHint'),
-                  apiKey: t('settings.apiKey'),
-                  apiKeyCleaned: t('settings.apiKeyCleaned'),
-                  apiKeyGetLink: t('settings.apiKeyGetLink', {
-                    host: apiKeyConsoleLink.host,
-                  }),
-                  apiKeyInvalid: t('settings.apiKeyInvalid'),
-                  hide: t('settings.hide'),
-                  hideKey: t('settings.hideKey'),
-                  required: t('settings.required'),
-                  show: t('settings.show'),
-                  showKey: t('settings.showKey'),
-                }}
-                requiresApiKey={byokRequiresApiKey}
-                showApiKeyInvalid={Boolean(
-                  apiKeyFieldAuthFailed ||
-                    byokPreconditionNotice?.field === 'api_key' ||
-                    apiKeyDraftInvalid,
-                )}
-                showApiKey={showApiKey}
-                onBlur={onByokKeyCommit}
-                onChange={(value) => {
-                  committedClearedByokProviderKeyRef.current = null;
-                  updateApiConfig({ apiKey: value });
-                }}
-                onFocus={() => {
-                  const byokProviderId = byokProtocolToTracking(apiProtocol);
-                  if (byokProviderId) {
-                    trackSettingsByokFieldClick(analytics.track, {
-                      page_name: 'settings',
-                      area: 'configure_execution_mode_byok',
-                      element: 'api_key',
-                      provider_id: byokProviderId,
-                      has_value: Boolean(cfg.apiKey?.trim()),
-                    });
-                  }
-                }}
-                onToggleShowApiKey={() => setShowApiKey((v) => !v)}
-              />
-              {showBaseUrlField ? (
-                <ByokProviderBaseUrl
-                  apiProtocol={apiProtocol}
-                  inputRef={baseUrlInputRef}
-                  baseUrl={cfg.baseUrl}
-                  baseUrlError={baseUrlErrorMessage}
-                  baseUrlInvalid={Boolean(baseUrlErrorMessage)}
-                  baseUrlPlaceholder={baseUrlPlaceholder}
-                  baseUrlReadOnly={baseUrlReadOnly}
-                  labels={{
-                    baseUrl: t('settings.baseUrl'),
-                    required: t('settings.required'),
-                    customize: t('settings.baseUrlCustomize'),
-                    invalid: t('settings.baseUrlInvalid'),
-                    defaultHint: t('settings.baseUrlDefaultHint'),
-                    azureHint: t('settings.azureBaseUrlHint'),
-                  }}
-                  onBlur={commitProviderModelsInputs}
-                  onChange={(value) =>
-                    updateApiConfig({
-                      baseUrl: value,
-                      apiProviderBaseUrl: apiProtocol === 'azure' ? '' : null,
-                    })
-                  }
-                  onCustomize={() => {
-                    updateApiConfig({ apiProviderBaseUrl: null });
-                    window.setTimeout(() => baseUrlInputRef.current?.focus(), 0);
-                  }}
-                  onFocus={() => {
-                    const byokProviderId = byokProtocolToTracking(apiProtocol);
-                    if (byokProviderId) {
-                      trackSettingsByokFieldClick(analytics.track, {
-                        page_name: 'settings',
-                        area: 'configure_execution_mode_byok',
-                        element: 'base_url',
-                        provider_id: byokProviderId,
-                        has_value: Boolean(cfg.baseUrl?.trim()),
-                      });
-                    }
-                  }}
-                />
-              ) : null}
-              <label className="field">
-                <span className="field-label">{t('settings.maxTokens')}</span>
-                <input
-                  type="number"
-                  min={MIN_MAX_TOKENS}
-                  max={MAX_MAX_TOKENS}
-                  step={1}
-                  placeholder={String(modelMaxTokensDefault(cfg.model))}
-                  value={maxTokensInput}
-                  onChange={(e) => updateMaxTokensInput(e.target.value)}
-                  onBlur={() => setMaxTokensInput(cfg.maxTokens == null ? '' : String(cfg.maxTokens))}
-                />
-                <p className="hint">{t('settings.maxTokensHint')}</p>
-              </label>
-              <ByokModelField
-                customActive={apiModelCustomActive}
-                customInputRef={customModelInputRef}
-                labels={{
-                  customModel: t('settings.modelCustom'),
-                  customModelLabel: apiProtocol === 'azure'
-                    ? t('settings.azureCustomDeploymentName')
-                    : t('settings.modelCustomLabel'),
-                  customModelPlaceholder: apiProtocol === 'azure'
-                    ? t('settings.azureDeploymentModel')
-                    : t('settings.modelCustomPlaceholder'),
-                  fetchModelsUnsupported: t('settings.fetchModelsUnsupported'),
-                  model: apiProtocol === 'azure'
-                    ? t('settings.azureDeploymentModel')
-                    : t('settings.model'),
-                  required: t('settings.required'),
-                  searchPlaceholder: t('designs.searchPlaceholder'),
-                  suggestedModelsHint: t('settings.suggestedModelsHint'),
-                }}
-                model={cfg.model}
-                modelSelectRef={modelSelectRef}
-                models={apiModelOptions.map((m) => ({
-                  ...m,
-                  label: apiModelOptionLabel(
-                    m,
-                    !hidesAccountModelSourceLabel(apiProtocol) &&
-                    loadedAccountModelCount > 0
-                      ? fetchedApiModelIds.has(m.id)
-                        ? t('settings.modelSourceAccount')
-                        : t('settings.modelSourceSuggested')
-                      : undefined,
-                  ),
-                }))}
-                modelsLoadedFromAccountMessage={
-                  loadedAccountModelCount > 0
-                    ? t(
-                        hidesAccountModelSourceLabel(apiProtocol)
-                          ? 'settings.modelsLoadedCount'
-                          : 'settings.modelsLoadedFromAccount',
-                        {
-                          count: loadedAccountModelCount,
-                        },
-                      )
-                    : null
-                }
-                providerModelsFailureMessage={providerModelsFailureMessage}
-                forceTextInput={apiProtocol === 'azure'}
-                showAzureModelFetchHint={apiProtocol === 'azure'}
-                showFetchModelsUnsupportedHint={
-                  apiProtocol !== 'azure' &&
-                  isProviderModelDiscoveryUnsupported(apiProtocol, cfg.baseUrl)
-                }
-                showSuggestedModelsHint={apiProtocol !== 'azure' && !selectedProvider}
-                azureModelFetchHint={t('settings.azureModelFetchHint')}
-                onCustomModelChange={(value) => updateApiConfig({ model: value })}
-                onCustomModelSelect={() => {
-                  apiModelUserSelectedRef.current = true;
-                  setApiModelCustomEditing(true);
-                  updateApiConfig({ model: '' });
-                }}
-                onFocus={() => {
-                  const byokProviderId = byokProtocolToTracking(apiProtocol);
-                  if (byokProviderId) {
-                    trackSettingsByokFieldClick(analytics.track, {
-                      page_name: 'settings',
-                      area: 'configure_execution_mode_byok',
-                      element: 'model',
-                      provider_id: byokProviderId,
-                      has_value: Boolean(cfg.model?.trim()),
-                    });
-                  }
-                }}
-                onModelSelect={(nextValue) => {
-                  apiModelUserSelectedRef.current = true;
-                  setApiModelCustomEditing(false);
-                  updateApiConfig({ model: nextValue });
-                }}
-              />
-              <details className="agent-cli-env settings-memory-advanced">
-                <summary className="agent-cli-env-summary">
-                  <span className="agent-cli-env-summary-title">
-                    {t('settings.memoryModelInlineLabel')}
-                  </span>
-                </summary>
-                <div className="agent-cli-env-body">
-                  <MemoryModelInline
-                    mode="api"
-                    apiProtocol={apiProtocol}
-                    chatApiKey={cfg.apiKey}
-                    chatBaseUrl={cfg.baseUrl}
-                    chatApiVersion={cfg.apiVersion ?? ''}
-                    chatModel={cfg.model}
-                    apiModelOptions={apiModelOptions}
-                  />
-                </div>
-              </details>
-              {apiProtocol === 'azure' ? (
-                <label className="field">
-                  <span className="field-label">{t('settings.apiVersion')}</span>
-                  <input
-                    type="text"
-                    value={cfg.apiVersion ?? ''}
-                    placeholder="2024-10-21"
-                    onBlur={commitProviderModelsInputs}
-                    onChange={(e) => updateApiConfig({ apiVersion: e.target.value.trim() })}
-                  />
-                </label>
-              ) : null}
-              {apiProtocol === 'senseaudio' || apiProtocol === 'aihubmix' ? (
-                <label className="field">
-                  <span className="field-label">{t('settings.byokImageModel')}</span>
-                  <SearchableModelSelect
-                    className="inline-switcher__select settings-model-select settings-model-select--byok"
-                    aria-label={t('settings.byokImageModel')}
-                    searchPlaceholder={t('designs.searchPlaceholder')}
-                    popoverClassName="settings-byok-select-popover"
-                    minSearchableOptions={Number.POSITIVE_INFINITY}
-                    // Live catalogue from the shared hook: AIHubMix's image
-                    // models for aihubmix, the static SenseAudio registry
-                    // otherwise. The default-empty option (first entry) resolves
-                    // to the registry default on the daemon side.
-                    models={[
-                      {
-                        id: '',
-                        label: byokImageModelOptions[0]?.label
-                          ? `${byokImageModelOptions[0].label} (${t('settings.byokModelDefaultOption')})`
-                          : t('settings.byokModelDefaultOption'),
-                      },
-                      ...byokImageModelOptions.map((m) => ({ id: m.id, label: m.label })),
-                    ]}
-                    value={cfg.byokImageModel ?? ''}
-                    onChange={(value) =>
-                      updateApiConfig({ byokImageModel: value })
-                    }
-                  />
-                </label>
-              ) : null}
-              {apiProtocol === 'aihubmix' ? (
-                <label className="field">
-                  <span className="field-label">{t('settings.byokVideoModel')}</span>
-                  <select
-                    value={cfg.byokVideoModel ?? ''}
-                    onChange={(e) =>
-                      updateApiConfig({ byokVideoModel: e.target.value })
-                    }
-                  >
-                    {/* Empty resolves to the default video model on the daemon
-                        side. The LLM can still override per-call via the tool's
-                        `model` arg. */}
-                    <option value="">
-                      {byokVideoModelOptions[0]?.label
-                        ? `${byokVideoModelOptions[0].label} (${t('settings.byokModelDefaultOption')})`
-                        : t('settings.byokModelDefaultOption')}
-                    </option>
-                    {byokVideoModelOptions.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
-              {apiProtocol === 'aihubmix' ? (
-                <label className="field">
-                  <span className="field-label">{t('settings.byokSpeechModel')}</span>
-                  <select
-                    value={cfg.byokSpeechModel ?? ''}
-                    onChange={(e) => updateApiConfig({ byokSpeechModel: e.target.value })}
-                  >
-                    <option value="">
-                      {byokSpeechModelOptions[0]?.label
-                        ? `${byokSpeechModelOptions[0].label} (${t('settings.byokModelDefaultOption')})`
-                        : t('settings.byokModelDefaultOption')}
-                    </option>
-                    {byokSpeechModelOptions.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
-              {apiProtocol === 'aihubmix' ? (
-                <label className="field">
-                  <span className="field-label">{t('settings.byokSpeechVoice')}</span>
-                  <select
-                    value={cfg.byokSpeechVoice ?? ''}
-                    onChange={(e) => updateApiConfig({ byokSpeechVoice: e.target.value })}
-                  >
-                    <option value="">alloy (default)</option>
-                    {['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'].map((v) => (
-                      <option key={v} value={v}>
-                        {v}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
-            </section>
-          )}
-            </>
+            <InfernoSettingsCard
+              model={cfg.model}
+              onModelChange={(nextModel) => {
+                apiModelUserSelectedRef.current = true;
+                updateApiConfig({ model: nextModel });
+              }}
+            />
           ) : null}
 
           {activeSection === 'media' ? (

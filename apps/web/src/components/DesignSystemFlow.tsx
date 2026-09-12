@@ -9,6 +9,8 @@ import type {
   WorkspaceCollabContext,
 } from '@open-design/contracts';
 import { streamViaDaemon } from '../providers/daemon';
+import { streamMessage } from '../providers/anthropic';
+import { composeInfernoSystemPrompt } from '../providers/inferno-prompt';
 import {
   connectConnector,
   createDesignSystemDraft,
@@ -88,6 +90,7 @@ import { notifyConnectorsChanged } from './connectors-events';
 import { connectorAuthSnapshotChanged } from './connectors-state';
 import { FileWorkspace, type FileRefreshResult } from './FileWorkspace';
 import { Icon, type IconName } from './Icon';
+import { InfernoGenerateGuard, useInfernoGenerateGate } from './InfernoKeyGate';
 import { Spinner } from './Loading';
 import { Toast } from './Toast';
 import { useAnalytics } from '../analytics/provider';
@@ -353,6 +356,7 @@ export function DesignSystemCreationFlow({
   designSystems = [],
 }: CreationProps) {
   const { t } = useI18n();
+  const infernoGate = useInfernoGenerateGate();
   const { context: workspaceContext } = useWorkspaceContext();
   const [step, setStep] = useState<SetupStep>('setup');
   // A Library "create design system from selection" hand-off pre-fills the
@@ -857,6 +861,7 @@ export function DesignSystemCreationFlow({
   }
 
   async function generate() {
+    if (!infernoGate.requestGenerate()) return;
     if (generationStarting) return;
     // Snapshot the user-pinned source state up front. Used for the
     // pre-async ui_click intent signal AND the post-async lifecycle
@@ -1451,9 +1456,11 @@ export function DesignSystemCreationFlow({
               <Icon name="arrow-left" />
               {t('dsCreate.back')}
             </Button>
+            <InfernoGenerateGuard>
             <Button
               variant="primary"
-              disabled={!hasCreationSource(state)}
+              disabled={!hasCreationSource(state) || !infernoGate.canGenerate}
+              aria-disabled={!infernoGate.canGenerate ? true : undefined}
               onClick={() => {
                 emitCreateFormClick('continue_to_generation');
                 void generate();
@@ -1462,6 +1469,7 @@ export function DesignSystemCreationFlow({
               {t('dsCreate.generate')}
               <Icon name="chevron-right" />
             </Button>
+            </InfernoGenerateGuard>
           </div>
         ) : null}
         </div>
@@ -1644,6 +1652,7 @@ export function DesignSystemDetailView({
   onInitialRevisionJobConsumed,
 }: DetailProps) {
   const { locale, t } = useI18n();
+  const infernoGate = useInfernoGenerateGate();
   const { context: workspaceContext } = useWorkspaceContext();
   const [system, setSystem] = useState<DesignSystemDetail | null>(null);
   const [body, setBody] = useState('');
@@ -2380,6 +2389,7 @@ export function DesignSystemDetailView({
     ) => {
       const rawText = prompt.trim();
       if (!rawText || chatStreaming || !system) return;
+      if (!infernoGate.requestGenerate()) return;
       if (activeConversationId && !projectChatMessagesReady) return;
       const text = feedbackSection ? `${rawText}\n\nFocus section: ${feedbackSection}` : rawText;
       const projectId = workspaceProjectId ?? await ensureWorkspaceProject();
@@ -2400,7 +2410,7 @@ export function DesignSystemDetailView({
         setActiveConversationId(fresh.id);
         conversationId = fresh.id;
       }
-      if (config.mode !== 'daemon' || !config.agentId) {
+      if (config.mode !== 'api' && (config.mode !== 'daemon' || !config.agentId)) {
         setChatError(t('dsFlow.pickLocalAgentFirst'));
         return;
       }
@@ -2444,13 +2454,14 @@ export function DesignSystemDetailView({
         attachments: attachments.length > 0 ? attachments : undefined,
         commentAttachments: commentAttachments.length > 0 ? commentAttachments : undefined,
       };
-      const selectedAgent = agents.find((agent) => agent.id === config.agentId);
-      const selectedModel = config.agentModels?.[config.agentId];
+      const agentId = config.agentId ?? 'inferno';
+      const selectedAgent = agents.find((agent) => agent.id === agentId);
+      const selectedModel = config.agentModels?.[agentId];
       const assistantMsg: ChatMessage = {
         id: randomUUID(),
         role: 'assistant',
         content: '',
-        agentId: config.agentId,
+        agentId,
         agentName: [selectedAgent?.name ?? config.agentId, selectedModel?.model].filter(Boolean).join(' · '),
         events: [],
         createdAt: startedAt,
@@ -2510,8 +2521,105 @@ export function DesignSystemDetailView({
       const wasOnboardingHandoff =
         Boolean(peekOnboardingSessionId())
         || sessionStorage.getItem(`od:auto-send-first:${projectId}`) === '1';
+      const infernoHandlers = {
+          onDelta: (delta: string) => {
+            updateAssistant((message) => ({
+              ...message,
+              content: message.content + delta,
+              events: [...(message.events ?? []), { kind: 'text', text: delta }],
+            }));
+          },
+          onDone: () => {
+            updateAssistant(
+              (message) => ({
+                ...message,
+                endedAt: Date.now(),
+                runStatus: message.runStatus === 'failed' || message.runStatus === 'canceled'
+                  ? message.runStatus
+                  : 'succeeded',
+              }),
+              true,
+            );
+            setChatStreaming(false);
+            chatAbortRef.current = null;
+            chatCancelRef.current = null;
+            pendingWorkspaceFileWritesRef.current.clear();
+            void (async () => {
+              const nextFiles = await refreshWorkspaceProjectFiles(projectId);
+              if (!nextFiles) return;
+              const synced = await syncDesignSystemBodyFromWorkspace(projectId);
+              void syncDesignSystemAssetsFromWorkspace();
+              const audit = await fetchProjectDesignSystemPackageAudit(
+                projectId,
+                workspaceContext,
+              );
+              const auditSummary = audit ? summarizeDesignSystemPackageAudit(audit) : null;
+              if (auditSummary) {
+                updateAssistant(
+                  (message) => ({
+                    ...message,
+                    events: [...(message.events ?? []), { kind: 'status', label: 'audit', detail: auditSummary }],
+                  }),
+                  true,
+                );
+              }
+              const repairPrompt = audit ? buildDesignSystemPackageAuditRepairPrompt(audit) : null;
+              if (auditSummary) {
+                setStatusLine(
+                  repairPrompt
+                    ? t('dsFlow.auditNeedsRepair', { summary: auditSummary })
+                    : t('dsFlow.workspaceUpdatedWithAudit', { summary: auditSummary }),
+                );
+              } else {
+                setStatusLine(
+                  synced
+                    ? t('dsFlow.workspaceUpdatedSynced')
+                    : t('dsFlow.workspaceUpdatedReview'),
+                );
+              }
+              await onProjectsRefresh?.();
+            })().catch(() => {
+              setChatError(t('dsFlow.workspaceOpenFailed'));
+            });
+          },
+          onError: (error: Error) => {
+            const message = error.message;
+            setChatError(message);
+            updateAssistant(
+              (previous) => ({
+                ...appendErrorStatusEvent(previous, message),
+                endedAt: Date.now(),
+                runStatus: 'failed' as const,
+              }),
+              true,
+            );
+            setChatStreaming(false);
+            chatAbortRef.current = null;
+            chatCancelRef.current = null;
+            pendingWorkspaceFileWritesRef.current.clear();
+          },
+      };
+      if (config.mode === 'api') {
+        const infernoSystemPrompt = await composeInfernoSystemPrompt({
+          locale,
+          designSystemId: system.id,
+          designSystemBody: system.body,
+          designSystemTitle: system.title,
+          workspaceContext,
+        });
+        if (controller.signal.aborted) return;
+        void streamMessage(
+          config,
+          infernoSystemPrompt,
+          agentHistory,
+          controller.signal,
+          infernoHandlers,
+          { projectId, workspaceContext },
+        );
+        return;
+      }
       void streamViaDaemon({
-        agentId: config.agentId,
+        agentId,
         history: agentHistory,
         signal: controller.signal,
         cancelSignal: cancelController.signal,
@@ -2681,11 +2789,13 @@ export function DesignSystemDetailView({
       activeConversationId,
       agents,
       chatStreaming,
+      config,
       config.agentId,
       config.agentModels,
       config.mode,
       ensureWorkspaceProject,
       feedbackSection,
+      infernoGate,
       introChatMessages,
       locale,
       onProjectsRefresh,
@@ -2698,6 +2808,7 @@ export function DesignSystemDetailView({
       syncDesignSystemBodyFromWorkspace,
       system,
       t,
+      workspaceContext,
       workspaceProjectId,
     ],
   );

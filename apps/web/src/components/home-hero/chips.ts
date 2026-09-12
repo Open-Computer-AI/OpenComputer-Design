@@ -286,44 +286,8 @@ export const HOME_HERO_CHIPS: ReadonlyArray<HomeHeroChip> = [
       },
     },
   },
-  {
-    id: 'image',
-    label: 'Image',
-    icon: 'image',
-    group: 'create',
-    description: 'Posters, graphics & art',
-    action: {
-      kind: 'apply-scenario',
-      pluginId: 'od-media-generation',
-      projectKind: 'image',
-      automaticDefault: true,
-      inputs: {
-        mediaKind: 'image',
-        subject: 'a polished product concept',
-        style: 'cinematic, high-quality, on-brand',
-        aspect: '16:9',
-      },
-    },
-  },
-  {
-    id: 'video',
-    label: 'Video',
-    icon: 'video-ai',
-    group: 'create',
-    description: 'Clips, reels & promos',
-    action: {
-      kind: 'apply-scenario',
-      pluginId: 'od-media-generation',
-      projectKind: 'video',
-      automaticDefault: true,
-      inputs: {
-        mediaKind: 'video',
-        subject: 'a short product reveal',
-        style: 'cinematic, high-quality, on-brand',
-        aspect: '16:9',
-      },
-    },
-  },
+  // Remote Image/Video create chips are intentionally absent. HyperFrames
+  // (motion-as-code) stays; leftover handoffs must not re-enter those composers.
   {
     id: 'audio',
     label: 'Audio',
@@ -381,29 +345,26 @@ export function chipsForGroup(group: ChipGroup): HomeHeroChip[] {
   return HOME_HERO_CHIPS.filter((c) => c.group === group);
 }
 
-// Fixed Home information architecture. Only these ten output types are
-// top-level choices. Action-only create entries (for example Create Design
-// System) are intentionally excluded.
+// Fixed Home information architecture. Remote Image/Video cards are omitted;
+// HyperFrames (motion-as-code) stays. Action-only create entries (for example
+// Create Design System) are intentionally excluded.
 export const CREATE_RAIL_ORDER = [
   'prototype',
   'deck',
-  'image',
   'document',
   'hyperframes',
   'web-clone',
-  'video',
   'audio',
   'live-artifact',
   'webgl',
 ] as const;
 
 // Chip ids the onboarding "build a design system" teaser intentionally omits.
-// Video and Audio are pure-media outputs and the least central to the
-// design-system story, so they are omitted to keep the teaser chips to a
-// single tidy row. Website clone starts
-// from someone else's site rather than the user's design system, so it stays
-// off the design-system teaser too.
-const ONBOARDING_ARTIFACT_OMIT = new Set<string>(['web-clone', 'video', 'audio']);
+// Audio is a pure-media output and the least central to the design-system
+// story, so it is omitted to keep the teaser chips to a single tidy row.
+// Website clone starts from someone else's site rather than the user's
+// design system, so it stays off the design-system teaser too.
+const ONBOARDING_ARTIFACT_OMIT = new Set<string>(['web-clone', 'audio']);
 
 // The artifact chips shown on the onboarding "build a design system" step — a
 // curated single-row subset of the create rail. Derived from CREATE_RAIL_ORDER
@@ -431,4 +392,9 @@ export const HOME_APPLY_TEMPLATE_EVENT = 'open-design:home-apply-template';
 // off a click target without round-tripping through React state.
 export function findChip(id: string): HomeHeroChip | undefined {
   return HOME_HERO_CHIPS.find((c) => c.id === id);
+}
+
+/** Retired remote Image/Video create ids. Persist/handoff must not reopen them. */
+export function isHiddenRemoteMediaCreateChip(chipId: string | null | undefined): boolean {
+  return chipId === 'image' || chipId === 'video';
 }

@@ -315,7 +315,7 @@ Table OVERRIDES ใน `maxTokens.ts` มีไว้สำหรับกรณ
 tl;dr: ship PR ดี ๆ, review อย่างใส่ใจ, อยู่ใน [Discussions][discussions] / [Discord][discord], แล้วที่เหลือจะตามมาเอง.
 
 [discussions]: https://github.com/nexu-io/open-design/discussions
-[discord]: https://discord.gg/qhbcCH8Am4
+[discord]: https://tryopencomputer.com
 
 ---
 

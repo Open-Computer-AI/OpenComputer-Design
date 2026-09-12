@@ -1,4 +1,9 @@
 import { createHash } from 'node:crypto';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { configuredDataDirRaw, resolveDataDir } from '../daemon-paths.js';
+import { readInfernoApiKey } from '../inferno/credentials.js';
+import { resolveProjectRootFromNestedModule } from '../project-root.js';
 import { execAgentFile } from './invocation.js';
 import { AGENT_DEFS } from './registry.js';
 import {
@@ -94,7 +99,7 @@ export async function ensureDetectedRuntimeVersions(
 ): Promise<DetectedRuntimeVersions | null> {
   if (!agentId) return null;
   const def = AGENT_DEFS.find((candidate) => candidate.id === agentId);
-  if (!def) return null;
+  if (!def || def.synthetic) return null;
   const context = runtimeVersionProbeContext(def, configuredAgentEnv);
   if (!context) return null;
   const remembered = getDetectedRuntimeVersions(agentId);
@@ -140,7 +145,7 @@ export async function ensureDetectedRuntimeCapabilities(
 ): Promise<RuntimeCapabilityMap | null> {
   if (!agentId) return null;
   const def = AGENT_DEFS.find((candidate) => candidate.id === agentId);
-  if (!def) return null;
+  if (!def || def.synthetic) return null;
   const context = runtimeVersionProbeContext(def, configuredAgentEnv);
   if (!context) return null;
   const remembered = agentCapabilities.get(agentId);
@@ -449,6 +454,29 @@ async function probeRuntimeVersionsOnly(
   return { ...versions };
 }
 
+async function detectSyntheticAgent(def: RuntimeAgentDef): Promise<DetectedAgent> {
+  // Same root as server.ts RUNTIME_DATA_DIR: OCD_DATA_DIR, then OD_DATA_DIR,
+  // else ~/.opencomputer-design.
+  const dataDir = resolveDataDir(
+    configuredDataDirRaw(),
+    resolveProjectRootFromNestedModule(path.dirname(fileURLToPath(import.meta.url))),
+  );
+  let apiKey: string | null = null;
+  try {
+    apiKey = await readInfernoApiKey(dataDir);
+  } catch {
+    apiKey = null;
+  }
+  return {
+    ...stripFns(def),
+    models: def.fallbackModels ?? [],
+    modelsSource: 'fallback',
+    available: true,
+    authStatus: apiKey ? 'ok' : 'missing',
+    ...installMetaForAgent(def.id),
+  };
+}
+
 function unavailableAgent(
   def: RuntimeAgentDef,
   diagnostics: AgentDiagnostic[] = [],
@@ -555,6 +583,9 @@ async function probe(
   def: RuntimeAgentDef,
   configuredEnv: Record<string, string> = {},
 ): Promise<DetectedAgent> {
+  if (def.synthetic) {
+    return detectSyntheticAgent(def);
+  }
   detectedRuntimeVersions.delete(def.id);
   // Forget what a previous pass proved unusable before re-probing: a rescan
   // after the user repairs or reinstalls a CLI must not keep skipping it.

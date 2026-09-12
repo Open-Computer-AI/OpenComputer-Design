@@ -64,28 +64,28 @@ export const zhCN: Dict = {
   "workspaceInvite.errorUnreachable": "邀请未能送达，请稍后重试。",
   "chat.amrCard.switchTitle": "模型调用失败，当前任务已暂停",
   "chat.amrCard.switchBody":
-    "可切换到 OpenDesign Cloud 官方模型服务，无需配置 API Key。完成登录、授权和充值后，将自动重试当前任务。",
+    "可切换到 Inferno 官方模型服务，无需配置 API Key。完成登录、授权和充值后，将自动重试当前任务。",
   "chat.amrCard.chipOfficial": "官方托管",
   "chat.amrCard.chipNoKey": "无需 API Key",
   "chat.amrCard.chipAutoRetry": "授权后自动重试",
   "chat.amrCard.switchCta": "切换到 Cloud",
   "chat.amrError.authMessage":
-    "OpenDesign Cloud 账号尚未授权。完成授权后将自动重试当前任务。",
+    "Inferno 账号尚未授权。完成授权后将自动重试当前任务。",
   "chat.amrError.balanceMessage":
-    "OpenDesign Cloud 额度不足。充值后可继续运行当前任务。",
+    "Inferno 额度不足。充值后可继续运行当前任务。",
   "chat.amrError.authorizeCta": "授权并重试",
   "chat.amrError.rechargeCta": "充值",
   "chat.amrBalanceGate.title": "升级套餐，继续创作",
   "chat.amrBalanceGate.message": "额度不足（当前 {balance}），升级套餐或充值后，任务马上就能开始。",
-  "chat.amrBalanceGate.benefitsTitle": "OpenDesign Cloud 为你提供",
+  "chat.amrBalanceGate.benefitsTitle": "Inferno 为你提供",
   "chat.amrBalanceGate.benefit1": "无需 API Key，海量模型任选",
   "chat.amrBalanceGate.benefit2": "自带 SOTA Design Agent，零配置",
   "chat.amrBalanceGate.benefit3": "官方服务，稳定有保障",
   "chat.amrBalanceGate.benefit4": "持续升级：一键部署、多模态、团队版等",
   "chat.amrBalanceGate.laterCta": "暂不需要",
   "chat.amrBalanceGate.plansCta": "升级套餐",
-  "chat.amrBalanceGate.signedOutTitle": "登录 OpenDesign Cloud，开始创作",
-  "chat.amrBalanceGate.signedOutMessage": "当前使用的是 OpenDesign Cloud 智能体，登录后这个任务马上就能开始。",
+  "chat.amrBalanceGate.signedOutTitle": "登录 Inferno，开始创作",
+  "chat.amrBalanceGate.signedOutMessage": "当前使用的是 Inferno 智能体，登录后这个任务马上就能开始。",
   "chat.amrBalanceGate.signInCta": "立即登录",
   "chat.amrBalanceGate.watchingWallet": "额度更新后将自动继续。",
   "chat.amrArtifactUpgrade.title": "用更强模型继续完善作品",
@@ -330,7 +330,7 @@ export const zhCN: Dict = {
   "settings.onboardingAmrCloudUpcomingSkills": "海量 Skills",
   "settings.onboardingAmrCloudUpcomingRouting": "智能路由",
   "settings.onboardingAmrModelSourceLabel": "OpenDesign 托管",
-  "settings.onboardingAmrCloudAuthorizeAction": "授权 OpenDesign Cloud",
+  "settings.onboardingAmrCloudAuthorizeAction": "授权 Inferno",
   "settings.onboardingAmrCloudAuthorizedAction": "已授权",
   "settings.onboardingStepConnect": "连接",
   "settings.onboardingStepDesignSystem": "构建设计系统",
@@ -352,7 +352,7 @@ export const zhCN: Dict = {
   "settings.onboardingGateTooltipNoRuntime":
     "后续流程由 AI 运行，请先选择一种运行方式。",
   "settings.onboardingGateTooltipAmr":
-    "后续流程由 AI 运行，请先登录 OpenDesign Cloud。",
+    "后续流程由 AI 运行，请先登录 Inferno。",
   "settings.onboardingGateTooltipLocal":
     "后续流程由 AI 运行，请先选择一个可用的本地 CLI。",
   "settings.onboardingGateTooltipByok":
@@ -450,7 +450,7 @@ export const zhCN: Dict = {
   "settings.modeDaemonOfflineMeta": "守护进程未运行",
   "settings.modeDaemonInstalledMeta": "已安装 {count} 个",
   "settings.modeApi": "API 提供方",
-  "settings.cloudCalloutTitle": "使用 OpenDesign Cloud",
+  "settings.cloudCalloutTitle": "使用 Inferno",
   "settings.cloudCalloutBody": "登录云端版本后可启用团队空间、共享项目、成员权限和审计大盘。",
   "settings.cloudCalloutButton": "登录 / 注册",
   "settings.modeApiMeta": "API 提供商",
@@ -504,7 +504,7 @@ export const zhCN: Dict = {
   "settings.agentInstallGroup": "可安装（{count}）",
   "settings.agentAuthRequired": "需要认证",
   "settings.agentAuthUnknown": "认证状态未知",
-  "settings.amrCloud": "OpenDesign Cloud",
+  "settings.amrCloud": "Inferno",
   "settings.amrAuthorize": "授权",
   "settings.amrBenefitOfficial": "官方推荐",
   "settings.amrBenefitLowerPrice": "免部署即用",
@@ -518,7 +518,7 @@ export const zhCN: Dict = {
   "settings.amrWalletUpdatedAt": "更新于 {time}",
   "settings.amrWalletCached": "缓存",
   "settings.amrWalletRefresh": "刷新",
-  "settings.amrWalletRefreshTitle": "刷新 OpenDesign Cloud 钱包余额",
+  "settings.amrWalletRefreshTitle": "刷新 Inferno 钱包余额",
   "settings.amrNotSignedIn": "未授权",
   "settings.amrSigningIn": "登录中…",
   "settings.amrActivationHint": "没有弹出登录页?点击下方按钮重新拉起",
@@ -526,9 +526,9 @@ export const zhCN: Dict = {
     "没能自动打开浏览器,请打开下面的登录页继续。",
   "settings.amrActivationOpen": "打开登录页",
   "settings.amrCancelSignIn": "取消登录",
-  "settings.amrAccountStatus": "OpenDesign Cloud 账户状态",
-  "settings.amrConsole": "OpenDesign Cloud 管理",
-  "settings.amrLoginErrorCompact": "OpenDesign Cloud 登录失败。",
+  "settings.amrAccountStatus": "Inferno 账户状态",
+  "settings.amrConsole": "Inferno 管理",
+  "settings.amrLoginErrorCompact": "Inferno 登录失败。",
   "settings.advanced": "高级设置",
   "settings.amrLogin": "登录",
   "settings.amrLogout": "登出",
@@ -855,14 +855,14 @@ export const zhCN: Dict = {
   "entry.navBoard": "看板",
   "entry.navTeamSection": "团队",
   "entry.teamSlotNote": "该视图由团队服务提供，接入中。",
-  "entry.cloudCalloutTitle": "OpenDesign Cloud 版",
+  "entry.cloudCalloutTitle": "Inferno 版",
   'entry.cloudRecovering': '账号连接中断，正在自动恢复…',
-  'entry.authExpiredBody': '登录状态已过期。登录后即可继续使用 OpenDesign Cloud。',
+  'entry.authExpiredBody': '登录状态已过期。登录后即可继续使用 Inferno。',
   'home.createFailed': '启动任务失败，请重试。',
   'home.daemonRecovering': '本地服务连接中断，正在自动恢复…',
   'home.bundledScenarioMissing': '内置场景“{scenarioId}”未安装。请重新安装 OpenDesign，以恢复默认插件。',
   "entry.cloudCalloutBody": "登录即可享受云端协作",
-  "entry.cloudCalloutDismissAria": "关闭 OpenDesign Cloud 版说明",
+  "entry.cloudCalloutDismissAria": "关闭 Inferno 版说明",
   "entry.workspaceLockedNote": "工作区已锁定，恢复账单后可继续编辑共享项目。",
   "entry.workspaceLockedRecover": "恢复访问",
   "messageCenter.openAria": "打开消息中心",
@@ -902,7 +902,7 @@ export const zhCN: Dict = {
   "homeHero.templatePicker.label": "创作类型",
   "homeHero.templatePicker.searchPlaceholder": "搜索模板",
   "homeHero.templatePicker.projectTypes": "项目类型",
-  "homeHero.subtitlePrefix": "Claude Design 的源码可用替代方案。",
+  "homeHero.subtitlePrefix": "由 Inferno 驱动的本地优先设计工作室。",
   "homeHero.placeholder": "描述你想生成的内容…",
   "homeHero.placeholderActive": "编辑示例请求，或写下你自己的需求…",
   "homeHero.carousel.hint": "上传文件、关联设计系统，或描述你想创作的内容",
@@ -1068,7 +1068,7 @@ export const zhCN: Dict = {
   "handoff.frameworkPrompt.solid": "SolidJS",
   "handoff.frameworkPrompt.next": "Next.js / React",
   "handoff.frameworkPrompt.vanilla": "原生 JavaScript、HTML 和 CSS",
-  "handoff.amrWebsite": "打开 OpenDesign Cloud 官网",
+  "handoff.amrWebsite": "打开 Inferno 官网",
   "handoff.copyPrompt": "复制提示词",
   "handoff.copyPromptForTarget": "复制给 {target} 的提示词",
   "handoff.copied": "已复制",
@@ -1427,9 +1427,9 @@ export const zhCN: Dict = {
   "useEverywhere.section.overview.heading":
     "OpenDesign 可在智能体工作的任何地方运行",
   "useEverywhere.section.overview.intro":
-    "OpenDesign 不只是一个窗口；它包含本地特权 daemon（`od`），以及 Skills + Design Systems + Atoms registry。它在你的机器上运行后，任何代码智能体（Claude Code、Codex、Cursor、OpenCode/openclaw、Hermes 或你自己的脚本）都可以通过四种可互换入口驱动生成、检查项目并产出设计制品。",
+    "OpenDesign 不只是一个窗口；它包含本地特权 daemon（`ocd`），以及 Skills + Design Systems + Atoms registry。它在你的机器上运行后，任何代码智能体（Claude Code、Codex、Cursor、OpenCode/openclaw、Hermes 或你自己的脚本）都可以通过四种可互换入口驱动生成、检查项目并产出设计制品。",
   "useEverywhere.section.overview.bullet1":
-    "CLI — 使用 `od <command>` 支持无头脚本、CI 和 shell 自动化。",
+    "CLI — 使用 `ocd <command>` 支持无头脚本、CI 和 shell 自动化。",
   "useEverywhere.section.overview.bullet2":
     "MCP 服务器 — 将 OpenDesign 作为 Model Context Protocol 服务器接入，使任何支持 MCP 的智能体都能列出技能、运行场景并读取制品。",
   "useEverywhere.section.overview.bullet3":
@@ -1442,23 +1442,23 @@ export const zhCN: Dict = {
   "useEverywhere.section.overview.snippet2": "确认服务可访问",
   "useEverywhere.section.overview.snippet3": "启动前导入标准制品",
   "useEverywhere.section.overview.footer":
-    "daemon 默认写入项目本地的 `./.od/`。设置 `OD_DATA_DIR=~/.open-design` 可在多个项目间共享数据。",
-  "useEverywhere.section.cli.tab": "CLI · od",
+    "daemon 默认写入项目本地的 `./.od/`。设置 `OCD_DATA_DIR=~/.opencomputer-design` 可在多个项目间共享数据。",
+  "useEverywhere.section.cli.tab": "CLI · ocd",
   "useEverywhere.section.cli.heading": "从任意 shell 驱动 OpenDesign",
   "useEverywhere.section.cli.intro":
-    "`od` 命令随 daemon 一起发布，也是 Claude Code / Codex 运行生成时使用的同一个二进制。多数子命令都是向本地 daemon 发送 POST 的轻量客户端，因此无论你通过 `pnpm tools-dev` 启动，还是通过打包应用启动，行为都一致。",
+    "`ocd` 命令随 daemon 一起发布，也是 Claude Code / Codex 运行生成时使用的同一个二进制。多数子命令都是向本地 daemon 发送 POST 的轻量客户端，因此无论你通过 `pnpm tools-dev` 启动，还是通过打包应用启动，行为都一致。",
   "useEverywhere.section.cli.bullet1":
-    "`od`（无参数）— 启动 daemon 并打开 Web UI。",
+    "`ocd`（无参数）— 启动 daemon 并打开 Web UI。",
   "useEverywhere.section.cli.bullet2":
-    "`od media generate ...` — 通过统一媒体协议生成图片 / 视频 / 音频字节。",
+    "`ocd media generate ...` — 通过统一媒体协议生成图片 / 视频 / 音频字节。",
   "useEverywhere.section.cli.bullet3":
-    "`od run ...` — 从 prompt + skill 启动一次项目运行。",
+    "`ocd run ...` — 从 prompt + skill 启动一次项目运行。",
   "useEverywhere.section.cli.bullet4":
-    "`od plugin install <source>` / `od plugin apply <id>` — 安装并应用社区插件。",
+    "`ocd plugin install <source>` / `ocd plugin apply <id>` — 安装并应用社区插件。",
   "useEverywhere.section.cli.bullet5":
-    "`od skills list` / `od design-systems list` — 查看本地可用内容。",
+    "`ocd skills list` / `ocd design-systems list` — 查看本地可用内容。",
   "useEverywhere.section.cli.bullet6":
-    "`od status` / `od doctor` — 验证 daemon 健康状态并检测 PATH 中的智能体 CLI。",
+    "`ocd status` / `ocd doctor` — 验证 daemon 健康状态并检测 PATH 中的智能体 CLI。",
   "useEverywhere.section.cli.snippet1": "生成图片（委托给已配置的媒体提供方）",
   "useEverywhere.section.cli.snippet2":
     "无头运行场景插件，并以 JSON Lines 流式输出事件",
@@ -1473,15 +1473,15 @@ export const zhCN: Dict = {
   "useEverywhere.section.mcp.heading":
     "把 OpenDesign 暴露为任意代码智能体可用的 MCP 服务器",
   "useEverywhere.section.mcp.intro":
-    "OpenDesign 内置 Model Context Protocol 服务器（`od mcp`），让任何支持 MCP 的客户端（Cursor、Claude Code、Antigravity、VS Code Copilot Chat、openclaw、hermes）都能发现 OpenDesign 工具（列出技能、渲染预览、生成媒体、运行插件），无需手动 shell 调用。daemon 会通过 `GET /api/mcp/install-info` 为主流客户端发布可直接粘贴的安装片段。",
+    "OpenDesign 内置 Model Context Protocol 服务器（`ocd mcp`），让任何支持 MCP 的客户端（Cursor、Claude Code、Antigravity、VS Code Copilot Chat、openclaw、hermes）都能发现 OpenDesign 工具（列出技能、渲染预览、生成媒体、运行插件），无需手动 shell 调用。daemon 会通过 `GET /api/mcp/install-info` 为主流客户端发布可直接粘贴的安装片段。",
   "useEverywhere.section.mcp.bullet1":
-    "Stdio 传输 — 无需额外端口，客户端直接启动 `od mcp`。",
+    "Stdio 传输 — 无需额外端口，客户端直接启动 `ocd mcp`。",
   "useEverywhere.section.mcp.bullet2":
     "作为 sidecar 启动时，会通过本地 IPC 状态 socket 自动发现实时 daemon URL。",
   "useEverywhere.section.mcp.bullet3":
     "普通安装会回退到 `--daemon-url http://127.0.0.1:<port>`，确保 MCP 进程总能找到运行中的 daemon。",
   "useEverywhere.section.mcp.bullet4":
-    "固定 `OD_DATA_DIR`，让派生的 MCP 进程写入 daemon 已使用的位置，避免打包 macOS app bundle 中的 EPERM 问题。",
+    "固定 `OCD_DATA_DIR`，让派生的 MCP 进程写入 daemon 已使用的位置，避免打包 macOS app bundle 中的 EPERM 问题。",
   "useEverywhere.section.mcp.snippet1":
     "通用 MCP 客户端配置（适用于 Cursor、Claude Code、Codex 等）",
   "useEverywhere.section.mcp.snippet2":
@@ -1523,7 +1523,7 @@ export const zhCN: Dict = {
   "useEverywhere.section.skills.bullet3":
     "每个 skill 都可以声明 connectors、atoms、design-system 要求，以及用于 gallery 的 `preview` 示例输出。",
   "useEverywhere.section.skills.bullet4":
-    "无头模式：PATH 中有 `od` 的智能体可以调用 `od skills list` 后运行任意 skill；只读流程不强制需要 daemon。",
+    "无头模式：PATH 中有 `ocd` 的智能体可以调用 `ocd skills list` 后运行任意 skill；只读流程不强制需要 daemon。",
   "useEverywhere.section.skills.bullet5":
     "`pnpm seed:test-projects` 会用默认插件示例和社区插件示例演练同一制品形态，并把生成的 `index.html` 项目保存为可复用测试数据。",
   "useEverywhere.section.skills.snippet1":
@@ -2104,7 +2104,7 @@ export const zhCN: Dict = {
   "avatar.useApi": "使用 API · BYOK",
   "avatar.codeAgent": "代码代理",
   "avatar.rescan": "重新扫描 PATH",
-  "avatar.amrConsole": "OpenDesign Cloud 账户",
+  "avatar.amrConsole": "Inferno 账户",
   "avatar.amrConsoleMeta": "余额与充值",
   "avatar.settings": "设置",
   "avatar.backToProjects": "返回项目列表",
@@ -3149,10 +3149,9 @@ export const zhCN: Dict = {
     "选好设计系统再生成，结果会与品牌风格保持一致。",
   "designFiles.usefulInfoTip5":
     "没有想法？试试首页 Community 的插件模板，一键生成同款。",
-  "designFiles.usefulInfoTip6": "遇到问题或有建议？加入 Discord 和我们聊聊。",
-  "designFiles.usefulInfoTip7": "觉得好用？在 GitHub 给我们点个 Star。",
-  "designFiles.usefulInfoTip8":
-    "在 X 上关注 @OpenDesignHQ，第一时间了解新功能。",
+  'designFiles.usefulInfoTip6': 'Questions or feedback? Visit tryopencomputer.com.',
+  'designFiles.usefulInfoTip7': 'OpenComputer Design runs locally with Inferno — add your key in Settings.',
+  'designFiles.usefulInfoTip8': 'Learn more about OpenComputer Design at tryopencomputer.com.',
   "designFiles.usefulInfoTip9":
     "把图片、文档甚至整个文件夹拖到当前面板，智能体都会用作上下文。",
   "designFiles.usefulInfoTip10":
@@ -3164,16 +3163,11 @@ export const zhCN: Dict = {
   "designFiles.usefulInfoTip14":
     "满意的项目可通过「分享」菜单保存为模板，下次直接复用。",
   "designFiles.usefulInfoTip15": "部署后可以直接生成社媒分享卡片。",
-  "designFiles.usefulInfoTip16":
-    "在 Threads 上关注 @opendesign.ai，看团队幕后动态。",
-  "designFiles.usefulInfoTip17":
-    "在 Instagram 上关注 @opendesign.ai，获取设计灵感。",
-  "designFiles.usefulInfoTip18":
-    "在 YouTube 上订阅 OpenDesign，观看教程和演示。",
-  "designFiles.usefulInfoTip19":
-    "在 LinkedIn 上关注 OpenDesign，了解产品动态。",
-  "designFiles.usefulInfoTip20":
-    "在小红书上关注 OpenDesign，获取技巧和灵感。",
+  'designFiles.usefulInfoTip16': 'Need product updates? Visit tryopencomputer.com.',
+  'designFiles.usefulInfoTip17': 'Configure Inferno in Settings to use managed models.',
+  'designFiles.usefulInfoTip18': 'OpenComputer Design keeps projects on your machine — export anytime.',
+  'designFiles.usefulInfoTip19': 'Drive OpenComputer Design from any shell with the ocd CLI.',
+  'designFiles.usefulInfoTip20': 'Pick Inferno in Settings when you want managed models without self-hosting providers.',
   "quickSwitcher.placeholder": "打开标签页或文件…",
   "quickSwitcher.empty": "此项目中没有文件",
   "quickSwitcher.noMatches": "无匹配项",
@@ -3392,7 +3386,7 @@ export const zhCN: Dict = {
   "fileViewer.shareTeamMissingTitle": "还没有团队可以分享",
 
   "fileViewer.publishFileRequiresTeam": "发布公开链接需要团队工作区。请切换到团队工作区，或使用「部署」发布此文件。",
-  "fileViewer.publishFileRequiresWorkspace": "生成分享链接需要登录工作区。请登录 OpenDesign Cloud，或改用「部署」分享此文件。",
+  "fileViewer.publishFileRequiresWorkspace": "生成分享链接需要登录工作区。请登录 Inferno，或改用「部署」分享此文件。",
   "fileViewer.publishFileFailed": "生成分享链接失败，请稍后重试，或改用下方的部署方式。",
   "fileViewer.workspaceShareSuccess": "已分享给工作空间成员",
   "fileViewer.workspaceShareFailed": "分享到工作空间失败",
@@ -3684,7 +3678,7 @@ export const zhCN: Dict = {
   "chat.runError.actionBlocked.billing": "还在确认这个项目由哪个工作区付费，稍后再试。",
   "chat.runError.actionBlocked.busy": "这条对话还有任务在运行，结束后才能重试。",
   "chat.support.channel.feishu": "飞书社群",
-  "chat.support.channel.discord": "Discord",
+  "chat.support.channel.discord": "Website",
   "chat.amrBalanceOwner.title": "请联系团队所有者充值",
   "chat.amrBalanceOwner.message": "当前仅团队所有者可以为团队充值，请联系「{name}」完成充值后再继续使用。",
   "chat.amrBalanceOwner.messageNoOwnerName": "当前仅团队所有者可以为团队充值，请联系团队所有者完成充值后再继续使用。",

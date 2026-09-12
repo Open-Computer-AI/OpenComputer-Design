@@ -126,7 +126,8 @@ describe('aihubmix media generation', () => {
     projectsRoot = path.join(projectRoot, '.od', 'projects');
     await mkdir(projectsRoot, { recursive: true });
     delete process.env.OD_MEDIA_CONFIG_DIR;
-    delete process.env.OD_DATA_DIR;
+    process.env.OD_DATA_DIR = path.join(projectRoot, '.od');
+    process.env.OCD_DATA_DIR = path.join(projectRoot, '.od');
     process.env.OD_AIHUBMIX_API_KEY = 'sk-aihubmix-test-1234';
   });
 
@@ -135,8 +136,13 @@ describe('aihubmix media generation', () => {
     delete process.env.OD_AIHUBMIX_API_KEY;
     if (originalMediaConfigDir == null) delete process.env.OD_MEDIA_CONFIG_DIR;
     else process.env.OD_MEDIA_CONFIG_DIR = originalMediaConfigDir;
-    if (originalDataDir == null) delete process.env.OD_DATA_DIR;
-    else process.env.OD_DATA_DIR = originalDataDir;
+    if (originalDataDir == null) {
+      delete process.env.OD_DATA_DIR;
+      delete process.env.OCD_DATA_DIR;
+    } else {
+      process.env.OD_DATA_DIR = originalDataDir;
+      process.env.OCD_DATA_DIR = originalDataDir;
+    }
     await rm(root, { recursive: true, force: true });
   });
 

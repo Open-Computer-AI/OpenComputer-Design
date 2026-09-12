@@ -73,6 +73,7 @@ export function buildMcpInstallPayload(
   // `od mcp` falls back to `<cwd>/.od/...` which is the read-only
   // macOS app bundle for packaged installs and trips EPERM. Issue #848.
   const env: Record<string, string> = {
+    OCD_DATA_DIR: inputs.dataDir,
     OD_DATA_DIR: inputs.dataDir,
     ...inputs.sidecarEnv,
   };

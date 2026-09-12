@@ -38,6 +38,7 @@ import type {
 import { DesignSystemPicker } from './DesignSystemPicker';
 import type { SkillSummary } from '../types';
 import { Icon, type IconName } from './Icon';
+import { InfernoGenerateGuard, useInfernoGenerateGate } from './InfernoKeyGate';
 import { useAnalytics } from '../analytics/provider';
 import {
   trackContextLinkResult,
@@ -383,6 +384,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
 ) {
   const { locale, t } = useI18n();
   const analytics = useAnalytics();
+  const infernoGate = useInfernoGenerateGate();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [mentionTab, setMentionTab] = useState<HomeMentionTab>('all');
   const [hoveredPlugin, setHoveredPlugin] = useState<InstalledPluginRecord | null>(null);
@@ -511,8 +513,9 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
     !pluginsLoading &&
     carouselScenario !== null &&
     carouselScenarios.some((scenario) => scenario.id === carouselScenario.id);
-  const sendEnabled = canSubmit || carouselSubmittable;
+  const sendEnabled = (canSubmit || carouselSubmittable) && infernoGate.canGenerate;
   function handleSend() {
+    if (!infernoGate.requestGenerate()) return;
     if (submitting || submitDisabled) return;
     if (canSubmit) {
       notifyCompletionFeedbackGesture();
@@ -1298,7 +1301,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
         <PixelScanLogo className="home-hero__logo home-hero__logo--tiles" />
       </span>
 
-      {/* Capsule type row: the 10 top-level create-scenario types as pill chips above
+      {/* Capsule type row: top-level create-scenario types as pill chips above
           the composer (per product — replaces the fanned card carousel); the
           selected pill carries the accent tint, click switches. */}
       <TypePillRow
@@ -2052,6 +2055,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
                 {executionSwitcher}
               </div>
             ) : null}
+            <InfernoGenerateGuard>
             <button
               type="button"
               className={`home-hero__submit od-tooltip${sendAttention ? ' home-hero__attention-sheen' : ''}${submitting ? ' is-sending' : ''}`}
@@ -2059,6 +2063,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
               onClick={handleSend}
               onAnimationEnd={() => setSendAttention(false)}
               disabled={!sendEnabled}
+              aria-disabled={!infernoGate.canGenerate ? true : undefined}
               title={submitting ? t('chat.comments.sending') : sendEnabled ? t('homeHero.run') : t('homeHero.typeSomethingToRun')}
               data-tooltip={submitting ? t('chat.comments.sending') : sendEnabled ? t('homeHero.run') : t('homeHero.typeSomethingToRun')}
               aria-label={submitting ? t('chat.comments.sending') : t('homeHero.run')}
@@ -2066,6 +2071,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
             >
               <Icon name={submitting ? 'spinner' : 'arrow-up'} size={17} />
             </button>
+            </InfernoGenerateGuard>
           </div>
         </div>
       </div>
@@ -2324,14 +2330,14 @@ function PluginPromptPresets({
 }
 
 const FIRST_PARTY_WEB_CLONE_SITE_ICONS: Record<string, string> = {
-  'open-design.ai': '/logo.svg',
+  'tryopencomputer.com': '/logo.svg',
 };
 
 function webCloneFaviconUrl(domain: string): string {
   return `https://www.google.com/s2/favicons?sz=128&domain=${encodeURIComponent(domain)}`;
 }
 
-// A Website-clone text example ("Website URL to clone: https://open-design.ai") —
+// A Website-clone text example ("Website URL to clone: https://tryopencomputer.com") —
 // pull the site out so the card can show the site's own mark + bare domain
 // instead of the raw prompt line. First-party bundled examples use local assets
 // so the first screen is stable without waiting on a remote favicon service.
@@ -4256,7 +4262,7 @@ function fallbackPluginPresetPrompt(
 const HOME_PROMPT_EXAMPLES: Record<Locale, Record<string, string[]>> = {
   "en": {
     "web-clone": [
-      "Website URL to clone: https://open-design.ai",
+      "Website URL to clone: https://tryopencomputer.com",
     ],
     prototype: [
       "Design a high-converting website for an AI CRM with a clear hero, feature story, proof points, and trial CTA",
@@ -4391,7 +4397,7 @@ const HOME_PROMPT_EXAMPLES: Record<Locale, Record<string, string[]>> = {
   },
   "zh-CN": {
     "web-clone": [
-      "想要复刻的网站链接：https://open-design.ai",
+      "想要复刻的网站链接：https://tryopencomputer.com",
     ],
     prototype: [
       "为 AI CRM 设计一个高转化官网，包含首屏、功能卖点、客户案例和清晰的试用入口",
