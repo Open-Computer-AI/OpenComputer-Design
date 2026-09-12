@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import express from 'express';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { saveInfernoApiKey } from '../src/inferno/credentials.js';
 import { registerChatRoutes } from '../src/routes/chat.js';
 import {
   buildInfernoUpstreamRequest,
@@ -230,6 +231,44 @@ describe('inferno chat routes', () => {
     await expect(res.json()).resolves.toMatchObject({
       error: { code: 'INFERNO_KEY_REQUIRED' },
     });
+  });
+
+  it('returns INFERNO_NOT_READY when a key is stored but models are not ready', async () => {
+    const dataDir = await mkdtemp(path.join(tmpdir(), 'inferno-proxy-'));
+    const origin = { current: '' };
+    const fetchMock = vi.fn(async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+      const url = String(input);
+      if (origin.current && url.startsWith(origin.current)) return realFetch(input, init);
+      if (url === 'https://router.tryopencomputer.com/v1/models') {
+        return new Response(JSON.stringify({ data: [] }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response(`unexpected ${url}`, { status: 500 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await saveInfernoApiKey(dataDir, 'sk-live-abcd');
+    origin.current = await startInfernoChatApp(dataDir);
+
+    const res = await realFetch(`${origin.current}/api/proxy/inferno/stream`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model: 'grok-4.5',
+        messages: [{ role: 'user', content: 'hi' }],
+      }),
+    });
+    expect(res.status).toBe(503);
+    await expect(res.json()).resolves.toMatchObject({
+      error: { code: 'INFERNO_NOT_READY' },
+    });
+    const upstreamCalls = fetchMock.mock.calls.filter(([input]) =>
+      String(input).includes('router.tryopencomputer.com'),
+    );
+    expect(upstreamCalls).toHaveLength(1);
+    expect(String(upstreamCalls[0]?.[0])).toBe('https://router.tryopencomputer.com/v1/models');
   });
 
   it('PUT/GET/DELETE key never return the raw key and ignore client baseUrl on stream', async () => {
