@@ -3,10 +3,12 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { InfernoGenerateGateProvider } from '../../../src/components/InfernoKeyGate';
 import { useConversationChat } from '../../../src/components/workspace/useConversationChat';
 import { streamViaDaemon } from '../../../src/providers/daemon';
 import { listMessages, saveMessage } from '../../../src/state/projects';
 import type { AppConfig } from '../../../src/types';
+import type { ReactNode } from 'react';
 
 vi.mock('../../../src/providers/daemon', async () => {
   const actual = await vi.importActual<typeof import('../../../src/providers/daemon')>(
@@ -75,6 +77,37 @@ describe('useConversationChat authoritative message loading', () => {
       });
     });
 
+    expect(mockedStreamViaDaemon).not.toHaveBeenCalled();
+    expect(mockedSaveMessage).not.toHaveBeenCalled();
+  });
+
+  it('blocks onSend when Inferno is not ready', async () => {
+    mockedListMessages.mockResolvedValue([]);
+    const onOpenGate = vi.fn();
+    const hook = renderHook(
+      () =>
+        useConversationChat('project-1', 'conversation-1', {
+          config,
+          agentsById: new Map(),
+          locale: 'en',
+          sessionMode: 'design',
+        }),
+      {
+        wrapper: ({ children }: { children: ReactNode }) => (
+          <InfernoGenerateGateProvider canGenerate={false} onOpenGate={onOpenGate}>
+            {children}
+          </InfernoGenerateGateProvider>
+        ),
+      },
+    );
+
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+
+    act(() => {
+      hook.result.current.onSend('must not stream without an Inferno key', [], []);
+    });
+
+    expect(onOpenGate).toHaveBeenCalledTimes(1);
     expect(mockedStreamViaDaemon).not.toHaveBeenCalled();
     expect(mockedSaveMessage).not.toHaveBeenCalled();
   });

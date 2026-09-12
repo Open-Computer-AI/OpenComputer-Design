@@ -703,10 +703,9 @@ describe('EntryShell AMR workspace precheck race', () => {
       </I18nProvider>,
     );
 
-    expect(
-      await screen.findByRole('heading', { name: 'Sign in to OpenDesign' }),
-    ).toBeTruthy();
-    expect(window.location.pathname).toBe('/onboarding');
+    expect(await screen.findByTestId('home-hero-input')).toBeTruthy();
+    expect(window.location.pathname).toBe('/');
+    expect(screen.queryByRole('heading', { name: 'Sign in to OpenDesign' })).toBeNull();
     expect(screen.queryByRole('alertdialog')).toBeNull();
   });
 
@@ -794,10 +793,8 @@ describe('EntryShell AMR workspace precheck race', () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => expect(onCreateProject).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(window.location.pathname).toBe('/onboarding'));
-    expect(
-      await screen.findByRole('heading', { name: 'Sign in to OpenDesign' }),
-    ).toBeTruthy();
+    expect(window.location.pathname).toBe('/');
+    expect(screen.queryByRole('heading', { name: 'Sign in to OpenDesign' })).toBeNull();
     expect(window.localStorage.getItem('open-design:home-composer:prompt')).toBe(
       'Keep this draft through Cloud reauthentication',
     );

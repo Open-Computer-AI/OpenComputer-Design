@@ -2280,6 +2280,7 @@ export function ExtensionsMarketplace({
                         type="button"
                         className="plugin-marketplace__row-action"
                         disabled={!infernoGate.canGenerate}
+                        aria-disabled={!infernoGate.canGenerate ? true : undefined}
                         onClick={(event) => {
                           event.stopPropagation();
                           if (!infernoGate.requestGenerate()) return;
@@ -2301,6 +2302,7 @@ export function ExtensionsMarketplace({
                         className="plugin-marketplace__row-action"
                         data-testid={`plugins-card-use-skill-${card.id}`}
                         disabled={!infernoGate.canGenerate}
+                        aria-disabled={!infernoGate.canGenerate ? true : undefined}
                         onClick={(event) => {
                           event.stopPropagation();
                           if (!infernoGate.requestGenerate()) return;

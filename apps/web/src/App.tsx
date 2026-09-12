@@ -2048,13 +2048,13 @@ function AppInner() {
         )
       );
     if (!cloudIdentityRejected) return;
-    if (route.kind === 'home' && route.view === 'onboarding') return;
-    navigate({ kind: 'home', view: 'onboarding' }, { replace: true });
+    // Inferno-only: never bounce to Open Design Cloud onboarding on reauth.
+    if (!canGenerateWithInferno(infernoStatus)) setInfernoGateOpen(true);
   }, [
     amrLoginStatus,
     config.agentId,
     config.mode,
-    route,
+    infernoStatus,
     workspaceContextState.failure,
   ]);
 

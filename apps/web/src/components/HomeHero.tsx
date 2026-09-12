@@ -515,10 +515,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
     carouselScenarios.some((scenario) => scenario.id === carouselScenario.id);
   const sendEnabled = (canSubmit || carouselSubmittable) && infernoGate.canGenerate;
   function handleSend() {
-    if (!infernoGate.canGenerate) {
-      infernoGate.openGate();
-      return;
-    }
+    if (!infernoGate.requestGenerate()) return;
     if (submitting || submitDisabled) return;
     if (canSubmit) {
       notifyCompletionFeedbackGesture();
@@ -2066,6 +2063,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
               onClick={handleSend}
               onAnimationEnd={() => setSendAttention(false)}
               disabled={!sendEnabled}
+              aria-disabled={!infernoGate.canGenerate ? true : undefined}
               title={submitting ? t('chat.comments.sending') : sendEnabled ? t('homeHero.run') : t('homeHero.typeSomethingToRun')}
               data-tooltip={submitting ? t('chat.comments.sending') : sendEnabled ? t('homeHero.run') : t('homeHero.typeSomethingToRun')}
               aria-label={submitting ? t('chat.comments.sending') : t('homeHero.run')}

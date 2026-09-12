@@ -1674,6 +1674,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       meta?: ChatSendMeta,
     ): boolean {
       setStreamingAnnotationSendPending(false);
+      if (!infernoGate.requestGenerate()) return false;
       if (!prompt && attachments.length === 0 && nextCommentAttachments.length === 0) return false;
       const nextAttachments =
         activeFileContext && !attachments.some((attachment) => attachment.path === activeFileContext)
@@ -2617,6 +2618,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     }, [
       commentAttachments,
       draft,
+      infernoGate,
       onSend,
       projectId,
       // 引用要折进这条路发出去的正文,闭包必须拿到当下这一份。
@@ -2667,6 +2669,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     }, [
       commentAttachments,
       draft,
+      infernoGate,
       onSend,
       // 同上:延迟发的那一发也要带上此刻的引用。
       quotes,
@@ -3080,10 +3083,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       // 「这一发能不能走」只问 `canSend` 这一处 —— 见它的注释(OPEND-2551)。
       // 位置在最前面是有意的:下面的 `/hatch`、`/search` 两条支路会绕过后续流程,
       // 判据留在它们后面的话,那两条支路等于又多了一套自己的答案。
-      if (!infernoGate.canGenerate) {
-        infernoGate.openGate();
-        return;
-      }
+      if (!infernoGate.requestGenerate()) return;
       if (!canSend) return;
       // Intercept `/pet …` and `/mcp` before sending so the slash command
       // never hits the agent — these are local UX hooks, not model prompts.
@@ -3918,6 +3918,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
                   void submit();
                 }}
                 disabled={!canSend}
+                aria-disabled={!infernoGate.canGenerate ? true : undefined}
                 aria-label={t('chat.send')}
                 title={t('chat.send')}
                 data-tooltip={t('chat.send')}

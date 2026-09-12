@@ -1460,6 +1460,7 @@ export function DesignSystemCreationFlow({
             <Button
               variant="primary"
               disabled={!hasCreationSource(state) || !infernoGate.canGenerate}
+              aria-disabled={!infernoGate.canGenerate ? true : undefined}
               onClick={() => {
                 emitCreateFormClick('continue_to_generation');
                 void generate();

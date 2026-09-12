@@ -197,6 +197,7 @@ export function SkillDetailsModal({ skillId, summary, onClose, onUse }: Props) {
             type="button"
             className="plugin-details-modal__primary"
             disabled={!infernoGate.canGenerate}
+            aria-disabled={!infernoGate.canGenerate ? true : undefined}
             onClick={() => {
               if (!infernoGate.requestGenerate()) return;
               onUse();

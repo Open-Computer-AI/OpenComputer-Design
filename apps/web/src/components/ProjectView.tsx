@@ -22,6 +22,7 @@ import { createArtifactParser } from '../artifacts/parser';
 import { useI18n } from '../i18n';
 import { streamMessage } from '../providers/anthropic';
 import { composeInfernoSystemPrompt } from '../providers/inferno-prompt';
+import { useInfernoGenerateGate } from './InfernoKeyGate';
 import {
   type DaemonAgentReconnectState,
   type DaemonAgentRetryState,
@@ -2169,6 +2170,7 @@ export function ProjectView({
   onRunActivityChange,
 }: Props) {
   const { locale, t } = useI18n();
+  const infernoGate = useInfernoGenerateGate();
   const amrAuthRetryMountIdRef = useRef<string | null>(null);
   if (amrAuthRetryMountIdRef.current === null) {
     amrAuthRetryMountIdRef.current = randomUUID();
@@ -8108,6 +8110,7 @@ export function ProjectView({
         attachments.length === 0 &&
         commentAttachments.length === 0
       ) return false;
+      if (!infernoGate.requestGenerate()) return false;
       // AMR must resolve this project's persisted billing principal before a
       // run can start. Local CLI and BYOK runtimes do not consume the Vela
       // wallet, so old daemons without this endpoint and directory outages
@@ -10058,6 +10061,7 @@ export function ProjectView({
       projectRunHasBillableAmrPrincipal,
       projectMutationReadOnly,
       projectWorkspaceScopeState.scope,
+      infernoGate,
     ],
   );
 

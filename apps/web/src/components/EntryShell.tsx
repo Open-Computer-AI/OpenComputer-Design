@@ -141,6 +141,7 @@ import {
 import type { OnboardingEntry } from '../onboarding/onboarding-entry';
 import type { PluginUseAction } from './plugins-home/useActions';
 import { Icon } from './Icon';
+import { useInfernoGenerateGate } from './InfernoKeyGate';
 import { Button } from '@open-design/components';
 import {
   defaultAgentModelId,
@@ -648,6 +649,7 @@ export function EntryShell({
   artifactUpgradeSlot,
 }: Props) {
   const { t } = useI18n();
+  const infernoGate = useInfernoGenerateGate();
   // Each entry sub-view (home / projects / design-systems) is its own
   // URL now, so the browser back/forward buttons work and a deep link
   // to /design-systems lands on that section. We derive the active
@@ -678,14 +680,12 @@ export function EntryShell({
       && requiresAmrReauthentication(amrSessionState, workspaceContextState.failure)
     );
   useEffect(() => {
-    // The entry shell is an authenticated surface. Both an explicit signed-out
-    // status and a definitive credential rejection return to the existing
-    // Cloud identity gate. Passive reauthentication preserves the saved model
-    // source and Home's locally persisted, not-yet-sent draft.
+    // Inferno-only: Cloud reauth must not dump the user into upstream
+    // onboarding. Open the Inferno key gate instead.
     const selectedCloudIdentityRejected = usesOpenDesignCloud && amrLoggedIn === false;
-    if ((!selectedCloudIdentityRejected && !amrAuthRequired) || view === 'onboarding') return;
-    navigate({ kind: 'home', view: 'onboarding' }, { replace: true });
-  }, [amrAuthRequired, amrLoggedIn, usesOpenDesignCloud, view]);
+    if (!selectedCloudIdentityRejected && !amrAuthRequired) return;
+    infernoGate.openGate();
+  }, [amrAuthRequired, amrLoggedIn, infernoGate, usesOpenDesignCloud]);
   let accountFooterNotice: ReactNode = null;
   if (accountFooterState === 'syncing') {
     accountFooterNotice = <RailAccountSyncTip />;
@@ -1389,10 +1389,7 @@ export function EntryShell({
   // projectKind='other', so the agent infers the task type and asks only
   // when the brief cannot be routed reliably.
   async function handlePluginLoopSubmit(payload: PluginLoopSubmit) {
-    if (amrAuthRequired) {
-      navigate({ kind: 'home', view: 'onboarding' }, { replace: true });
-      return 'blocked' as const;
-    }
+    if (!infernoGate.requestGenerate()) return 'blocked' as const;
     // OpenDesign Cloud pre-run balance gate: hard blocks (empty wallet or
     // signed out) and the soft low-balance reminder both fire BEFORE the
     // project is created, so the dialog appears right here on the home page

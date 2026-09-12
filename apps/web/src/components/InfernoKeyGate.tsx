@@ -20,10 +20,10 @@ export {
 } from '../providers/inferno-status';
 
 export function canGenerateWithInferno(status: {
-  ready: boolean;
-  models: unknown[];
-}): boolean {
-  return status.ready === true && status.models.length > 0;
+  ready?: boolean;
+  models?: unknown[] | null;
+} | null | undefined): boolean {
+  return status?.ready === true && Array.isArray(status.models) && status.models.length > 0;
 }
 
 type InfernoGenerateGateValue = {
@@ -79,7 +79,11 @@ export function InfernoGenerateGuard({ children }: { children: ReactNode }) {
     openGate();
   };
   return (
-    <span className="inferno-generate-guard" onClickCapture={onClickCapture}>
+    <span
+      className={canGenerate ? 'inferno-generate-guard' : 'inferno-generate-guard is-blocked'}
+      data-testid="inferno-generate-guard"
+      onClickCapture={onClickCapture}
+    >
       {children}
     </span>
   );
