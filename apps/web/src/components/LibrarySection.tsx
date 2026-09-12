@@ -1143,7 +1143,7 @@ export function LibrarySection({ active, onOpenProject }: Props) {
           <p className={styles.headerHint}>{t('library.headerHint')}</p>
           <a
             className={styles.clipperDownload}
-            href="https://open-design.ai/clipper"
+            href="https://tryopencomputer.com"
             target="_blank"
             rel="noreferrer"
           >

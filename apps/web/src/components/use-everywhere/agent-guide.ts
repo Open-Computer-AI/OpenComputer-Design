@@ -22,7 +22,7 @@ export interface AgentGuideOptions {
   mcpInstallInfo?: AgentGuideMcpInstallInfo | null;
   /**
    * Optional `od` binary path / hint. When provided we mention it in the
-   * setup checklist so the agent knows whether to run `od …` directly or
+   * setup checklist so the agent knows whether to run `ocd …` directly or
    * spawn the packaged binary.
    */
   cliHint?: string;
@@ -75,7 +75,7 @@ export function buildAgentGuideMarkdown(options: AgentGuideOptions = {}): string
   lines.push('   If it 404s or times out, ask the user to run `pnpm tools-dev` (dev) or open the OpenDesign app (packaged).');
   lines.push('');
   if (installInfo) {
-    lines.push('2. Use this daemon-reported MCP server config. Do not replace it with a bare `od` command:');
+    lines.push('2. Use this daemon-reported MCP server config. Do not replace it with a bare `ocd` command:');
     lines.push('');
     lines.push('   ```json');
     lines.push(indent(buildMcpServerConfigSnippet(installInfo), '   '));
@@ -83,17 +83,17 @@ export function buildAgentGuideMarkdown(options: AgentGuideOptions = {}): string
     lines.push('');
     lines.push(`   This config came from \`${daemonUrl}/api/mcp/install-info\` and preserves the absolute command, args, and env needed by packaged installs.`);
   } else {
-    lines.push('2. Detect available agent CLIs and confirm `od` is on PATH:');
+    lines.push('2. Detect available agent CLIs and confirm `ocd` is on PATH:');
     lines.push('');
     lines.push('   ```bash');
-    lines.push('   od doctor');
-    lines.push('   od status --json');
+    lines.push('   ocd doctor');
+    lines.push('   ocd status --json');
     lines.push('   ```');
   }
   lines.push('');
   if (options.cliHint) {
     lines.push('');
-    lines.push(`   The user reported \`od\` at: \`${options.cliHint}\``);
+    lines.push(`   The user reported \`ocd\` at: \`${options.cliHint}\``);
   }
   lines.push('');
   lines.push('3. Pull the MCP install snippet (use it instead of hand-writing `mcpServers` config):');
@@ -112,7 +112,7 @@ export function buildAgentGuideMarkdown(options: AgentGuideOptions = {}): string
   lines.push('');
   lines.push('   ```bash');
   lines.push(`   curl -s ${daemonUrl}/api/skills | jq '.skills | length'`);
-  lines.push('   od skills list --json');
+  lines.push('   ocd skills list --json');
   lines.push('   ```');
   lines.push('');
 

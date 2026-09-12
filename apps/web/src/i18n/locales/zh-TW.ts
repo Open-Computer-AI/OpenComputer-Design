@@ -1429,9 +1429,9 @@ export const zhTW: Dict = {
   "useEverywhere.section.overview.heading":
     "你的 Agent 在哪裡運作，OpenDesign 就在哪裡運作",
   "useEverywhere.section.overview.intro":
-    "OpenDesign 不只是一個視窗 — 它是一個本機特權 daemon（`od`），外加一個 Skills + Design-Systems + Atoms 登錄。一旦它在您的機器上執行，任何程式碼 Agent（Claude Code、Codex、Cursor、OpenCode/openclaw、Hermes、您自己的指令碼）都能透過四個可互換的介面來驅動產生作業、檢視專案並產出設計成品。",
+    "OpenDesign 不只是一個視窗 — 它是一個本機特權 daemon（`ocd`），外加一個 Skills + Design-Systems + Atoms 登錄。一旦它在您的機器上執行，任何程式碼 Agent（Claude Code、Codex、Cursor、OpenCode/openclaw、Hermes、您自己的指令碼）都能透過四個可互換的介面來驅動產生作業、檢視專案並產出設計成品。",
   "useEverywhere.section.overview.bullet1":
-    "CLI — 以 `od <command>` 用於無頭指令碼、CI 及 shell 自動化。",
+    "CLI — 以 `ocd <command>` 用於無頭指令碼、CI 及 shell 自動化。",
   "useEverywhere.section.overview.bullet2":
     "MCP server — 將 OpenDesign 接成 Model Context Protocol 伺服器，讓任何支援 MCP 的 Agent 都能列出技能、執行情境並讀取成品。",
   "useEverywhere.section.overview.bullet3":
@@ -1445,22 +1445,22 @@ export const zhTW: Dict = {
   "useEverywhere.section.overview.snippet3": "在啟動前匯入標準成品",
   "useEverywhere.section.overview.footer":
     "daemon 預設會寫入 `./.od/`（專案本機）。設定 `OCD_DATA_DIR=~/.opencomputer-design` 即可在多個專案間共用資料。",
-  "useEverywhere.section.cli.tab": "CLI · od",
+  "useEverywhere.section.cli.tab": "CLI · ocd",
   "useEverywhere.section.cli.heading": "從任何 shell 操作 OpenDesign",
   "useEverywhere.section.cli.intro":
-    "`od` 執行檔隨 daemon 一起發佈，與 Claude Code / Codex 執行產生作業時所用的是同一個二進位檔。多數子指令都是精簡的用戶端，會 POST 至本機 daemon，因此無論你是透過 `pnpm tools-dev` 啟動，還是以打包後的應用程式執行，運作方式都相同。",
+    "`ocd` 執行檔隨 daemon 一起發佈，與 Claude Code / Codex 執行產生作業時所用的是同一個二進位檔。多數子指令都是精簡的用戶端，會 POST 至本機 daemon，因此無論你是透過 `pnpm tools-dev` 啟動，還是以打包後的應用程式執行，運作方式都相同。",
   "useEverywhere.section.cli.bullet1":
-    "`od`（無參數）— 啟動 daemon 並開啟網頁 UI。",
+    "`ocd`（無參數）— 啟動 daemon 並開啟網頁 UI。",
   "useEverywhere.section.cli.bullet2":
-    "`od media generate ...` — 透過統一的媒體協定產生圖片／影片／音訊位元組。",
+    "`ocd media generate ...` — 透過統一的媒體協定產生圖片／影片／音訊位元組。",
   "useEverywhere.section.cli.bullet3":
-    "`od run ...` — 從提示 + 技能啟動一次專案執行。",
+    "`ocd run ...` — 從提示 + 技能啟動一次專案執行。",
   "useEverywhere.section.cli.bullet4":
-    "`od plugin install <source>` / `od plugin apply <id>` — 安裝並套用社群外掛。",
+    "`ocd plugin install <source>` / `ocd plugin apply <id>` — 安裝並套用社群外掛。",
   "useEverywhere.section.cli.bullet5":
-    "`od skills list` / `od design-systems list` — 檢視本機可用的項目。",
+    "`ocd skills list` / `ocd design-systems list` — 檢視本機可用的項目。",
   "useEverywhere.section.cli.bullet6":
-    "`od status` / `od doctor` — 驗證 daemon 健康狀態並偵測您 PATH 上的 Agent CLI。",
+    "`ocd status` / `ocd doctor` — 驗證 daemon 健康狀態並偵測您 PATH 上的 Agent CLI。",
   "useEverywhere.section.cli.snippet1": "產生影像（委派給已設定的媒體提供者）",
   "useEverywhere.section.cli.snippet2":
     "以無頭模式執行情境外掛，並以 JSON 行的形式串流事件",
@@ -1526,7 +1526,7 @@ export const zhTW: Dict = {
   "useEverywhere.section.skills.bullet3":
     "每個技能都可宣告連接器、原子元件、設計系統需求，以及供藝廊使用的 `preview` 範例輸出。",
   "useEverywhere.section.skills.bullet4":
-    "無頭模式：PATH 中含有 `od` 的 Agent 可呼叫 `od skills list`，接著執行任何技能；唯讀流程中 daemon 為選用。",
+    "無頭模式：PATH 中含有 `ocd` 的 Agent 可呼叫 `ocd skills list`，接著執行任何技能；唯讀流程中 daemon 為選用。",
   "useEverywhere.section.skills.bullet5":
     "`pnpm seed:test-projects` 會以預設外掛範例與社群外掛範例演練相同的成品結構，接著將產生的 `index.html` 專案儲存為可重複使用的測試資料。",
   "useEverywhere.section.skills.snippet1":

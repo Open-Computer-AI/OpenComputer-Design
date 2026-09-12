@@ -44,11 +44,11 @@ describe('buildAgentGuideMarkdown', () => {
 
   it('documents the current project create plus run start CLI flow', () => {
     const md = buildAgentGuideMarkdown();
-    expect(md).toContain('od project create');
-    expect(md).toContain('od run start');
+    expect(md).toContain('ocd project create');
+    expect(md).toContain('ocd run start');
     expect(md).toContain('--conversation "$CONVERSATION_ID"');
     expect(md).toContain('[form answers - discovery]');
-    expect(md).toContain('od files list "$PROJECT_ID"');
+    expect(md).toContain('ocd files list "$PROJECT_ID"');
     expect(md).not.toContain('od run \\\n  --plugin');
     expect(md).not.toContain("--prompt 'A 10-slide investor pitch");
   });
@@ -59,13 +59,13 @@ describe('buildAgentGuideMarkdown', () => {
       cliHint: '/usr/local/bin/od',
     });
     expect(md).toContain('Reported OpenDesign version: `0.42.0`');
-    expect(md).toContain('The user reported `od` at: `/usr/local/bin/od`');
+    expect(md).toContain('The user reported `ocd` at: `/usr/local/bin/od`');
   });
 
   it('omits hint sentences when the corresponding option is not provided', () => {
     const md = buildAgentGuideMarkdown();
     expect(md).not.toContain('Reported OpenDesign version');
-    expect(md).not.toContain('The user reported `od` at');
+    expect(md).not.toContain('The user reported `ocd` at');
   });
 
   it('always closes with a Reference URLs section', () => {
@@ -119,7 +119,7 @@ describe('buildAgentGuideMarkdown', () => {
 
     expect(md).toContain('"command": "C:\\\\Program Files\\\\Open Design\\\\Open Design.exe"');
     expect(md).toContain('"ELECTRON_RUN_AS_NODE": "1"');
-    expect(md).toContain('od skills list --json');
+    expect(md).toContain('ocd skills list --json');
     expect(md).not.toMatch(/^\s*ELECTRON_RUN_AS_NODE=1\s+OD_DATA_DIR=/m);
   });
 });

@@ -2262,11 +2262,11 @@ Common options:
   --prompt-file <path|->     Read the prompt from a file, or - for stdin (for long-form prompts).
   --output <filename>       File to write under the project. Auto-named if omitted.
   --aspect 1:1|16:9|9:16|4:3|3:4
-  --quality <tier>          OpenDesign Cloud images only: published quality tier
+  --quality <tier>          Images only: published quality tier
                             (gpt-image-2 accepts low|medium|high). Omit to let the
                             model's own default tier decide — tiers are priced
                             differently, so this is a billing choice.
-  --resolution <res>        OpenDesign Cloud images only: published output resolution
+  --resolution <res>        Images only: published output resolution
                             (e.g. 1K, 2K). Must name a resolution the model publishes
                             for --aspect. Omit to use the model's default profile.
   --length <seconds>        Video length.

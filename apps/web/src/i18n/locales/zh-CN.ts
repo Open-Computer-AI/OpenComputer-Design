@@ -1427,9 +1427,9 @@ export const zhCN: Dict = {
   "useEverywhere.section.overview.heading":
     "OpenDesign 可在智能体工作的任何地方运行",
   "useEverywhere.section.overview.intro":
-    "OpenDesign 不只是一个窗口；它包含本地特权 daemon（`od`），以及 Skills + Design Systems + Atoms registry。它在你的机器上运行后，任何代码智能体（Claude Code、Codex、Cursor、OpenCode/openclaw、Hermes 或你自己的脚本）都可以通过四种可互换入口驱动生成、检查项目并产出设计制品。",
+    "OpenDesign 不只是一个窗口；它包含本地特权 daemon（`ocd`），以及 Skills + Design Systems + Atoms registry。它在你的机器上运行后，任何代码智能体（Claude Code、Codex、Cursor、OpenCode/openclaw、Hermes 或你自己的脚本）都可以通过四种可互换入口驱动生成、检查项目并产出设计制品。",
   "useEverywhere.section.overview.bullet1":
-    "CLI — 使用 `od <command>` 支持无头脚本、CI 和 shell 自动化。",
+    "CLI — 使用 `ocd <command>` 支持无头脚本、CI 和 shell 自动化。",
   "useEverywhere.section.overview.bullet2":
     "MCP 服务器 — 将 OpenDesign 作为 Model Context Protocol 服务器接入，使任何支持 MCP 的智能体都能列出技能、运行场景并读取制品。",
   "useEverywhere.section.overview.bullet3":
@@ -1443,22 +1443,22 @@ export const zhCN: Dict = {
   "useEverywhere.section.overview.snippet3": "启动前导入标准制品",
   "useEverywhere.section.overview.footer":
     "daemon 默认写入项目本地的 `./.od/`。设置 `OCD_DATA_DIR=~/.opencomputer-design` 可在多个项目间共享数据。",
-  "useEverywhere.section.cli.tab": "CLI · od",
+  "useEverywhere.section.cli.tab": "CLI · ocd",
   "useEverywhere.section.cli.heading": "从任意 shell 驱动 OpenDesign",
   "useEverywhere.section.cli.intro":
-    "`od` 命令随 daemon 一起发布，也是 Claude Code / Codex 运行生成时使用的同一个二进制。多数子命令都是向本地 daemon 发送 POST 的轻量客户端，因此无论你通过 `pnpm tools-dev` 启动，还是通过打包应用启动，行为都一致。",
+    "`ocd` 命令随 daemon 一起发布，也是 Claude Code / Codex 运行生成时使用的同一个二进制。多数子命令都是向本地 daemon 发送 POST 的轻量客户端，因此无论你通过 `pnpm tools-dev` 启动，还是通过打包应用启动，行为都一致。",
   "useEverywhere.section.cli.bullet1":
-    "`od`（无参数）— 启动 daemon 并打开 Web UI。",
+    "`ocd`（无参数）— 启动 daemon 并打开 Web UI。",
   "useEverywhere.section.cli.bullet2":
-    "`od media generate ...` — 通过统一媒体协议生成图片 / 视频 / 音频字节。",
+    "`ocd media generate ...` — 通过统一媒体协议生成图片 / 视频 / 音频字节。",
   "useEverywhere.section.cli.bullet3":
-    "`od run ...` — 从 prompt + skill 启动一次项目运行。",
+    "`ocd run ...` — 从 prompt + skill 启动一次项目运行。",
   "useEverywhere.section.cli.bullet4":
-    "`od plugin install <source>` / `od plugin apply <id>` — 安装并应用社区插件。",
+    "`ocd plugin install <source>` / `ocd plugin apply <id>` — 安装并应用社区插件。",
   "useEverywhere.section.cli.bullet5":
-    "`od skills list` / `od design-systems list` — 查看本地可用内容。",
+    "`ocd skills list` / `ocd design-systems list` — 查看本地可用内容。",
   "useEverywhere.section.cli.bullet6":
-    "`od status` / `od doctor` — 验证 daemon 健康状态并检测 PATH 中的智能体 CLI。",
+    "`ocd status` / `ocd doctor` — 验证 daemon 健康状态并检测 PATH 中的智能体 CLI。",
   "useEverywhere.section.cli.snippet1": "生成图片（委托给已配置的媒体提供方）",
   "useEverywhere.section.cli.snippet2":
     "无头运行场景插件，并以 JSON Lines 流式输出事件",
@@ -1523,7 +1523,7 @@ export const zhCN: Dict = {
   "useEverywhere.section.skills.bullet3":
     "每个 skill 都可以声明 connectors、atoms、design-system 要求，以及用于 gallery 的 `preview` 示例输出。",
   "useEverywhere.section.skills.bullet4":
-    "无头模式：PATH 中有 `od` 的智能体可以调用 `od skills list` 后运行任意 skill；只读流程不强制需要 daemon。",
+    "无头模式：PATH 中有 `ocd` 的智能体可以调用 `ocd skills list` 后运行任意 skill；只读流程不强制需要 daemon。",
   "useEverywhere.section.skills.bullet5":
     "`pnpm seed:test-projects` 会用默认插件示例和社区插件示例演练同一制品形态，并把生成的 `index.html` 项目保存为可复用测试数据。",
   "useEverywhere.section.skills.snippet1":

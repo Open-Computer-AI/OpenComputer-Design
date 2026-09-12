@@ -103,12 +103,11 @@ import {
 import { WorkbenchCampaignBadge } from './WorkbenchCampaignBadge';
 import { workspaceChromeAccountActionsHost } from './workspaceChromeActions';
 
-const REPO_URL = 'https://github.com/nexu-io/open-design';
+const REPO_URL = 'https://github.com/Open-Computer-AI/OpenComputer-Design';
 const GITHUB_HELP_URL = `${REPO_URL}/issues/new`;
 const GITHUB_FEATURE_URL = `${REPO_URL}/pulls`;
-const DISCORD_URL = 'https://discord.gg/mHAjSMV6gz';
-const X_URL = 'https://x.com/OpenDesignHQ';
-const CONTACT_EMAIL_URL = 'mailto:support@open-design.ai';
+const X_URL = 'https://tryopencomputer.com';
+const CONTACT_EMAIL_URL = 'https://tryopencomputer.com';
 const externalLinkProps = { target: '_blank', rel: 'noreferrer noopener' } as const;
 
 // Last directory this shell successfully read. `coalescedGet` only collapses
@@ -1238,11 +1237,7 @@ function RailSocialRow({
   // Without the flip the bubble would be clamped against the viewport
   // and land back on top of the icons it describes.
   const tooltipPlacement = isRtlLocale(locale) ? 'left' : 'right';
-  // One string per link doubles as the accessible name and the hover
-  // tooltip: the bubble is the only place the icons say what they do, so
-  // the copy leads with the payoff (Discord hands out credits) rather
-  // than naming the destination.
-  const communityLabel = t('entry.discordAria');
+  // One string per link doubles as the accessible name and the hover tooltip.
   const xLabel = t('entry.xAria');
   const mailLabel = t('entry.mailAria');
 
@@ -1257,20 +1252,6 @@ function RailSocialRow({
 
   return (
     <div className="entry-nav-rail__social" data-testid="entry-nav-rail-social">
-      {false ? (
-      <a
-        className="entry-nav-rail__social-btn od-tooltip"
-        href={DISCORD_URL}
-        {...externalLinkProps}
-        aria-label={communityLabel}
-        data-tooltip={communityLabel}
-        data-tooltip-placement={tooltipPlacement}
-        data-testid="entry-nav-rail-discord"
-        onClick={() => track('discord')}
-      >
-        <Icon name="discord" size={15} />
-      </a>
-      ) : null}
       <a
         className="entry-nav-rail__social-btn od-tooltip"
         href={X_URL}
