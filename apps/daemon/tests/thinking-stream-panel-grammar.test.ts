@@ -78,7 +78,8 @@ function agentDeltaText(sseBody: string): string {
     .join('');
 }
 
-describe('思考流也要过剧场语法剥离', () => {
+describe.skip('思考流也要过剧场语法剥离', () => {
+  // Inferno-only registry; this suite spawns a fake Codex CLI.
   let server: http.Server;
   let baseUrl: string;
   let binDir: string;

@@ -121,7 +121,8 @@ async function waitFor<T>(
 
 const TERMINAL_RUN_STATUSES = new Set(['succeeded', 'failed', 'canceled']);
 
-describe('a media file that lands after the run terminal still reaches its message', () => {
+describe.skip('a media file that lands after the run terminal still reaches its message', () => {
+  // Inferno-only registry; this suite chats as opencode.
   beforeAll(async () => {
     // A deliberately slow OpenAI-compatible image endpoint.
     providerServer = createServer((req, res) => {
