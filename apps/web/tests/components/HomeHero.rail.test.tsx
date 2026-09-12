@@ -239,10 +239,10 @@ describe('HomeHero intent rail', () => {
   });
 
   it('uses the active creation chip as the only clear control for a chip-bound plugin', () => {
-    const activePlugin = makePlugin('example-image-a', 'image', 'Product image');
+    const activePlugin = makePlugin('example-hyperframes', 'video', 'HyperFrames motion');
     renderHero({
-      activeChipId: 'image',
-      activePluginTitle: 'Product image',
+      activeChipId: 'hyperframes',
+      activePluginTitle: 'HyperFrames motion',
       activePluginRecord: activePlugin,
       showActivePluginChip: true,
     });
@@ -370,48 +370,35 @@ describe('HomeHero intent rail', () => {
 
   it('keeps curated presets even when they rely on fallback prompt text', () => {
     const otakuDance = makePlugin(
-      'image-template-infographic-otaku-dance-choreography-breakdown-gokurakujodo-16-panels',
-      'image',
-      'Infographic - Otaku Dance Choreography Breakdown (Gokuraku Jodo, 16 Panels)',
-      ['image-template'],
+      'example-html-ppt-zhangzara-creative-mode',
+      'deck',
+      'Html Ppt Zhangzara Creative Mode',
+      [],
       { query: null },
     );
-    const ordinaryImage = makePlugin(
-      'image-template-ordinary',
-      'image',
-      'Ordinary image',
-      ['image-template'],
-    );
+    const ordinaryDeck = makePlugin('example-ordinary-deck', 'deck', 'Ordinary deck');
     renderHero({
-      activeChipId: 'image',
-      pluginOptions: [ordinaryImage, otakuDance],
+      activeChipId: 'deck',
+      pluginOptions: [ordinaryDeck, otakuDance],
     });
 
     const presets = screen.getAllByTestId('home-hero-plugin-preset');
     expect(presets[0]?.getAttribute('data-plugin-id')).toBe(
-      'image-template-infographic-otaku-dance-choreography-breakdown-gokurakujodo-16-panels',
+      'example-html-ppt-zhangzara-creative-mode',
     );
   });
 
-  it('keeps Hatch Pet at the end of the image example presets', () => {
-    const hatchPet = makePlugin('example-hatch-pet', 'image', 'Hatch Pet');
-    const imagePoster = makePlugin('image-template-poster', 'image', 'Image Poster');
-    const stoneInfographic = makePlugin('image-template-stone', 'image', 'Stone Infographic');
-    renderHero({
-      activeChipId: 'image',
-      pluginOptions: [hatchPet, imagePoster, stoneInfographic],
-    });
-
-    const presets = screen.getAllByTestId('home-hero-plugin-preset');
-    expect(presets.map((preset) => preset.textContent)).toEqual([
-      expect.stringContaining('Image Poster'),
-      expect.stringContaining('Stone Infographic'),
-      expect.stringContaining('Hatch Pet'),
-    ]);
+  it('does not expose Image or Video create chips on the Home rail', () => {
+    renderHero();
+    openTemplatePicker();
+    expect(screen.queryByTestId('home-hero-template-wedge-image')).toBeNull();
+    expect(screen.queryByTestId('home-hero-template-wedge-video')).toBeNull();
+    expect(screen.getByTestId('home-hero-template-wedge-hyperframes')).toBeTruthy();
+    expect(findChip('image')).toBeUndefined();
+    expect(findChip('video')).toBeUndefined();
   });
 
-  it('moves live artifact presets out of Image and into Live artifact examples', () => {
-    const imagePoster = makePlugin('image-template-poster', 'image', 'Image Poster');
+  it('routes live artifact presets into Live artifact examples', () => {
     const liveDashboard = makePlugin(
       'example-live-dashboard',
       'prototype',
@@ -443,19 +430,8 @@ describe('HomeHero intent rail', () => {
       ['live-artifact'],
     );
     renderHero({
-      activeChipId: 'image',
-      pluginOptions: [imagePoster, liveDashboard, notionDashboard],
-    });
-
-    let presets = screen.getAllByTestId('home-hero-plugin-preset');
-    expect(presets).toHaveLength(1);
-    expect(presets[0]?.textContent).toContain('Image Poster');
-
-    cleanup();
-    renderHero({
       activeChipId: 'live-artifact',
       pluginOptions: [
-        imagePoster,
         liveArtifact,
         tradingDashboard,
         notionDashboard,
@@ -464,7 +440,7 @@ describe('HomeHero intent rail', () => {
       ],
     });
 
-    presets = screen.getAllByTestId('home-hero-plugin-preset');
+    const presets = screen.getAllByTestId('home-hero-plugin-preset');
     // Order within a facet is now usage/sink-driven (OPEND-449); this test is
     // about which presets route into Live Artifact, so assert membership only.
     expect(presets.map((preset) => preset.getAttribute('data-plugin-id')).sort()).toEqual([
@@ -515,12 +491,8 @@ describe('HomeHero intent rail', () => {
   });
 
   it('media chips route to od-media-generation with the matching project kind', () => {
-    expect(findChip('image')?.action).toMatchObject({
-      kind: 'apply-scenario',
-      pluginId: 'od-media-generation',
-      projectKind: 'image',
-    });
-    expect(findChip('video')?.action).toMatchObject({ pluginId: 'od-media-generation', projectKind: 'video' });
+    expect(findChip('image')).toBeUndefined();
+    expect(findChip('video')).toBeUndefined();
     expect(findChip('audio')?.action).toMatchObject({ pluginId: 'od-media-generation', projectKind: 'audio' });
   });
 
@@ -571,7 +543,9 @@ describe('HomeHero intent rail', () => {
   // binding. The OD Next route is decided separately, by chip id, and these
   // surfaces own none.
   it('keeps ordinary media chips outside automatic OD Next routing', () => {
-    for (const id of ['image', 'video', 'audio', 'live-artifact']) {
+    expect(findChip('image')).toBeUndefined();
+    expect(findChip('video')).toBeUndefined();
+    for (const id of ['audio', 'live-artifact']) {
       expect(automaticStrategyTaskProfileForRouteId(id), id).toBeNull();
       expect(findChip(id)?.action, id).toMatchObject({ automaticDefault: true });
     }

@@ -286,44 +286,8 @@ export const HOME_HERO_CHIPS: ReadonlyArray<HomeHeroChip> = [
       },
     },
   },
-  {
-    id: 'image',
-    label: 'Image',
-    icon: 'image',
-    group: 'create',
-    description: 'Posters, graphics & art',
-    action: {
-      kind: 'apply-scenario',
-      pluginId: 'od-media-generation',
-      projectKind: 'image',
-      automaticDefault: true,
-      inputs: {
-        mediaKind: 'image',
-        subject: 'a polished product concept',
-        style: 'cinematic, high-quality, on-brand',
-        aspect: '16:9',
-      },
-    },
-  },
-  {
-    id: 'video',
-    label: 'Video',
-    icon: 'video-ai',
-    group: 'create',
-    description: 'Clips, reels & promos',
-    action: {
-      kind: 'apply-scenario',
-      pluginId: 'od-media-generation',
-      projectKind: 'video',
-      automaticDefault: true,
-      inputs: {
-        mediaKind: 'video',
-        subject: 'a short product reveal',
-        style: 'cinematic, high-quality, on-brand',
-        aspect: '16:9',
-      },
-    },
-  },
+  // Remote Image/Video create chips are intentionally absent. HyperFrames
+  // (motion-as-code) stays; leftover handoffs must not re-enter those composers.
   {
     id: 'audio',
     label: 'Audio',
@@ -428,4 +392,9 @@ export const HOME_APPLY_TEMPLATE_EVENT = 'open-design:home-apply-template';
 // off a click target without round-tripping through React state.
 export function findChip(id: string): HomeHeroChip | undefined {
   return HOME_HERO_CHIPS.find((c) => c.id === id);
+}
+
+/** Retired remote Image/Video create ids. Persist/handoff must not reopen them. */
+export function isHiddenRemoteMediaCreateChip(chipId: string | null | undefined): boolean {
+  return chipId === 'image' || chipId === 'video';
 }

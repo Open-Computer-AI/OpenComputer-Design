@@ -28,17 +28,18 @@ export interface CommunityTemplateUseTarget {
   projectKind: ProjectKind;
 }
 
-const TEMPLATE_HOME_TARGET: Record<TemplateType, Pick<CommunityTemplateUseTarget, 'chipId' | 'projectKind'>> = {
+type CommunityHomeTemplateType = Exclude<TemplateType, 'Image' | 'Video'>;
+
+const TEMPLATE_HOME_TARGET: Record<CommunityHomeTemplateType, Pick<CommunityTemplateUseTarget, 'chipId' | 'projectKind'>> = {
   'Prototype': { chipId: 'prototype', projectKind: 'prototype' },
   'Live Artifact': { chipId: 'live-artifact', projectKind: 'prototype' },
   'Slides': { chipId: 'deck', projectKind: 'deck' },
-  'Image': { chipId: 'image', projectKind: 'image' },
-  'Video': { chipId: 'video', projectKind: 'video' },
   'HyperFrames': { chipId: 'hyperframes', projectKind: 'video' },
   'Audio': { chipId: 'audio', projectKind: 'audio' },
 };
 
-function templateUseTarget(template: TemplateDemo): CommunityTemplateUseTarget {
+function templateUseTarget(template: TemplateDemo): CommunityTemplateUseTarget | null {
+  if (template.type === 'Image' || template.type === 'Video') return null;
   return {
     templateId: template.id,
     prompt: template.prompt,
@@ -190,6 +191,7 @@ export function CommunityView({ onRemixTemplate, onUsePrompt, onUsePlugin }: Com
   };
   const handleCardUse = (template: TemplateDemo) => {
     const target = templateUseTarget(template);
+    if (!target) return;
     trackCommunityTemplateClick(analytics.track, {
       page_name: 'community',
       area: 'community_templates',
@@ -238,6 +240,7 @@ export function CommunityView({ onRemixTemplate, onUsePrompt, onUsePlugin }: Com
     const template = templateById(record.id);
     if (!template) return;
     const target = templateUseTarget(template);
+    if (!target) return;
     if (onUsePlugin) {
       onUsePlugin(record, action, target);
       return;

@@ -3077,7 +3077,7 @@ export function SettingsDialog({
       autosaveRetryTimerRef.current = null;
     }
     claimAutosaveStatus('idle');
-    onResetOnboarding({ ...cfg, onboardingCompleted: false });
+    onResetOnboarding({ ...cfg, onboardingCompleted: true });
   }, [cfg, claimAutosaveStatus, onResetOnboarding]);
 
   useEffect(() => {

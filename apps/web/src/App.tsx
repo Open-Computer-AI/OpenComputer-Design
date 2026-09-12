@@ -415,13 +415,12 @@ function clearStaleAmrModelChoiceOnProfileChange(
 /**
  * Active Cloud sign-out is an account boundary for Cloud-owned execution
  * state. Local BYOK credentials and provider choices belong to this install,
- * not the signed-in Cloud account, so keep them available when onboarding asks
- * the user to choose an execution path again.
+ * not the signed-in Cloud account. Do not reopen Cloud/AMR onboarding; the
+ * Inferno key gate already handles missing keys on Home.
  */
 export function resetExecutionConfigAfterSignOut(config: AppConfig): AppConfig {
   return {
     ...config,
-    onboardingCompleted: false,
     mode: DEFAULT_CONFIG.mode,
     agentId: null,
     agentModels: {},
@@ -5035,14 +5034,15 @@ function AppInner() {
   };
 
   const handleResetOnboarding = useCallback((next: AppConfig) => {
-    latestPersistedConfigRef.current = next;
-    saveConfig(next);
-    void syncConfigToDaemon(next, { allowOnboardingReset: true });
-    setConfig(next);
+    const kept: AppConfig = { ...next, onboardingCompleted: true };
+    latestPersistedConfigRef.current = kept;
+    saveConfig(kept);
+    void syncConfigToDaemon(kept);
+    setConfig(kept);
     setSettingsOpen(false);
     settingsDraftConfigRef.current = null;
     setSettingsHighlight(null);
-    navigate({ kind: 'home', view: 'onboarding' });
+    navigate({ kind: 'home', view: 'home' });
   }, []);
 
   const handleActiveCloudSignOut = useCallback(async () => {
@@ -5054,8 +5054,8 @@ function AppInner() {
     setSettingsOpen(false);
     settingsDraftConfigRef.current = null;
     setSettingsHighlight(null);
-    navigate({ kind: 'home', view: 'onboarding' });
-    await syncConfigToDaemon(next, { allowOnboardingReset: true });
+    navigate({ kind: 'home', view: 'home' });
+    await syncConfigToDaemon(next);
   }, []);
 
   const renderSettingsSurface = (presentation: 'modal' | 'page') => (

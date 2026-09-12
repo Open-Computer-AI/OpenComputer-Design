@@ -5531,7 +5531,7 @@ describe('SettingsDialog about interactions', () => {
     expect(view.onPersist).not.toHaveBeenCalled();
     expect(onResetOnboarding).toHaveBeenCalledWith(
       expect.objectContaining({
-        onboardingCompleted: false,
+        onboardingCompleted: true,
         notifications: expect.objectContaining({ soundEnabled: false }),
       }),
     );

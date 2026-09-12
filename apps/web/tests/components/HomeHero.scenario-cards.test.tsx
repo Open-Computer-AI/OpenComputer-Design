@@ -109,6 +109,9 @@ describe('HomeHero scenario cards', () => {
     expect(ids).not.toContain('video');
     expect(ids).not.toContain('wireframe');
     expect(ids).not.toContain('mobile');
+    expect(findChip('image')).toBeUndefined();
+    expect(findChip('video')).toBeUndefined();
+    expect(findChip('hyperframes')).toBeTruthy();
   });
 
   it('keeps nested prototype scenarios executable without giving them a chip of their own', () => {

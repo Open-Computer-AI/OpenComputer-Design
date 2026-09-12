@@ -59,7 +59,7 @@ export type TemplateDemo = {
   prompt: string;
 };
 
-export const TEMPLATE_TYPE_ORDER: TemplateType[] = ['Prototype', 'Slides', 'Live Artifact', 'Image', 'Video', 'HyperFrames', 'Audio'];
+export const TEMPLATE_TYPE_ORDER: TemplateType[] = ['Prototype', 'Slides', 'Live Artifact', 'HyperFrames', 'Audio'];
 
 /** The Community grid is the plugin catalogue seen through the artifact a user
  *  wants to make. Membership comes from the shared facet derivation in
@@ -70,8 +70,6 @@ const FACET_CATEGORY_TYPE: Record<string, TemplateType> = {
   'deck': 'Slides',
   'prototype': 'Prototype',
   'live-artifact': 'Live Artifact',
-  'image': 'Image',
-  'video': 'Video',
   'hyperframes': 'HyperFrames',
   'audio': 'Audio',
 };

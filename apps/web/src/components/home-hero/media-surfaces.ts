@@ -26,7 +26,7 @@ export interface HomeMediaComposerState {
   editableFieldNames: string[];
 }
 
-export const HOME_MEDIA_CHIP_IDS = ['image', 'video', 'hyperframes', 'audio'] as const;
+export const HOME_MEDIA_CHIP_IDS = ['hyperframes', 'audio'] as const;
 const NO_TEMPLATE_PLACEHOLDER = 'No template';
 const SFX_AUDIO_DURATIONS_SEC = AUDIO_DURATIONS_SEC.filter((sec) => sec <= 30);
 const MEDIA_RESOLUTIONS = ['2k', '4k'] as const;
@@ -37,8 +37,6 @@ const MEDIA_RESOLUTION_LABELS: Record<(typeof MEDIA_RESOLUTIONS)[number], string
 const DEFAULT_MEDIA_RESOLUTION = '2k';
 
 export function homeMediaSurfaceForChipId(chipId: string): HomeComposerMediaSurface | null {
-  if (chipId === 'image') return 'image';
-  if (chipId === 'video') return 'video';
   if (chipId === 'hyperframes') return 'hyperframes';
   if (chipId === 'audio') return 'audio';
   return null;
