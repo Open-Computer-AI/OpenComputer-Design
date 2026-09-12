@@ -9,6 +9,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EntryShell } from '../../src/components/EntryShell';
+import { InfernoGenerateGateProvider } from '../../src/components/InfernoKeyGate';
 import {
   notifyWorkspaceContextRefresh,
   resetTeamProjectsCache,
@@ -647,8 +648,9 @@ describe('EntryShell AMR workspace precheck race', () => {
     expect(screen.getByTestId('entry-rail-account-recovery-tip')).toBeTruthy();
   });
 
-  it('returns a definitively expired Cloud session to the existing sign-in gate', async () => {
+  it('opens the Inferno key gate on Cloud reauth when Inferno is not ready', async () => {
     window.history.replaceState(null, '', '/');
+    const onOpenGate = vi.fn();
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith('/api/workspace/directory')) {
@@ -666,40 +668,42 @@ describe('EntryShell AMR workspace precheck race', () => {
 
     render(
       <I18nProvider initial="en">
-        <EntryShell
-          skills={[]}
-          designTemplates={[]}
-          designSystems={[]}
-          projects={[]}
-          templates={[]}
-          promptTemplates={[]}
-          defaultDesignSystemId={null}
-          connectors={[]}
-          connectorsLoading={false}
-          config={amrConfig()}
-          agents={[amrAgent()]}
-          amrLoggedIn
-          amrSessionState="reauth_required"
-          daemonLive
-          onModeChange={vi.fn()}
-          onAgentChange={vi.fn()}
-          onAgentModelChange={vi.fn()}
-          onApiProtocolChange={vi.fn()}
-          onApiModelChange={vi.fn()}
-          onConfigPersist={vi.fn()}
-          onRefreshAgents={vi.fn(() => [amrAgent()])}
-          onCreateProject={vi.fn()}
-          onCreatePluginShareProject={vi.fn()}
-          onImportClaudeDesign={vi.fn()}
-          onOpenProject={vi.fn()}
-          onOpenLiveArtifact={vi.fn()}
-          onDeleteProject={vi.fn()}
-          onRenameProject={vi.fn()}
-          onChangeDefaultDesignSystem={vi.fn()}
-          onPersistComposioKey={vi.fn()}
-          onOpenSettings={vi.fn()}
-          onCompleteOnboarding={vi.fn()}
-        />
+        <InfernoGenerateGateProvider canGenerate={false} onOpenGate={onOpenGate}>
+          <EntryShell
+            skills={[]}
+            designTemplates={[]}
+            designSystems={[]}
+            projects={[]}
+            templates={[]}
+            promptTemplates={[]}
+            defaultDesignSystemId={null}
+            connectors={[]}
+            connectorsLoading={false}
+            config={amrConfig()}
+            agents={[amrAgent()]}
+            amrLoggedIn
+            amrSessionState="reauth_required"
+            daemonLive
+            onModeChange={vi.fn()}
+            onAgentChange={vi.fn()}
+            onAgentModelChange={vi.fn()}
+            onApiProtocolChange={vi.fn()}
+            onApiModelChange={vi.fn()}
+            onConfigPersist={vi.fn()}
+            onRefreshAgents={vi.fn(() => [amrAgent()])}
+            onCreateProject={vi.fn()}
+            onCreatePluginShareProject={vi.fn()}
+            onImportClaudeDesign={vi.fn()}
+            onOpenProject={vi.fn()}
+            onOpenLiveArtifact={vi.fn()}
+            onDeleteProject={vi.fn()}
+            onRenameProject={vi.fn()}
+            onChangeDefaultDesignSystem={vi.fn()}
+            onPersistComposioKey={vi.fn()}
+            onOpenSettings={vi.fn()}
+            onCompleteOnboarding={vi.fn()}
+          />
+        </InfernoGenerateGateProvider>
       </I18nProvider>,
     );
 
@@ -707,6 +711,72 @@ describe('EntryShell AMR workspace precheck race', () => {
     expect(window.location.pathname).toBe('/');
     expect(screen.queryByRole('heading', { name: 'Sign in to OpenDesign' })).toBeNull();
     expect(screen.queryByRole('alertdialog')).toBeNull();
+    await waitFor(() => expect(onOpenGate).toHaveBeenCalled());
+  });
+
+  it('does not open the Inferno key gate on Cloud reauth when Inferno is ready', async () => {
+    window.history.replaceState(null, '', '/');
+    const onOpenGate = vi.fn();
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/api/workspace/directory')) {
+        return new Response(JSON.stringify({ error: 'unauthenticated' }), {
+          status: 401,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (url.endsWith('/api/plugins')) return jsonResponse({ plugins: [] });
+      if (url.endsWith('/api/mcp/servers')) return jsonResponse({ servers: [] });
+      if (url.endsWith('/api/community/discord')) return jsonResponse({ stale: true });
+      if (url.endsWith('/api/github/open-design')) return jsonResponse({ stale: true });
+      return jsonResponse({});
+    }) as typeof fetch;
+
+    render(
+      <I18nProvider initial="en">
+        <InfernoGenerateGateProvider canGenerate onOpenGate={onOpenGate}>
+          <EntryShell
+            skills={[]}
+            designTemplates={[]}
+            designSystems={[]}
+            projects={[]}
+            templates={[]}
+            promptTemplates={[]}
+            defaultDesignSystemId={null}
+            connectors={[]}
+            connectorsLoading={false}
+            config={amrConfig()}
+            agents={[amrAgent()]}
+            amrLoggedIn
+            amrSessionState="reauth_required"
+            daemonLive
+            onModeChange={vi.fn()}
+            onAgentChange={vi.fn()}
+            onAgentModelChange={vi.fn()}
+            onApiProtocolChange={vi.fn()}
+            onApiModelChange={vi.fn()}
+            onConfigPersist={vi.fn()}
+            onRefreshAgents={vi.fn(() => [amrAgent()])}
+            onCreateProject={vi.fn()}
+            onCreatePluginShareProject={vi.fn()}
+            onImportClaudeDesign={vi.fn()}
+            onOpenProject={vi.fn()}
+            onOpenLiveArtifact={vi.fn()}
+            onDeleteProject={vi.fn()}
+            onRenameProject={vi.fn()}
+            onChangeDefaultDesignSystem={vi.fn()}
+            onPersistComposioKey={vi.fn()}
+            onOpenSettings={vi.fn()}
+            onCompleteOnboarding={vi.fn()}
+          />
+        </InfernoGenerateGateProvider>
+      </I18nProvider>,
+    );
+
+    expect(await screen.findByTestId('home-hero-input')).toBeTruthy();
+    expect(window.location.pathname).toBe('/');
+    expect(screen.queryByRole('heading', { name: 'Sign in to OpenDesign' })).toBeNull();
+    expect(onOpenGate).not.toHaveBeenCalled();
   });
 
   it('returns a submit-time auth rejection to sign-in without losing the Home draft', async () => {

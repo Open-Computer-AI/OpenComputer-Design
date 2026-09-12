@@ -681,10 +681,10 @@ export function EntryShell({
     );
   useEffect(() => {
     // Inferno-only: Cloud reauth must not dump the user into upstream
-    // onboarding. Open the Inferno key gate instead.
+    // onboarding. Open the Inferno key gate only when Inferno is not ready.
     const selectedCloudIdentityRejected = usesOpenDesignCloud && amrLoggedIn === false;
     if (!selectedCloudIdentityRejected && !amrAuthRequired) return;
-    infernoGate.openGate();
+    if (!infernoGate.canGenerate) infernoGate.openGate();
   }, [amrAuthRequired, amrLoggedIn, infernoGate, usesOpenDesignCloud]);
   let accountFooterNotice: ReactNode = null;
   if (accountFooterState === 'syncing') {
