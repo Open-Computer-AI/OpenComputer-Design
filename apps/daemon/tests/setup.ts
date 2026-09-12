@@ -42,7 +42,7 @@ if (!globalState[TEST_DATA_DIR_SYMBOL]) {
 
 // Server paths are resolved at module import time. Force every daemon test
 // process to use one isolated data directory before any test imports server.ts,
-// so tests can never read or overwrite the developer's real repo `.od` data.
+// so tests can never read or overwrite the developer's real ~/.opencomputer-design data.
 process.env.OD_DATA_DIR = globalState[TEST_DATA_DIR_SYMBOL];
 // Keep unit tests from reading a developer's stored Vela profile and routing
 // Langfuse-shaped telemetry through the authenticated Vela sink by accident.

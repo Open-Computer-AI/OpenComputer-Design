@@ -36,7 +36,7 @@ function localAgentProfilesFile(): string | null {
       : null;
 
   if (isSandboxModeEnabled(process.env)) {
-    if (!process.env.OD_DATA_DIR?.trim()) return null;
+    if (!(process.env.OCD_DATA_DIR || process.env.OD_DATA_DIR)?.trim()) return null;
     const sandboxRuntime = resolveSandboxRuntimeConfigFromEnv(
       process.env,
       RUNTIME_PROJECT_ROOT,

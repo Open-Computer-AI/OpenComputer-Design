@@ -3096,7 +3096,7 @@ async function getFile(
   const mime = ((resp.headers.get('content-type') || 'application/octet-stream').split(';')[0] ?? 'application/octet-stream').trim();
   if (!isTextualMime(mime)) {
     return errorResult(
-      `file at "${relPath}" has mime "${mime}"; binary content is not yet supported by od mcp. Use list_files to inspect its metadata.`,
+      `file at "${relPath}" has mime "${mime}"; binary content is not yet supported by ocd mcp. Use list_files to inspect its metadata.`,
     );
   }
   const text = await resp.text();

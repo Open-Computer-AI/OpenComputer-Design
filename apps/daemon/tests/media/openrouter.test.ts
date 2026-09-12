@@ -35,7 +35,7 @@ describe('openrouter video generation', () => {
     projectsRoot = path.join(projectRoot, '.od', 'projects');
     await mkdir(projectsRoot, { recursive: true });
     delete process.env.OD_MEDIA_CONFIG_DIR;
-    delete process.env.OD_DATA_DIR;
+    process.env.OD_DATA_DIR = path.join(projectRoot, '.od');
     process.env.OD_OPENROUTER_VIDEO_POLL_INTERVAL_MS = '0';
     process.env.OD_OPENROUTER_API_KEY = 'sk-or-test-key-1234';
   });
@@ -541,7 +541,7 @@ describe('openrouter image generation', () => {
     projectsRoot = path.join(projectRoot, '.od', 'projects');
     await mkdir(projectsRoot, { recursive: true });
     delete process.env.OD_MEDIA_CONFIG_DIR;
-    delete process.env.OD_DATA_DIR;
+    process.env.OD_DATA_DIR = path.join(projectRoot, '.od');
     process.env.OD_OPENROUTER_API_KEY = 'sk-or-img-test-key';
   });
 

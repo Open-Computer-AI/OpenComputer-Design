@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { resolveDataDir } from '../daemon-paths.js';
+import { configuredDataDirRaw, resolveDataDir } from '../daemon-paths.js';
 import { readInfernoApiKey } from '../inferno/credentials.js';
 import { resolveProjectRootFromNestedModule } from '../project-root.js';
 import { execAgentFile } from './invocation.js';
@@ -455,9 +455,10 @@ async function probeRuntimeVersionsOnly(
 }
 
 async function detectSyntheticAgent(def: RuntimeAgentDef): Promise<DetectedAgent> {
-  // Same root as server.ts RUNTIME_DATA_DIR: OD_DATA_DIR when set, else <projectRoot>/.od.
+  // Same root as server.ts RUNTIME_DATA_DIR: OCD_DATA_DIR, then OD_DATA_DIR,
+  // else ~/.opencomputer-design.
   const dataDir = resolveDataDir(
-    process.env.OD_DATA_DIR,
+    configuredDataDirRaw(),
     resolveProjectRootFromNestedModule(path.dirname(fileURLToPath(import.meta.url))),
   );
   let apiKey: string | null = null;

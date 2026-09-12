@@ -78,6 +78,7 @@ import { emittedRenderableQuestionForm } from './question-form-detect.js';
 import { resolveProjectRoot } from './project-root.js';
 import { OPEN_DESIGN_PLUGIN_ID } from './mcp-observability.js';
 import {
+  configuredDataDirRaw,
   resolveDaemonCliPath,
   resolveDaemonPluginPreviewsDir,
   resolveDaemonResourceDir,
@@ -86,6 +87,7 @@ import {
   resolveProcessResourcesPath,
 } from './daemon-paths.js';
 export {
+  configuredDataDirRaw,
   resolveDaemonCliPath,
   resolveDaemonPluginPreviewsDir,
   resolveDaemonResourceRoot,
@@ -1342,7 +1344,7 @@ const {
 });
 
 const SANDBOX_MODE_ENABLED = isSandboxModeEnabled(process.env);
-const RUNTIME_DATA_DIR = resolveDataDir(process.env.OD_DATA_DIR, PROJECT_ROOT, {
+const RUNTIME_DATA_DIR = resolveDataDir(configuredDataDirRaw(), PROJECT_ROOT, {
   requireExplicit: SANDBOX_MODE_ENABLED,
 });
 configureDiagnosticsEvidence(RUNTIME_DATA_DIR);
@@ -1779,6 +1781,7 @@ export function createAgentRuntimeEnv(
   const env: NodeJS.ProcessEnv = applySandboxRuntimeEnv(
     {
       ...baseEnv,
+      OCD_DATA_DIR: RUNTIME_DATA_DIR,
       OD_DATA_DIR: RUNTIME_DATA_DIR,
       OD_DAEMON_URL: daemonUrl,
       OD_NODE_BIN: nodeBin,
@@ -1887,6 +1890,7 @@ export function createOpenDesignToolEnv({
   const scope = workspaceScope?.projectId === projectId ? workspaceScope : null;
   return {
     OD_BIN,
+    OCD_DATA_DIR: RUNTIME_DATA_DIR,
     OD_DATA_DIR: RUNTIME_DATA_DIR,
     OD_HYPERFRAMES_BIN: hyperFramesBin,
     OD_NODE_BIN,
@@ -1910,6 +1914,7 @@ export function createDaemonDataDirConfiguredAgentEnv(
 ): Record<string, string> {
   return {
     ...configuredAgentEnv,
+    OCD_DATA_DIR: RUNTIME_DATA_DIR,
     OD_DATA_DIR: RUNTIME_DATA_DIR,
   };
 }
@@ -3428,7 +3433,7 @@ export async function startServer({
   const amrTerminalReportOutbox = createAmrTerminalReportOutboxStore(db);
   const amrTerminalReportDelivery = createAmrTerminalReportDeliveryService({
     store: amrTerminalReportOutbox,
-    env: { ...process.env, OD_DATA_DIR: RUNTIME_DATA_DIR },
+    env: { ...process.env, OCD_DATA_DIR: RUNTIME_DATA_DIR, OD_DATA_DIR: RUNTIME_DATA_DIR },
   });
   const commentAnchorRepair = repairTeamProjectCommentAnchorConversations(db);
   if (commentAnchorRepair.created > 0) {

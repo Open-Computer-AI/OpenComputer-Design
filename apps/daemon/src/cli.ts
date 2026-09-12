@@ -979,7 +979,7 @@ function printRootHelp() {
   od tools design-systems read --path <manifest-declared-path>
       Read active design-system pull-layer files through daemon wrapper commands.
 
-  od mcp live-artifacts
+  ocd mcp live-artifacts
       Start the MCP server exposing live-artifact and connector tools.
 
   od research search --query <text> [--max-sources 5] [--daemon-url <url>]
@@ -1048,7 +1048,7 @@ function printRootHelp() {
       Create a deterministic HyperFrames composition without npx or global
       skill installation, before dispatching it through media generate.
 
-  od mcp [--daemon-url <url>]
+  ocd mcp [--daemon-url <url>]
       Run a stdio MCP server that proxies project tool calls to a
       running OpenDesign daemon. Wire it into a coding agent
       (Claude Code, Cursor, VS Code, Zed, Windsurf) in another repo
@@ -2359,7 +2359,7 @@ async function runMcp(args) {
 }
 
 function printMcpHelp() {
-  console.log(`Usage: od mcp [--daemon-url <url>]
+  console.log(`Usage: ocd mcp [--daemon-url <url>]
 
 Run a stdio MCP (Model Context Protocol) server that proxies project
 tool calls to a running OpenDesign daemon. Wire it into a coding agent
@@ -2412,7 +2412,7 @@ for your machine, plus a one-click deeplink for Cursor), open Settings
 for tool calls to succeed.
 
 To register this server into a coding agent's own config automatically:
-  od mcp install <agent> [--uninstall] [--print] [--json] [--daemon-url <url>]
+  ocd mcp install <agent> [--uninstall] [--print] [--json] [--daemon-url <url>]
   Agents: ${AGENT_SLUGS.join(' ')}`);
 }
 
@@ -2429,7 +2429,7 @@ To register this server into a coding agent's own config automatically:
 // Resolve the canonical launch spec from the running daemon's
 // /api/mcp/install-info (the same payload the Settings → MCP panel and the
 // Codex one-click install use), so every install path configures byte-for-
-// byte the same command. Falls back to a minimal `od mcp --daemon-url`
+// byte the same command. Falls back to a minimal `ocd mcp --daemon-url`
 // spec when the daemon is unreachable.
 async function resolveMcpLaunchSpec(flags) {
   const base = await cliDaemonBaseUrl(flags);
@@ -2646,7 +2646,7 @@ async function runMcpInstall(args) {
 }
 
 function printMcpInstallHelp() {
-  console.log(`Usage: od mcp install <agent> [options]
+  console.log(`Usage: ocd mcp install <agent> [options]
 
 Register OpenDesign's stdio MCP server into a coding agent's own config.
 
@@ -2663,7 +2663,7 @@ Options:
 The launch command is resolved from the running daemon's
 /api/mcp/install-info, so the installed entry matches the Settings → MCP
 panel snippet byte-for-byte. Start the daemon first for an exact match;
-otherwise a minimal \`od mcp --daemon-url <url>\` command is used.`);
+otherwise a minimal \`ocd mcp --daemon-url <url>\` command is used.`);
 }
 
 // ---------------------------------------------------------------------------
@@ -9112,7 +9112,7 @@ async function runDaemonDb(rest, flags) {
 
 status:
   Prints a structured inventory of the daemon's SQLite backend:
-    - file path (under .od/ by default; OD_DATA_DIR overrides)
+    - file path (under ~/.opencomputer-design by default; OCD_DATA_DIR or OD_DATA_DIR overrides)
     - size on disk (primary + WAL + SHM)
     - schema version (user_version PRAGMA)
     - per-table row counts (system tables excluded)

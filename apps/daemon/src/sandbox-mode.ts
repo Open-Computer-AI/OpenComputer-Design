@@ -132,7 +132,7 @@ export function resolveSandboxRuntimeConfigFromEnv(
   projectRoot: string,
 ): SandboxRuntimeConfig | null {
   if (!isSandboxModeEnabled(env)) return null;
-  const rawDataDir = env.OD_DATA_DIR?.trim();
+  const rawDataDir = (env.OCD_DATA_DIR || env.OD_DATA_DIR)?.trim();
   if (!rawDataDir) {
     throw new Error('OD_DATA_DIR is required when OD_SANDBOX_MODE is enabled');
   }
@@ -173,6 +173,7 @@ export function applySandboxRuntimeEnv(
   const npmUserConfig = path.join(roots.toolConfigDir, 'npmrc');
 
   env[SANDBOX_MODE_ENV] = '1';
+  env.OCD_DATA_DIR = config.dataDir;
   env.OD_DATA_DIR = config.dataDir;
   env.OD_AGENT_HOME = roots.agentHomeDir;
   env.HOME = roots.agentHomeDir;

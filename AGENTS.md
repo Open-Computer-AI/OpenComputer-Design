@@ -78,8 +78,9 @@ a new convention.
 
 The daemon has one active data-root truth source:
 
-- On daemon startup, `apps/daemon/src/server.ts` resolves `OD_DATA_DIR` into
-  `RUNTIME_DATA_DIR`.
+- On daemon startup, `apps/daemon/src/server.ts` resolves `OCD_DATA_DIR`, then
+  `OD_DATA_DIR`, into `RUNTIME_DATA_DIR`. When neither is set, the data root is
+  the `.opencomputer-design` directory in the user home directory.
 - All daemon-owned data paths must derive from `RUNTIME_DATA_DIR` or from a
   constant derived from it, such as `PROJECTS_DIR` or `ARTIFACTS_DIR`.
 - `PROJECTS_DIR` is the managed-project root. Imported-folder projects are the
@@ -89,9 +90,9 @@ The daemon has one active data-root truth source:
   state, plugin state, connector credentials, generated files, logs owned by
   sandbox mode, and agent runtime homes are daemon data and must remain under
   the resolved daemon data root unless this file names a specific exception.
-- Agent subprocesses receive the resolved daemon data root as `OD_DATA_DIR`.
-  They must inherit the daemon's truth source instead of guessing their own
-  data path.
+- Agent subprocesses receive the resolved daemon data root as `OCD_DATA_DIR`
+  and `OD_DATA_DIR`. They must inherit the daemon's truth source instead of
+  guessing their own data path.
 
 Development propagation:
 
@@ -99,17 +100,19 @@ Development propagation:
 - `tools-dev --namespace <name>` does not, by itself, define daemon data
   isolation.
 - A development run that needs an isolated daemon data root must pass
-  `OD_DATA_DIR` into the daemon process environment. After that, the daemon
-  resolves it once and all daemon data paths flow from `RUNTIME_DATA_DIR`.
+  `OCD_DATA_DIR` or `OD_DATA_DIR` into the daemon process environment. After
+  that, the daemon resolves it once and all daemon data paths flow from
+  `RUNTIME_DATA_DIR`.
 
 Packaged propagation:
 
 - `tools-pack` / `apps/packaged` own packaged channel and namespace layout.
 - Packaged code resolves the final namespace-scoped daemon data root before
   spawning the daemon.
-- The packaged daemon receives that final data root as `OD_DATA_DIR`; daemon
-  code must not infer packaged data paths from app names, Electron `userData`,
-  ports, channel names, or namespace names.
+- The packaged daemon receives that final data root as `OCD_DATA_DIR` (or
+  `OD_DATA_DIR` for compatibility); daemon code must not infer packaged data
+  paths from app names, Electron `userData`, ports, channel names, or
+  namespace names.
 
 Sanctioned exceptions:
 
@@ -127,8 +130,8 @@ Known escape candidates that must not be reused:
 
 - Module-level defaults that point at a cwd-relative legacy data directory.
 - Helper defaults such as `defaultRegistryRoots()` that recompute a data root
-  from `process.env.OD_DATA_DIR` or a cwd fallback instead of receiving
-  `RUNTIME_DATA_DIR`.
+  from `process.env.OCD_DATA_DIR` / `process.env.OD_DATA_DIR` or a home
+  fallback instead of receiving `RUNTIME_DATA_DIR`.
 - `openDatabase(projectRoot)` calls that rely on its fallback instead of
   passing the resolved data root.
 - Script help text or examples that suggest concrete legacy data directories.

@@ -41,7 +41,7 @@ describe('media alias preserves catalog-keyed capability branching (#1309 review
     await mkdir(projectsRoot, { recursive: true });
     delete process.env.OD_MEDIA_MODEL_ALIASES;
     delete process.env.OD_MEDIA_CONFIG_DIR;
-    delete process.env.OD_DATA_DIR;
+    process.env.OD_DATA_DIR = path.join(projectRoot, '.od');
     process.env.OPENAI_API_KEY = 'sk-test-key';
   });
 

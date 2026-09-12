@@ -204,7 +204,7 @@ describe('GET /api/mcp/install-info', () => {
     expect(body.args).toEqual([cliPath, 'mcp', '--daemon-url', `http://127.0.0.1:${port}`]);
     // env always carries OD_DATA_DIR (issue #848); no sidecar keys in
     // a non-sidecar launch.
-    expect(body.env).toEqual({ OD_DATA_DIR: dataDir });
+    expect(body.env).toEqual({ OCD_DATA_DIR: dataDir, OD_DATA_DIR: dataDir });
     expect(body.daemonUrl).toBe(`http://127.0.0.1:${port}`);
     expect(body.platform).toBe(process.platform);
     expect(body.cliExists).toBe(true);
@@ -218,6 +218,7 @@ describe('GET /api/mcp/install-info', () => {
     const body = await readInstallInfo(res);
     expect(body.env).toBeDefined();
     expect(body.env.OD_DATA_DIR).toBe(dataDir);
+    expect(body.env.OCD_DATA_DIR).toBe(dataDir);
   });
 
   it('rejects cross-origin requests with 403', async () => {
@@ -272,6 +273,7 @@ describe('GET /api/mcp/install-info', () => {
       const body = await readInstallInfo(res);
       expect(body.args).toEqual([cliPath, 'mcp']);
       expect(body.env).toEqual({
+        OCD_DATA_DIR: dataDir,
         OD_DATA_DIR: dataDir,
         ...inheritedSidecarEnv,
       });
@@ -325,6 +327,7 @@ describe('GET /api/mcp/install-info', () => {
       );
       const body = await readInstallInfo(res);
       expect(body.env).toEqual({
+        OCD_DATA_DIR: dataDir,
         OD_DATA_DIR: dataDir,
         ...inheritedSidecarEnv,
         OD_MCP_BOOTSTRAP_COMMAND: '/usr/bin/open',
@@ -348,6 +351,7 @@ describe('GET /api/mcp/install-info', () => {
       const body = await readInstallInfo(res);
       expect(body.args).toEqual([cliPath, 'mcp']);
       expect(body.env).toEqual({
+        OCD_DATA_DIR: dataDir,
         OD_DATA_DIR: dataDir,
         ...customCapability,
       });
@@ -369,6 +373,7 @@ describe('GET /api/mcp/install-info', () => {
       const res = await fetch(`http://127.0.0.1:${port}/api/mcp/install-info`);
       const body = await readInstallInfo(res);
       expect(body.env).toEqual({
+        OCD_DATA_DIR: dataDir,
         OD_DATA_DIR: dataDir,
       });
       expect(body.args).toContain('--daemon-url');

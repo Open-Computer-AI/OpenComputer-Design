@@ -1,5 +1,5 @@
-import { mkdtemp } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdtemp, rm } from 'node:fs/promises';
+import os, { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { resolveDataDir } from '../src/daemon-paths.js';
@@ -46,11 +46,14 @@ describe('inferno-only registry', () => {
 
 describe('synthetic inferno detection', () => {
   const originalDataDir = process.env.OD_DATA_DIR;
+  const originalOcdDataDir = process.env.OCD_DATA_DIR;
 
   afterEach(() => {
     (globalThis as InfernoTestGlobal).__infernoTestProjectRoot = null;
     if (originalDataDir === undefined) delete process.env.OD_DATA_DIR;
     else process.env.OD_DATA_DIR = originalDataDir;
+    if (originalOcdDataDir === undefined) delete process.env.OCD_DATA_DIR;
+    else process.env.OCD_DATA_DIR = originalOcdDataDir;
     vi.restoreAllMocks();
   });
 
@@ -75,17 +78,25 @@ describe('synthetic inferno detection', () => {
     expect((await detectAgent(def)).authStatus).toBe('ok');
   });
 
-  it('reads Inferno key from default .od when OD_DATA_DIR is unset', async () => {
+  it('reads Inferno key from ~/.opencomputer-design when data-dir env is unset', async () => {
     const projectRoot = await mkdtemp(path.join(tmpdir(), 'inferno-default-od-'));
+    const fakeHome = await mkdtemp(path.join(tmpdir(), 'inferno-home-'));
+    const homedirSpy = vi.spyOn(os, 'homedir').mockReturnValue(fakeHome);
     const dataDir = resolveDataDir(undefined, projectRoot);
-    expect(dataDir).toBe(path.join(projectRoot, '.od'));
+    expect(dataDir).toBe(path.join(fakeHome, '.opencomputer-design'));
 
     delete process.env.OD_DATA_DIR;
+    delete process.env.OCD_DATA_DIR;
     (globalThis as InfernoTestGlobal).__infernoTestProjectRoot = projectRoot;
     await saveInfernoApiKey(dataDir, 'sk-live-default-od');
 
-    const detected = await detectAgent(getAgentDef('inferno')!);
-    expect(detected.available).toBe(true);
-    expect(detected.authStatus).toBe('ok');
+    try {
+      const detected = await detectAgent(getAgentDef('inferno')!);
+      expect(detected.available).toBe(true);
+      expect(detected.authStatus).toBe('ok');
+    } finally {
+      homedirSpy.mockRestore();
+      await rm(fakeHome, { recursive: true, force: true });
+    }
   });
 });

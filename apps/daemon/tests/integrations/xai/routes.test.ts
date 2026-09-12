@@ -140,7 +140,7 @@ describe('xai-routes', () => {
   beforeEach(async () => {
     projectRoot = await mkdtemp(path.join(tmpdir(), 'od-xai-routes-'));
     delete process.env.OD_MEDIA_CONFIG_DIR;
-    delete process.env.OD_DATA_DIR;
+    process.env.OD_DATA_DIR = path.join(projectRoot, '.od');
     onCallbackHolder.current = null;
     startMock.mockClear();
     stopMock.mockClear();

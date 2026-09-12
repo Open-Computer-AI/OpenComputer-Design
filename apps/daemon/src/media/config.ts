@@ -8,20 +8,18 @@
 //
 // Storage location (precedence high → low):
 //   1. OD_MEDIA_CONFIG_DIR=DIR   → <DIR>/media-config.json
-//   2. OD_DATA_DIR=DIR           → <DIR>/media-config.json
-//   3. (default)                 → <projectRoot>/.od/media-config.json
-// The default is unchanged for workspace-local installs. (1) lets a
-// supervisor relocate just the credentials file. (2) means installs
-// that already set OD_DATA_DIR for the rest of the daemon's runtime
-// state (immutable-image installs and the packaged daemon at
+//   2. OCD_DATA_DIR then OD_DATA_DIR → <DIR>/media-config.json
+//   3. (default)                 → ~/.opencomputer-design/media-config.json
+// (1) lets a supervisor relocate just the credentials file. (2) means
+// installs that already set the daemon data root (immutable-image
+// installs and the packaged daemon at
 // apps/packaged/src/sidecars.ts:createPackagedDaemonManagedPathEnv)
-// get media-config there too without
-// any extra plumbing. Both env values are resolved with the same
-// semantics as OD_DATA_DIR in server.ts:resolveDataDir(): the shared
-// expandHomePrefix() helper handles `~`, `$HOME`, and `${HOME}` (with
-// either `/` or `\` separator), then relative paths anchor to
-// <projectRoot> (NOT process.cwd, which is unrelated to the workspace
-// when systemd or launchd starts the daemon).
+// get media-config there too without any extra plumbing. Env values
+// are resolved with the same semantics as server.ts:resolveDataDir():
+// expandHomePrefix() handles `~`, `$HOME`, and `${HOME}` (with either
+// `/` or `\` separator), then relative paths anchor to <projectRoot>
+// (NOT process.cwd, which is unrelated to the workspace when systemd
+// or launchd starts the daemon).
 //
 // Migration note: a workspace install that sets a custom OD_DATA_DIR
 // AND has a pre-existing `<projectRoot>/.od/media-config.json` will
@@ -39,6 +37,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { MEDIA_PROVIDERS } from './models.js';
+import { appConfigDir } from '../app-config.js';
 import { expandHomePrefix } from '../home-expansion.js';
 import { resolveXAIBearer } from '../integrations/xai-credentials.js';
 import { isSandboxModeEnabled } from '../sandbox-mode.js';
@@ -146,8 +145,7 @@ function envOverrideDir(envName: string, projectRoot: string): string | null {
 export function mediaConfigDir(projectRoot: string): string {
   return (
     envOverrideDir('OD_MEDIA_CONFIG_DIR', projectRoot)
-    ?? envOverrideDir('OD_DATA_DIR', projectRoot)
-    ?? path.join(projectRoot, '.od')
+    ?? appConfigDir(projectRoot)
   );
 }
 

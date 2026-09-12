@@ -122,6 +122,18 @@ export interface ResolveDataDirOptions {
   requireExplicit?: boolean;
 }
 
+export function defaultUserDataDir(): string {
+  return path.join(os.homedir(), '.opencomputer-design');
+}
+
+export function configuredDataDirRaw(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  const ocd = env.OCD_DATA_DIR;
+  if (typeof ocd === 'string' && ocd.trim().length > 0) return ocd;
+  const od = env.OD_DATA_DIR;
+  if (typeof od === 'string' && od.trim().length > 0) return od;
+  return undefined;
+}
+
 export function resolveDataDir(
   raw: string | undefined,
   projectRoot: string,
@@ -132,7 +144,7 @@ export function resolveDataDir(
     if (options.requireExplicit) {
       throw new Error('OD_DATA_DIR is required when OD_SANDBOX_MODE is enabled');
     }
-    return path.join(projectRoot, '.od');
+    return defaultUserDataDir();
   }
 
   const resolved = resolveProjectRelativePath(value, projectRoot);

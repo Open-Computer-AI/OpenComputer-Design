@@ -26,7 +26,7 @@ describe('minimax image generation', () => {
     projectsRoot = path.join(projectRoot, '.od', 'projects');
     await mkdir(projectsRoot, { recursive: true });
     delete process.env.OD_MEDIA_CONFIG_DIR;
-    delete process.env.OD_DATA_DIR;
+    process.env.OD_DATA_DIR = path.join(projectRoot, '.od');
     delete process.env.OD_MINIMAX_IMAGE_BASE_URL;
     delete process.env.OD_MEDIA_MODEL_ALIASES;
     process.env.OD_MINIMAX_API_KEY = 'minimax-test-key';

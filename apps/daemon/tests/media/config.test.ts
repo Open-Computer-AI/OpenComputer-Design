@@ -46,6 +46,10 @@ describe('media-config OpenAI auth-file fallback', () => {
     delete process.env.OD_SANDBOX_MODE;
   });
 
+  function defaultMediaDir(): string {
+    return path.join(homeDir, '.opencomputer-design');
+  }
+
   afterEach(async () => {
     if (originalHome == null) {
       delete process.env.HOME;
@@ -86,7 +90,7 @@ describe('media-config OpenAI auth-file fallback', () => {
   }
 
   async function writeStoredMediaConfig(data: unknown) {
-    const file = path.join(projectRoot, '.od', 'media-config.json');
+    const file = path.join(defaultMediaDir(), 'media-config.json');
     await mkdir(path.dirname(file), { recursive: true });
     await writeFile(file, JSON.stringify(data), 'utf8');
   }
@@ -585,7 +589,7 @@ describe('media-config Grok / xAI OAuth fallback', () => {
     refreshToken?: string;
     expiresAt?: number;
   }) {
-    const file = path.join(projectRoot, '.od', 'xai-tokens.json');
+    const file = path.join(homeDir, '.opencomputer-design', 'xai-tokens.json');
     await mkdir(path.dirname(file), { recursive: true });
     await writeFile(
       file,
@@ -605,7 +609,7 @@ describe('media-config Grok / xAI OAuth fallback', () => {
   }
 
   async function writeStoredMediaConfig(data: unknown) {
-    const file = path.join(projectRoot, '.od', 'media-config.json');
+    const file = path.join(homeDir, '.opencomputer-design', 'media-config.json');
     await mkdir(path.dirname(file), { recursive: true });
     await writeFile(file, JSON.stringify(data), 'utf8');
   }
@@ -734,7 +738,7 @@ describe('media-config model alias resolution (issue #1277)', () => {
     projectRoot = await mkdtemp(path.join(tmpdir(), 'od-media-alias-'));
     delete process.env.OD_MEDIA_MODEL_ALIASES;
     delete process.env.OD_MEDIA_CONFIG_DIR;
-    delete process.env.OD_DATA_DIR;
+    process.env.OD_DATA_DIR = path.join(projectRoot, '.od');
   });
 
   afterEach(async () => {
@@ -933,7 +937,7 @@ describe('seedProviderIfMissing', () => {
       delete process.env[key];
     }
     delete process.env.OD_MEDIA_CONFIG_DIR;
-    delete process.env.OD_DATA_DIR;
+    process.env.OD_DATA_DIR = path.join(projectRoot, '.od');
   });
 
   afterEach(async () => {

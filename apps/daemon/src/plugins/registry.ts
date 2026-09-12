@@ -13,6 +13,7 @@
 // honest. Adding more tiers is a pure data-source change and never a
 // schema migration.
 
+import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
 import { promises as fsp } from 'node:fs';
@@ -52,7 +53,7 @@ export function registryRootsForDataDir(dataDir: string): RegistryRoots {
 }
 
 export function defaultRegistryRoots(): RegistryRoots {
-  return registryRootsForDataDir(path.resolve(process.env.OD_DATA_DIR ?? path.join(process.cwd(), '.od')));
+  return registryRootsForDataDir(path.resolve(process.env.OCD_DATA_DIR || process.env.OD_DATA_DIR || path.join(os.homedir(), '.opencomputer-design')));
 }
 
 export interface ScannedPlugin {

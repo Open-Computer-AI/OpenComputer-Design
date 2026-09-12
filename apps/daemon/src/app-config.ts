@@ -2,9 +2,10 @@
 //
 // The web frontend pushes preferences here via PUT /api/app-config; the
 // daemon persists them to <dataDir>/app-config.json (where dataDir defaults
-// to <projectRoot>/.od but follows OD_DATA_DIR when set, keeping test and
-// multi-namespace runs isolated). This survives browser storage resets and
-// origin changes so onboarding and agent selection don't reappear unexpectedly.
+// to ~/.opencomputer-design, prefers OCD_DATA_DIR, then OD_DATA_DIR, keeping
+// test and multi-namespace runs isolated). This survives browser storage
+// resets and origin changes so onboarding and agent selection don't reappear
+// unexpectedly.
 //
 // `agentCliEnv` is intentionally limited by allowlist below. It is the
 // explicit low-level launch environment for Local CLI runs, separate from
@@ -20,6 +21,7 @@
 import { readFileSync } from 'node:fs';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { createHash, randomBytes } from 'node:crypto';
+import os from 'node:os';
 import path from 'node:path';
 import type { OdNextRolloutMode } from '@open-design/contracts';
 
@@ -169,12 +171,12 @@ function configFile(dataDir: string): string {
 }
 
 export function appConfigDir(projectRoot: string, env: NodeJS.ProcessEnv = process.env): string {
-  const raw = env.OD_DATA_DIR;
-  if (typeof raw !== 'string' || raw.trim().length === 0) {
-    return path.join(projectRoot, '.od');
+  const raw = env.OCD_DATA_DIR || env.OD_DATA_DIR;
+  if (typeof raw === 'string' && raw.trim().length > 0) {
+    const expanded = expandHomePrefix(raw.trim());
+    return path.isAbsolute(expanded) ? path.resolve(expanded) : path.resolve(projectRoot, expanded);
   }
-  const expanded = expandHomePrefix(raw.trim());
-  return path.isAbsolute(expanded) ? expanded : path.resolve(projectRoot, expanded);
+  return path.join(os.homedir(), '.opencomputer-design');
 }
 
 const AGENT_MODEL_KEYS: ReadonlySet<string> = new Set([
