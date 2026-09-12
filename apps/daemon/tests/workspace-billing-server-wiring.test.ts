@@ -105,6 +105,7 @@ describe('server workspace billing runtime wiring', () => {
     // must receive the selected settings explicitly instead of depending on
     // the launcher-only OD_DATA_DIR environment variable.
     delete process.env.OD_DATA_DIR;
+    delete process.env.OCD_DATA_DIR;
     daemon = await serverModule.startServer({ port: 0, returnServer: true });
 
     const billingUrl =

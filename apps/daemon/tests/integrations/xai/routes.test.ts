@@ -141,6 +141,7 @@ describe('xai-routes', () => {
     projectRoot = await mkdtemp(path.join(tmpdir(), 'od-xai-routes-'));
     delete process.env.OD_MEDIA_CONFIG_DIR;
     process.env.OD_DATA_DIR = path.join(projectRoot, '.od');
+    process.env.OCD_DATA_DIR = path.join(projectRoot, '.od');
     onCallbackHolder.current = null;
     startMock.mockClear();
     stopMock.mockClear();
@@ -154,8 +155,13 @@ describe('xai-routes', () => {
     globalThis.fetch = realFetch;
     if (originalMediaConfigDir == null) delete process.env.OD_MEDIA_CONFIG_DIR;
     else process.env.OD_MEDIA_CONFIG_DIR = originalMediaConfigDir;
-    if (originalDataDir == null) delete process.env.OD_DATA_DIR;
-    else process.env.OD_DATA_DIR = originalDataDir;
+    if (originalDataDir == null) {
+      delete process.env.OD_DATA_DIR;
+      delete process.env.OCD_DATA_DIR;
+    } else {
+      process.env.OD_DATA_DIR = originalDataDir;
+      process.env.OCD_DATA_DIR = originalDataDir;
+    }
     await rm(projectRoot, { recursive: true, force: true });
   });
 

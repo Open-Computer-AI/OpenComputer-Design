@@ -43,6 +43,7 @@ describe('media-config OpenAI auth-file fallback', () => {
     }
     delete process.env.OD_MEDIA_CONFIG_DIR;
     delete process.env.OD_DATA_DIR;
+    delete process.env.OCD_DATA_DIR;
     delete process.env.OD_SANDBOX_MODE;
   });
 
@@ -70,8 +71,10 @@ describe('media-config OpenAI auth-file fallback', () => {
     }
     if (originalDataDir == null) {
       delete process.env.OD_DATA_DIR;
+      delete process.env.OCD_DATA_DIR;
     } else {
       process.env.OD_DATA_DIR = originalDataDir;
+      process.env.OCD_DATA_DIR = originalDataDir;
     }
     if (originalSandboxMode == null) {
       delete process.env.OD_SANDBOX_MODE;
@@ -277,6 +280,7 @@ describe('media-config OpenAI auth-file fallback', () => {
       originalDataDir = process.env.OD_DATA_DIR;
       delete process.env.OD_MEDIA_CONFIG_DIR;
       delete process.env.OD_DATA_DIR;
+      delete process.env.OCD_DATA_DIR;
     });
 
     afterEach(async () => {
@@ -287,8 +291,10 @@ describe('media-config OpenAI auth-file fallback', () => {
       }
       if (originalDataDir == null) {
         delete process.env.OD_DATA_DIR;
+        delete process.env.OCD_DATA_DIR;
       } else {
         process.env.OD_DATA_DIR = originalDataDir;
+        process.env.OCD_DATA_DIR = originalDataDir;
       }
       await rm(overrideRoot, { recursive: true, force: true });
     });
@@ -372,6 +378,7 @@ describe('media-config OpenAI auth-file fallback', () => {
       // daemon's runtime state. media-config should
       // co-locate there without needing a second env var.
       process.env.OD_DATA_DIR = overrideRoot;
+      process.env.OCD_DATA_DIR = overrideRoot;
       await writeProvidersAt(overrideRoot, {
         providers: {
           openai: {
@@ -392,6 +399,7 @@ describe('media-config OpenAI auth-file fallback', () => {
       const dataDir = await mkdtemp(path.join(tmpdir(), 'od-media-data-'));
       try {
         process.env.OD_DATA_DIR = dataDir;
+        process.env.OCD_DATA_DIR = dataDir;
         process.env.OD_MEDIA_CONFIG_DIR = overrideRoot;
         // Two competing files; only the OD_MEDIA_CONFIG_DIR one should
         // be read.
@@ -466,6 +474,7 @@ describe('media-config OpenAI auth-file fallback', () => {
     it('expands $HOME/... in OD_DATA_DIR fallback so media-config co-locates with daemon data', async () => {
       const subdir = '.od-test-home';
       process.env.OD_DATA_DIR = `$HOME/${subdir}`;
+      process.env.OCD_DATA_DIR = `$HOME/${subdir}`;
       const expandedDir = path.join(homeDir, subdir);
       await writeProvidersAt(expandedDir, {
         providers: {
@@ -486,6 +495,7 @@ describe('media-config OpenAI auth-file fallback', () => {
     it('expands ${HOME}/... in OD_DATA_DIR fallback', async () => {
       const subdir = '.od-test-braced';
       process.env.OD_DATA_DIR = `\${HOME}/${subdir}`;
+      process.env.OCD_DATA_DIR = `\${HOME}/${subdir}`;
       const expandedDir = path.join(homeDir, subdir);
       await writeProvidersAt(expandedDir, {
         providers: {
@@ -548,6 +558,7 @@ describe('media-config Grok / xAI OAuth fallback', () => {
     }
     delete process.env.OD_MEDIA_CONFIG_DIR;
     delete process.env.OD_DATA_DIR;
+    delete process.env.OCD_DATA_DIR;
   });
 
   afterEach(async () => {
@@ -570,8 +581,10 @@ describe('media-config Grok / xAI OAuth fallback', () => {
     }
     if (originalDataDir == null) {
       delete process.env.OD_DATA_DIR;
+      delete process.env.OCD_DATA_DIR;
     } else {
       process.env.OD_DATA_DIR = originalDataDir;
+      process.env.OCD_DATA_DIR = originalDataDir;
     }
     homedirSpy.mockRestore();
     await rm(homeDir, { recursive: true, force: true });
@@ -739,6 +752,7 @@ describe('media-config model alias resolution (issue #1277)', () => {
     delete process.env.OD_MEDIA_MODEL_ALIASES;
     delete process.env.OD_MEDIA_CONFIG_DIR;
     process.env.OD_DATA_DIR = path.join(projectRoot, '.od');
+    process.env.OCD_DATA_DIR = path.join(projectRoot, '.od');
   });
 
   afterEach(async () => {
@@ -754,8 +768,10 @@ describe('media-config model alias resolution (issue #1277)', () => {
     }
     if (originalDataDir == null) {
       delete process.env.OD_DATA_DIR;
+      delete process.env.OCD_DATA_DIR;
     } else {
       process.env.OD_DATA_DIR = originalDataDir;
+      process.env.OCD_DATA_DIR = originalDataDir;
     }
     await rm(projectRoot, { recursive: true, force: true });
   });
@@ -938,6 +954,7 @@ describe('seedProviderIfMissing', () => {
     }
     delete process.env.OD_MEDIA_CONFIG_DIR;
     process.env.OD_DATA_DIR = path.join(projectRoot, '.od');
+    process.env.OCD_DATA_DIR = path.join(projectRoot, '.od');
   });
 
   afterEach(async () => {
@@ -955,8 +972,10 @@ describe('seedProviderIfMissing', () => {
     }
     if (originalDataDir == null) {
       delete process.env.OD_DATA_DIR;
+      delete process.env.OCD_DATA_DIR;
     } else {
       process.env.OD_DATA_DIR = originalDataDir;
+      process.env.OCD_DATA_DIR = originalDataDir;
     }
     await rm(projectRoot, { recursive: true, force: true });
   });

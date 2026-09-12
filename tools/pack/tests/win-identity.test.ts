@@ -19,6 +19,7 @@ describe("resolveWinInstallIdentity", () => {
   it("keeps the default namespace on the canonical Windows display name", () => {
     expect(resolveWinInstallIdentity({ namespace: "default" })).toMatchObject({
       displayName: "OpenComputer Design",
+      exeName: "OpenComputer Design.exe",
       shortcutName: "OpenComputer Design.lnk",
       uninstallerName: "Uninstall OpenComputer Design.exe",
     });
@@ -28,6 +29,7 @@ describe("resolveWinInstallIdentity", () => {
     expect(resolveWinInstallIdentity({ namespace: "release-stable-win" })).toMatchObject({
       appPathsKey: "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\OpenComputer Design.exe",
       displayName: "OpenComputer Design",
+      exeName: "OpenComputer Design.exe",
       registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Open Design-release-stable-win",
       shortcutName: "OpenComputer Design.lnk",
       uninstallerName: "Uninstall OpenComputer Design.exe",
@@ -46,11 +48,11 @@ describe("resolveWinInstallIdentity", () => {
 
   it("keeps non-release beta-like namespaces isolated from the real beta channel identity", () => {
     expect(resolveWinInstallIdentity({ namespace: "beta-local-flow" })).toMatchObject({
-      appPathsKey: "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\Open Design beta-local-flow.exe",
-      displayName: "Open Design beta-local-flow",
+      appPathsKey: "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\OpenComputer Design beta-local-flow.exe",
+      displayName: "OpenComputer Design beta-local-flow",
       registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Open Design-beta-local-flow",
-      shortcutName: "Open Design beta-local-flow.lnk",
-      uninstallerName: "Uninstall Open Design beta-local-flow.exe",
+      shortcutName: "OpenComputer Design beta-local-flow.lnk",
+      uninstallerName: "Uninstall OpenComputer Design beta-local-flow.exe",
     });
   });
 

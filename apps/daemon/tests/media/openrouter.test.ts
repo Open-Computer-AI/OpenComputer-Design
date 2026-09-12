@@ -36,6 +36,7 @@ describe('openrouter video generation', () => {
     await mkdir(projectsRoot, { recursive: true });
     delete process.env.OD_MEDIA_CONFIG_DIR;
     process.env.OD_DATA_DIR = path.join(projectRoot, '.od');
+    process.env.OCD_DATA_DIR = path.join(projectRoot, '.od');
     process.env.OD_OPENROUTER_VIDEO_POLL_INTERVAL_MS = '0';
     process.env.OD_OPENROUTER_API_KEY = 'sk-or-test-key-1234';
   });
@@ -50,8 +51,10 @@ describe('openrouter video generation', () => {
     }
     if (originalDataDir == null) {
       delete process.env.OD_DATA_DIR;
+      delete process.env.OCD_DATA_DIR;
     } else {
       process.env.OD_DATA_DIR = originalDataDir;
+      process.env.OCD_DATA_DIR = originalDataDir;
     }
     if (originalPollInterval == null) {
       delete process.env.OD_OPENROUTER_VIDEO_POLL_INTERVAL_MS;
@@ -542,6 +545,7 @@ describe('openrouter image generation', () => {
     await mkdir(projectsRoot, { recursive: true });
     delete process.env.OD_MEDIA_CONFIG_DIR;
     process.env.OD_DATA_DIR = path.join(projectRoot, '.od');
+    process.env.OCD_DATA_DIR = path.join(projectRoot, '.od');
     process.env.OD_OPENROUTER_API_KEY = 'sk-or-img-test-key';
   });
 
@@ -555,8 +559,10 @@ describe('openrouter image generation', () => {
     }
     if (originalDataDir == null) {
       delete process.env.OD_DATA_DIR;
+      delete process.env.OCD_DATA_DIR;
     } else {
       process.env.OD_DATA_DIR = originalDataDir;
+      process.env.OCD_DATA_DIR = originalDataDir;
     }
     await rm(root, { recursive: true, force: true });
   });

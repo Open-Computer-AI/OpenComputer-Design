@@ -77,8 +77,8 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       },
     ],
     footer:
-      'The daemon writes to `./.od/` (project-local) by default. Set ' +
-      '`OD_DATA_DIR=~/.open-design` to share data across projects.',
+      'The daemon writes to `~/.opencomputer-design` by default. Set ' +
+      '`OCD_DATA_DIR` to override the data directory.',
   },
   {
     id: 'cli',
@@ -197,17 +197,17 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     tabLabel: 'MCP server',
     heading: 'Expose OpenDesign as an MCP server to any coding agent',
     intro:
-      'OpenDesign ships with a Model Context Protocol server (`od mcp`) ' +
+      'OpenDesign ships with a Model Context Protocol server (`ocd mcp`) ' +
       'that lets any MCP-capable client — Cursor, Claude Code, Antigravity, ' +
       'VS Code Copilot Chat, openclaw, hermes — discover OpenDesign tools ' +
       '(list skills, render previews, generate media, run plugins) without ' +
       'shelling out manually. The daemon publishes a ready-to-paste install ' +
       'snippet via `GET /api/mcp/install-info` for each major client.',
     bullets: [
-      'Stdio transport — no extra port, the client spawns `od mcp` directly.',
+      'Stdio transport — no extra port, the client spawns `ocd mcp` directly.',
       'Auto-discovers the live daemon URL via the local IPC status socket when launched as a sidecar.',
       'Falls back to `--daemon-url http://127.0.0.1:<port>` for plain installs so the MCP process always finds a running daemon.',
-      'Pins `OD_DATA_DIR` so the spawned MCP process writes to the same place the daemon already uses (avoids EPERM in packaged macOS app bundles).',
+      'Pins `OCD_DATA_DIR` so the spawned MCP process writes to the same place the daemon already uses (avoids EPERM in packaged macOS app bundles).',
     ],
     snippets: [
       {
@@ -217,9 +217,9 @@ export const GUIDE_SECTIONS: GuideSection[] = [
           '{\n' +
           '  "mcpServers": {\n' +
           '    "open-design": {\n' +
-          '      "command": "od",\n' +
+          '      "command": "ocd",\n' +
           '      "args": ["mcp", "--daemon-url", "http://127.0.0.1:7456"],\n' +
-          '      "env": { "OD_DATA_DIR": "~/.open-design" }\n' +
+          '      "env": { "OCD_DATA_DIR": "~/.opencomputer-design" }\n' +
           '    }\n' +
           '  }\n' +
           '}',
@@ -232,7 +232,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       {
         label: 'Live-artifacts MCP variant (read & refresh dashboards)',
         language: 'bash',
-        body: 'od mcp live-artifacts',
+        body: 'ocd mcp live-artifacts',
       },
     ],
     footer:

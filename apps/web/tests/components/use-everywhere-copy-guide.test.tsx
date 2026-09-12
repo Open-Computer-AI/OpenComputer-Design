@@ -59,6 +59,7 @@ describe('UseEverywhereGuidePanel copy guide', () => {
     );
     expect(copied).toContain('"ELECTRON_RUN_AS_NODE": "1"');
     expect(copied).not.toContain('"command": "od"');
+    expect(copied).not.toContain('"command": "ocd"');
   });
 
   it('waits for daemon install-info before copying the guide', async () => {
@@ -105,6 +106,7 @@ describe('UseEverywhereGuidePanel copy guide', () => {
     const copied = writeText.mock.calls[0]?.[0] as string;
     expect(copied).toContain('"command": "C:\\\\Program Files\\\\Open Design\\\\Open Design.exe"');
     expect(copied).not.toContain('"command": "od"');
+    expect(copied).not.toContain('"command": "ocd"');
   });
 
   it('waits for daemon install-info before copying the MCP tab snippet', async () => {
@@ -158,6 +160,7 @@ describe('UseEverywhereGuidePanel copy guide', () => {
     );
     expect(copied).toContain('"ELECTRON_RUN_AS_NODE": "1"');
     expect(copied).not.toContain('"command": "od"');
+    expect(copied).not.toContain('"command": "ocd"');
 
     await waitFor(() => {
       const mcpSection = screen.getByTestId('use-everywhere-section-mcp');
@@ -165,6 +168,7 @@ describe('UseEverywhereGuidePanel copy guide', () => {
         '"command": "C:\\\\Program Files\\\\Open Design\\\\Open Design.exe"',
       );
       expect(mcpSection.textContent).not.toContain('"command": "od"');
+      expect(mcpSection.textContent).not.toContain('"command": "ocd"');
     });
   });
 });

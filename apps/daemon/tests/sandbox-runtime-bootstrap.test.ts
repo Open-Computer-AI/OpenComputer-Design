@@ -76,10 +76,11 @@ test('sandbox runtime registry ignores host-local agent profiles at module load'
     );
 
     await withEnvSnapshot(
-      ['OD_SANDBOX_MODE', 'OD_DATA_DIR', 'OD_AGENT_PROFILES_CONFIG'],
+      ['OD_SANDBOX_MODE', 'OD_DATA_DIR', 'OCD_DATA_DIR', 'OD_AGENT_PROFILES_CONFIG'],
       async () => {
         process.env.OD_SANDBOX_MODE = '1';
         process.env.OD_DATA_DIR = dataDir;
+        process.env.OCD_DATA_DIR = dataDir;
         process.env.OD_AGENT_PROFILES_CONFIG = hostConfig;
 
         vi.resetModules();
@@ -117,10 +118,11 @@ test('sandbox runtime registry ignores implicit profiles without OD_DATA_DIR', a
     );
 
     await withEnvSnapshot(
-      ['OD_SANDBOX_MODE', 'OD_DATA_DIR', 'OD_AGENT_PROFILES_CONFIG'],
+      ['OD_SANDBOX_MODE', 'OD_DATA_DIR', 'OCD_DATA_DIR', 'OD_AGENT_PROFILES_CONFIG'],
       async () => {
         process.env.OD_SANDBOX_MODE = '1';
         delete process.env.OD_DATA_DIR;
+        delete process.env.OCD_DATA_DIR;
         delete process.env.OD_AGENT_PROFILES_CONFIG;
 
         vi.resetModules();

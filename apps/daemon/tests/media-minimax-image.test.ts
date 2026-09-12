@@ -27,6 +27,7 @@ describe('minimax image generation', () => {
     await mkdir(projectsRoot, { recursive: true });
     delete process.env.OD_MEDIA_CONFIG_DIR;
     process.env.OD_DATA_DIR = path.join(projectRoot, '.od');
+    process.env.OCD_DATA_DIR = path.join(projectRoot, '.od');
     delete process.env.OD_MINIMAX_IMAGE_BASE_URL;
     delete process.env.OD_MEDIA_MODEL_ALIASES;
     process.env.OD_MINIMAX_API_KEY = 'minimax-test-key';
@@ -46,8 +47,10 @@ describe('minimax image generation', () => {
     }
     if (originalDataDir == null) {
       delete process.env.OD_DATA_DIR;
+      delete process.env.OCD_DATA_DIR;
     } else {
       process.env.OD_DATA_DIR = originalDataDir;
+      process.env.OCD_DATA_DIR = originalDataDir;
     }
     if (originalImageBaseUrl == null) {
       delete process.env.OD_MINIMAX_IMAGE_BASE_URL;

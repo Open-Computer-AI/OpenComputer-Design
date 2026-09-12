@@ -30,8 +30,13 @@ afterEach(async () => {
   closeDatabase();
   if (dataDir) await rm(dataDir, { recursive: true, force: true });
   dataDir = null;
-  if (originalDataDir === undefined) delete process.env.OD_DATA_DIR;
-  else process.env.OD_DATA_DIR = originalDataDir;
+  if (originalDataDir === undefined) {
+    delete process.env.OD_DATA_DIR;
+    delete process.env.OCD_DATA_DIR;
+  } else {
+    process.env.OD_DATA_DIR = originalDataDir;
+    process.env.OCD_DATA_DIR = originalDataDir;
+  }
   if (originalWorkspaceContextSource === undefined) {
     delete process.env.OD_WORKSPACE_CONTEXT_SOURCE;
   } else {
@@ -44,6 +49,7 @@ it('allows headerless deletion but rejects malformed workspace metadata in works
   // Given a workspace-less local daemon with a user-created design system
   dataDir = await mkdtemp(join(tmpdir(), 'od-design-system-workspaceless-delete-'));
   process.env.OD_DATA_DIR = dataDir;
+  process.env.OCD_DATA_DIR = dataDir;
   delete process.env.OD_WORKSPACE_CONTEXT_SOURCE;
   vi.resetModules();
   const { startServer } = await import('../src/server.js');

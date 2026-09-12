@@ -42,6 +42,7 @@ describe('media alias preserves catalog-keyed capability branching (#1309 review
     delete process.env.OD_MEDIA_MODEL_ALIASES;
     delete process.env.OD_MEDIA_CONFIG_DIR;
     process.env.OD_DATA_DIR = path.join(projectRoot, '.od');
+    process.env.OCD_DATA_DIR = path.join(projectRoot, '.od');
     process.env.OPENAI_API_KEY = 'sk-test-key';
   });
 
@@ -65,8 +66,10 @@ describe('media alias preserves catalog-keyed capability branching (#1309 review
     }
     if (originalDataDir == null) {
       delete process.env.OD_DATA_DIR;
+      delete process.env.OCD_DATA_DIR;
     } else {
       process.env.OD_DATA_DIR = originalDataDir;
+      process.env.OCD_DATA_DIR = originalDataDir;
     }
     await rm(root, { recursive: true, force: true });
   });

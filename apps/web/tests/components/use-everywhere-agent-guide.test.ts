@@ -98,6 +98,7 @@ describe('buildAgentGuideMarkdown', () => {
     expect(md).toContain('"ELECTRON_RUN_AS_NODE": "1"');
     expect(md).toContain('"OD_DATA_DIR": "C:\\\\Users\\\\Ada\\\\AppData\\\\Roaming\\\\Open Design"');
     expect(md).not.toContain('"command": "od"');
+    expect(md).not.toContain('"command": "ocd"');
   });
 
   it('does not rewrite CLI snippets with POSIX env prefixes for Windows packaged installs', () => {

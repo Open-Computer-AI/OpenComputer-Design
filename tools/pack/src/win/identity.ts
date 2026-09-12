@@ -26,11 +26,12 @@ export function resolveWinInstallIdentity(config: Pick<ToolPackConfig, "namespac
   const channel = releaseChannelFromVersion(config.appVersion)
     ?? releaseChannelFromNamespace(config.namespace, SIDECAR_DEFAULTS.namespace);
   const displayName = channel == null ? `${PRODUCT_NAME} ${namespaceToken}` : releaseInstallIdentity(channel).productName;
+  const exeName = `${PRODUCT_NAME}.exe`;
 
   return {
     appPathsKey: `Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\${displayName}.exe`,
     displayName,
-    exeName: `${PRODUCT_NAME}.exe`,
+    exeName,
     registryKey: resolveWindowsUninstallRegistryKey(config.namespace),
     shortcutName: `${displayName}.lnk`,
     uninstallerName: `Uninstall ${displayName}.exe`,

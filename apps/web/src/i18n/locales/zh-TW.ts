@@ -1444,7 +1444,7 @@ export const zhTW: Dict = {
   "useEverywhere.section.overview.snippet2": "確認可正常連線",
   "useEverywhere.section.overview.snippet3": "在啟動前匯入標準成品",
   "useEverywhere.section.overview.footer":
-    "daemon 預設會寫入 `./.od/`（專案本機）。設定 `OD_DATA_DIR=~/.open-design` 即可在多個專案間共用資料。",
+    "daemon 預設會寫入 `./.od/`（專案本機）。設定 `OCD_DATA_DIR=~/.opencomputer-design` 即可在多個專案間共用資料。",
   "useEverywhere.section.cli.tab": "CLI · od",
   "useEverywhere.section.cli.heading": "從任何 shell 操作 OpenDesign",
   "useEverywhere.section.cli.intro":
@@ -1474,15 +1474,15 @@ export const zhTW: Dict = {
   "useEverywhere.section.mcp.heading":
     "將 OpenDesign 以 MCP 伺服器形式開放給任何程式設計 Agent",
   "useEverywhere.section.mcp.intro":
-    "OpenDesign 隨附一個 Model Context Protocol 伺服器（`od mcp`），讓任何支援 MCP 的用戶端 — Cursor、Claude Code、Antigravity、VS Code Copilot Chat、openclaw、hermes — 都能探索 OpenDesign 工具（列出技能、算繪預覽、產生媒體、執行外掛），而無需手動使用 shell。daemon 透過 `GET /api/mcp/install-info` 為每個主要用戶端發布可直接貼上的安裝程式碼片段。",
+    "OpenDesign 隨附一個 Model Context Protocol 伺服器（`ocd mcp`），讓任何支援 MCP 的用戶端 — Cursor、Claude Code、Antigravity、VS Code Copilot Chat、openclaw、hermes — 都能探索 OpenDesign 工具（列出技能、算繪預覽、產生媒體、執行外掛），而無需手動使用 shell。daemon 透過 `GET /api/mcp/install-info` 為每個主要用戶端發布可直接貼上的安裝程式碼片段。",
   "useEverywhere.section.mcp.bullet1":
-    "Stdio 傳輸 — 不需額外連接埠，用戶端直接產生 `od mcp` 程序。",
+    "Stdio 傳輸 — 不需額外連接埠，用戶端直接產生 `ocd mcp` 程序。",
   "useEverywhere.section.mcp.bullet2":
     "以 sidecar 模式啟動時，會透過本機 IPC 狀態 socket 自動探索運作中的 daemon URL。",
   "useEverywhere.section.mcp.bullet3":
     "針對一般安裝，會退回使用 `--daemon-url http://127.0.0.1:<port>`，讓 MCP 程序總能找到運作中的 daemon。",
   "useEverywhere.section.mcp.bullet4":
-    "固定 `OD_DATA_DIR`，讓衍生的 MCP 程序寫入 daemon 已使用的相同位置（避免在 macOS 打包應用程式套件中發生 EPERM）。",
+    "固定 `OCD_DATA_DIR`，讓衍生的 MCP 程序寫入 daemon 已使用的相同位置（避免在 macOS 打包應用程式套件中發生 EPERM）。",
   "useEverywhere.section.mcp.snippet1":
     "通用 MCP 用戶端設定（適用於 Cursor、Claude Code、Codex、…）",
   "useEverywhere.section.mcp.snippet2":

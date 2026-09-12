@@ -6,6 +6,7 @@
 //   - Throw MissingInputError when a required input is absent.
 
 import { describe, expect, it } from 'vitest';
+import os from 'node:os';
 import path from 'node:path';
 import { applyPlugin, MissingInputError } from '../src/plugins/apply.js';
 import { defaultRegistryRoots } from '../src/plugins/registry.js';
@@ -120,7 +121,9 @@ describe('applyPlugin', () => {
   it('does not require a registry roots argument (no FS access at apply time)', () => {
     // Sanity: the function must not reach for the on-disk plugin folder.
     const roots = defaultRegistryRoots();
-    const expectedDataDir = path.resolve(process.env.OD_DATA_DIR ?? path.join(process.cwd(), '.od'));
+    const expectedDataDir = path.resolve(
+      process.env.OCD_DATA_DIR || process.env.OD_DATA_DIR || path.join(os.homedir(), '.opencomputer-design'),
+    );
     expect(roots.userPluginsRoot).toBe(path.join(expectedDataDir, 'plugins'));
     const result = applyPlugin({ plugin: pluginFixture(), inputs: { topic: 'design' }, registry: REGISTRY });
     expect(result.result.appliedPlugin.pluginId).toBe('sample-plugin');

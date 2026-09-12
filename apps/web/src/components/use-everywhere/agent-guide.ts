@@ -154,7 +154,7 @@ export function agentGuideSnippetUsesMcpInstallInfo(snippet: CodeSnippet): boole
   return (
     snippet.language === 'json' &&
     snippet.body.includes('"mcpServers"') &&
-    snippet.body.includes('"command": "od"')
+    snippet.body.includes('"command": "ocd"')
   );
 }
 

@@ -61,6 +61,7 @@ beforeEach(async () => {
 
   dataDir = await mkdtemp(path.join(os.tmpdir(), 'od-mkt-ssrf-'));
   process.env.OD_DATA_DIR = dataDir;
+  process.env.OCD_DATA_DIR = dataDir;
 
   const { startServer } = await import('../src/server.js');
   const started = (await startServer({ port: 0, host: '127.0.0.1', returnServer: true })) as {
@@ -87,8 +88,13 @@ afterEach(async () => {
   canary = undefined;
   daemonShutdown = undefined;
   await rm(dataDir, { recursive: true, force: true }).catch(() => {});
-  if (PREV_DATA_DIR === undefined) delete process.env.OD_DATA_DIR;
-  else process.env.OD_DATA_DIR = PREV_DATA_DIR;
+  if (PREV_DATA_DIR === undefined) {
+    delete process.env.OD_DATA_DIR;
+    delete process.env.OCD_DATA_DIR;
+  } else {
+    process.env.OD_DATA_DIR = PREV_DATA_DIR;
+    process.env.OCD_DATA_DIR = PREV_DATA_DIR;
+  }
 }, 15000);
 
 describe('marketplace / plugin-install SSRF', () => {

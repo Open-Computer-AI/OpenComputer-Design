@@ -522,7 +522,7 @@ fsTest(
     const realPrefixBin = join(realPrefix, 'bin');
     try {
       return withEnvSnapshot(
-        ['PATH', 'OD_AGENT_HOME', 'OD_DATA_DIR', 'OD_SANDBOX_MODE', 'NPM_CONFIG_PREFIX'],
+        ['PATH', 'OD_AGENT_HOME', 'OD_DATA_DIR', 'OCD_DATA_DIR', 'OD_SANDBOX_MODE', 'NPM_CONFIG_PREFIX'],
         () => {
           mkdirSync(realPrefixBin, { recursive: true });
           writeFileSync(join(realPrefixBin, 'gemini'), '');
@@ -530,6 +530,7 @@ fsTest(
 
           delete process.env.OD_AGENT_HOME;
           process.env.OD_DATA_DIR = dataDir;
+          process.env.OCD_DATA_DIR = dataDir;
           process.env.OD_SANDBOX_MODE = '1';
           process.env.PATH = emptyPath;
           process.env.NPM_CONFIG_PREFIX = realPrefix;
@@ -560,7 +561,7 @@ fsTest(
     const emptyPath = mkdtempSync(join(tmpdir(), 'od-agents-empty-path-'));
     try {
       return withEnvSnapshot(
-        ['PATH', 'OD_AGENT_HOME', 'OD_DATA_DIR', 'OD_SANDBOX_MODE', 'NPM_CONFIG_PREFIX'],
+        ['PATH', 'OD_AGENT_HOME', 'OD_DATA_DIR', 'OCD_DATA_DIR', 'OD_SANDBOX_MODE', 'NPM_CONFIG_PREFIX'],
         () => {
           mkdirSync(sandboxBin, { recursive: true });
           const geminiPath = join(sandboxBin, 'gemini');
@@ -570,6 +571,7 @@ fsTest(
           delete process.env.OD_AGENT_HOME;
           delete process.env.NPM_CONFIG_PREFIX;
           process.env.OD_DATA_DIR = relative(projectRoot, dataDir);
+          process.env.OCD_DATA_DIR = relative(projectRoot, dataDir);
           process.env.OD_SANDBOX_MODE = '1';
           process.env.PATH = emptyPath;
 
@@ -623,7 +625,7 @@ fsTest(
   () => {
     const home = mkdtempSync(join(tmpdir(), 'od-codex-app-bundle-'));
     try {
-      return withEnvSnapshot(['PATH', 'OD_AGENT_HOME', 'OD_SANDBOX_MODE', 'OD_DATA_DIR'], () =>
+      return withEnvSnapshot(['PATH', 'OD_AGENT_HOME', 'OD_SANDBOX_MODE', 'OD_DATA_DIR', 'OCD_DATA_DIR'], () =>
         withPlatform('darwin', () => {
           const bundleDir = join(
             home,
@@ -641,6 +643,7 @@ fsTest(
           // (dev/CI) would override `home` or throw on OD_DATA_DIR.
           delete process.env.OD_SANDBOX_MODE;
           delete process.env.OD_DATA_DIR;
+          delete process.env.OCD_DATA_DIR;
           process.env.OD_AGENT_HOME = home;
           process.env.PATH = '/usr/bin:/bin';
 
@@ -661,7 +664,7 @@ fsTest(
   () => {
     const home = mkdtempSync(join(tmpdir(), 'od-codex-app-bundle-precedence-'));
     try {
-      return withEnvSnapshot(['PATH', 'OD_AGENT_HOME', 'OD_SANDBOX_MODE', 'OD_DATA_DIR'], () =>
+      return withEnvSnapshot(['PATH', 'OD_AGENT_HOME', 'OD_SANDBOX_MODE', 'OD_DATA_DIR', 'OCD_DATA_DIR'], () =>
         withPlatform('darwin', () => {
           const bundleDir = join(
             home,
@@ -685,6 +688,7 @@ fsTest(
           // honors this fixture's OD_AGENT_HOME deterministically.
           delete process.env.OD_SANDBOX_MODE;
           delete process.env.OD_DATA_DIR;
+          delete process.env.OCD_DATA_DIR;
           process.env.OD_AGENT_HOME = home;
           process.env.PATH = pathBin;
 
@@ -705,7 +709,7 @@ fsTest(
   () => {
     const home = mkdtempSync(join(tmpdir(), 'od-codex-app-bundle-linux-'));
     try {
-      return withEnvSnapshot(['PATH', 'OD_AGENT_HOME', 'OD_SANDBOX_MODE', 'OD_DATA_DIR'], () =>
+      return withEnvSnapshot(['PATH', 'OD_AGENT_HOME', 'OD_SANDBOX_MODE', 'OD_DATA_DIR', 'OCD_DATA_DIR'], () =>
         withPlatform('linux', () => {
           const bundleDir = join(
             home,
@@ -723,6 +727,7 @@ fsTest(
           // (dev/CI) would override `home` or throw on OD_DATA_DIR.
           delete process.env.OD_SANDBOX_MODE;
           delete process.env.OD_DATA_DIR;
+          delete process.env.OCD_DATA_DIR;
           process.env.OD_AGENT_HOME = home;
           process.env.PATH = '/usr/bin:/bin';
 
@@ -743,7 +748,7 @@ fsTest(
   () => {
     const home = mkdtempSync(join(tmpdir(), 'od-codex-app-bundle-id-'));
     try {
-      return withEnvSnapshot(['PATH', 'OD_AGENT_HOME', 'OD_SANDBOX_MODE', 'OD_DATA_DIR'], () =>
+      return withEnvSnapshot(['PATH', 'OD_AGENT_HOME', 'OD_SANDBOX_MODE', 'OD_DATA_DIR', 'OCD_DATA_DIR'], () =>
         withPlatform('darwin', () => {
           const bundleDir = join(
             home,
@@ -761,6 +766,7 @@ fsTest(
           // (dev/CI) would override `home` or throw on OD_DATA_DIR.
           delete process.env.OD_SANDBOX_MODE;
           delete process.env.OD_DATA_DIR;
+          delete process.env.OCD_DATA_DIR;
           process.env.OD_AGENT_HOME = home;
           process.env.PATH = '/usr/bin:/bin';
 
@@ -786,12 +792,13 @@ fsTest(
   'codexAppBundleCandidates probes /Applications first when no home override is set',
   () => {
     return withEnvSnapshot(
-      ['OD_AGENT_HOME', 'OD_SANDBOX_MODE', 'OD_DATA_DIR'],
+      ['OD_AGENT_HOME', 'OD_SANDBOX_MODE', 'OD_DATA_DIR', 'OCD_DATA_DIR'],
       () =>
         withPlatform('darwin', () => {
           delete process.env.OD_AGENT_HOME;
           delete process.env.OD_SANDBOX_MODE;
           delete process.env.OD_DATA_DIR;
+          delete process.env.OCD_DATA_DIR;
 
           const candidates = codexAppBundleCandidates();
           const bundleSuffix = join(

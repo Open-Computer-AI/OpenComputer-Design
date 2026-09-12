@@ -60,6 +60,7 @@ describe('synthetic inferno detection', () => {
   it('is available without PATH or version probes and does not call buildArgs', async () => {
     const dataDir = await mkdtemp(path.join(tmpdir(), 'inferno-detect-missing-'));
     process.env.OD_DATA_DIR = dataDir;
+    process.env.OCD_DATA_DIR = dataDir;
     const def = getAgentDef('inferno');
     expect(def).not.toBeNull();
     const buildArgs = vi.spyOn(def!, 'buildArgs');
@@ -72,6 +73,7 @@ describe('synthetic inferno detection', () => {
   it('sets authStatus from Inferno credentials', async () => {
     const dataDir = await mkdtemp(path.join(tmpdir(), 'inferno-detect-'));
     process.env.OD_DATA_DIR = dataDir;
+    process.env.OCD_DATA_DIR = dataDir;
     const def = getAgentDef('inferno')!;
     expect((await detectAgent(def)).authStatus).toBe('missing');
     await saveInfernoApiKey(dataDir, 'sk-live-abcd');

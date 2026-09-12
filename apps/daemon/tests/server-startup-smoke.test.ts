@@ -66,6 +66,7 @@ describe('daemon startup route smoke', () => {
   beforeAll(async () => {
     dataDir = await mkdtemp(join(tmpdir(), 'od-server-startup-smoke-'));
     process.env.OD_DATA_DIR = dataDir;
+    process.env.OCD_DATA_DIR = dataDir;
     vi.resetModules();
     const { startServer } = await import('../src/server.js') as ServerModule;
     started = await startServer({ port: 0, returnServer: true });
@@ -75,8 +76,13 @@ describe('daemon startup route smoke', () => {
     await Promise.resolve(started.shutdown?.());
     await new Promise<void>((resolve) => started.server.close(() => resolve()));
     await rmRecursiveWithRetry(dataDir);
-    if (originalDataDir === undefined) delete process.env.OD_DATA_DIR;
-    else process.env.OD_DATA_DIR = originalDataDir;
+    if (originalDataDir === undefined) {
+      delete process.env.OD_DATA_DIR;
+      delete process.env.OCD_DATA_DIR;
+    } else {
+      process.env.OD_DATA_DIR = originalDataDir;
+      process.env.OCD_DATA_DIR = originalDataDir;
+    }
     vi.resetModules();
   });
 

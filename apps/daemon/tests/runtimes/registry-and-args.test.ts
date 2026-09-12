@@ -107,7 +107,7 @@ test('local agent profiles skip explicit unknown baseAgent without falling back'
 test('sandbox mode ignores implicit and host explicit local agent profiles', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'od-local-agent-profiles-sandbox-'));
   try {
-    await withEnvSnapshot(['OD_AGENT_PROFILES_CONFIG', 'OD_SANDBOX_MODE', 'OD_DATA_DIR'], async () => {
+    await withEnvSnapshot(['OD_AGENT_PROFILES_CONFIG', 'OD_SANDBOX_MODE', 'OD_DATA_DIR', 'OCD_DATA_DIR'], async () => {
       const config = join(dir, 'agents.local.json');
       writeFileSync(
         config,
@@ -118,6 +118,7 @@ test('sandbox mode ignores implicit and host explicit local agent profiles', asy
 
       process.env.OD_SANDBOX_MODE = '1';
       delete process.env.OD_DATA_DIR;
+      delete process.env.OCD_DATA_DIR;
       delete process.env.OD_AGENT_PROFILES_CONFIG;
       assert.deepEqual(readLocalAgentProfileDefs(), []);
 
