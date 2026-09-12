@@ -2757,8 +2757,8 @@ function AppInner() {
   );
 
   const handleModeChange = useCallback(
-    (mode: AppConfig['mode']) => {
-      const next = { ...latestPersistedConfigRef.current, mode };
+    (_mode: AppConfig['mode']) => {
+      const next = { ...latestPersistedConfigRef.current, mode: 'api' as const };
       latestPersistedConfigRef.current = next;
       saveConfig(next);
       setConfig(next);

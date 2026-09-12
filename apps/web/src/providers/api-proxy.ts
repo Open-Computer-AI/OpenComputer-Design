@@ -35,6 +35,11 @@ export interface ProxyContext {
   byokSpeechVoice?: string;
 }
 
+export interface StreamProxyBodyOptions {
+  omitBaseUrl?: boolean;
+  omitApiKey?: boolean;
+}
+
 export async function streamProxyEndpoint(
   endpoint: string,
   cfg: AppConfig,
@@ -43,8 +48,9 @@ export async function streamProxyEndpoint(
   signal: AbortSignal,
   handlers: StreamHandlers,
   context?: ProxyContext,
+  options?: StreamProxyBodyOptions,
 ): Promise<void> {
-  if (!cfg.apiKey) {
+  if (!options?.omitApiKey && !cfg.apiKey) {
     handlers.onError(new Error('Missing API key — open Settings and paste one in.'));
     return;
   }
@@ -62,8 +68,8 @@ export async function streamProxyEndpoint(
           : {}),
       },
       body: JSON.stringify({
-        baseUrl: cfg.baseUrl,
-        apiKey: cfg.apiKey,
+        ...(options?.omitBaseUrl ? {} : { baseUrl: cfg.baseUrl }),
+        ...(options?.omitApiKey ? {} : { apiKey: cfg.apiKey }),
         model: cfg.model,
         systemPrompt: system,
         messages,

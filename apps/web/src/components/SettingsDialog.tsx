@@ -32,7 +32,6 @@ import {
   trackSettingsDesignReviewClick,
   trackSettingsLanguageClick,
   trackSettingsLocalCliClick,
-  trackSettingsExecutionModeTabClick,
   trackSettingsMediaProvidersClick,
   trackSettingsNotificationsClick,
   trackSettingsPrivacyClick,
@@ -2184,31 +2183,6 @@ export function SettingsDialog({
     };
   }, []);
 
-  const installedCount = useMemo(
-    () => agents.filter((a) => a.available && isVisibleLocalCliAgent(a)).length,
-    [agents],
-  );
-
-  const setMode = (mode: ExecMode) => {
-    setCfg((c) => {
-      const modeBefore = executionModeToTracking(c.mode);
-      const modeAfter = executionModeToTracking(mode);
-      if (modeBefore !== modeAfter) {
-        trackSettingsExecutionModeTabClick(analytics.track, {
-          page_name: 'settings',
-          area: 'configure_execution_mode',
-          element: 'execution_mode_tab',
-          action: 'switch_execution_mode',
-          mode_before: modeBefore,
-          mode_after: modeAfter,
-        });
-      }
-      if (mode === 'api' && c.mode !== 'api') {
-        return restorePendingByokProviderDraft({ ...c, mode });
-      }
-      return { ...c, mode };
-    });
-  };
   const setByokProvider = (provider: ByokProviderPreset) => {
     const currentDraftKey = byokProviderKeyForConfig(cfg);
     const currentApiConfig = currentApiProtocolConfig(cfg);
@@ -2368,7 +2342,7 @@ export function SettingsDialog({
         (agent) => agent.id === 'deepseek-harness' && agent.available,
       );
       if (!installed) throw new Error(t('settings.dshSetupRequired'));
-      setCfg((current) => ({ ...current, agentId: installed.id, mode: 'daemon' }));
+      setCfg((current) => ({ ...current, agentId: 'inferno', mode: 'api' }));
       setDshSetup(null);
       setAgentTestState({ status: 'running' });
       const choice = cfg.agentModels?.[installed.id] ?? {};
@@ -4462,56 +4436,6 @@ export function SettingsDialog({
           <div className="settings-content" ref={settingsContentRef}>
           {activeSection === 'execution' ? (
             <>
-              {/* Sticky shell: the 本机 CLI / API 提供商 switch stays pinned
-                  while the agent list scrolls. The wrapper (not .seg-control
-                  itself) is sticky so it can paint an opaque full-width strip
-                  behind the pill — otherwise cards would show through around
-                  the pill's rounded corners mid-scroll. */}
-              <div className="settings-execution-sticky">
-              <div
-                className="seg-control"
-                role="tablist"
-                aria-label={t('settings.modeAria')}
-                style={{ ['--seg-cols' as string]: 2 } as CSSProperties}
-              >
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={cfg.mode === 'daemon'}
-                  className={
-                    'seg-btn seg-btn--inline' +
-                    (cfg.mode === 'daemon' ? ' active' : '')
-                  }
-                  disabled={!daemonLive}
-                  onClick={() => setMode('daemon')}
-                  title={
-                    daemonLive
-                      ? t('settings.modeDaemonHelp')
-                      : t('settings.modeDaemonOffline')
-                  }
-                >
-                  <span className="seg-title">{t('settings.localCli')}</span>
-                  <span className="seg-meta">
-                    {daemonLive
-                      ? t('settings.modeDaemonInstalledMeta', { count: installedCount })
-                      : t('settings.modeDaemonOfflineMeta')}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={cfg.mode === 'api'}
-                  className={
-                    'seg-btn seg-btn--inline' +
-                    (cfg.mode === 'api' ? ' active' : '')
-                  }
-                  onClick={() => setMode('api')}
-                >
-                  <span className="seg-title">{t('settings.modeApiMeta')}</span>
-                  <span className="seg-meta">{t('settings.modeApi')}</span>
-                </button>
-              </div>
-              </div>
               {cfg.mode === 'daemon' && !amrCardSignedIn ? (
                 // Only prompt to sign into OpenDesign Cloud when NOT already
                 // signed in — the AMR/vela session IS the cloud identity (one

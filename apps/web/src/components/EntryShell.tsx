@@ -1229,7 +1229,7 @@ export function EntryShell({
   // otherwise keep the BYOK provider even after agent/model ids change.
   const applyDeepSeekCampaignModel = useCallback(
     (agentId: string, modelId: string) => {
-      onModeChange('daemon');
+      onModeChange('api');
       onAgentChange(agentId);
       onAgentModelChange(agentId, { model: modelId });
     },
@@ -2730,7 +2730,7 @@ function OnboardingView({
     cliScanTokenRef.current = scanToken;
     clearAgentRevealTimers();
     setRuntime('local');
-    onModeChange('daemon');
+    onModeChange('api');
     setCliScanStatus('scanning');
     if (options.clearVisible) setVisibleAgentIds([]);
     const onboardingSessionId = onboardingSessionIdRef.current;
@@ -2855,7 +2855,7 @@ function OnboardingView({
         is_recommended: true,
       });
       setRuntime('amr');
-      onModeChange('daemon');
+      onModeChange('api');
       onAgentChange('amr');
       completeStreamlinedOnboarding('amr_cloud');
       return;
@@ -2946,7 +2946,7 @@ function OnboardingView({
       if (!continueAttemptStillCurrent('local', startedInputKey)) return;
       await onConfigPersist({
         ...config,
-        mode: 'daemon',
+        mode: 'api',
         agentId: selectedAgent.id,
       });
       emitOnboardingClick('continue', 'continue', { runtime_type: 'local_cli' });
@@ -3397,7 +3397,7 @@ function OnboardingView({
         ),
         { stagger: false },
       );
-      onModeChange('daemon');
+      onModeChange('api');
       onAgentChange(installed.id);
       setDshSetup(null);
 
@@ -3889,7 +3889,7 @@ function OnboardingView({
                       setDshSetup({ busy: false, error: null });
                       return;
                     }
-                    onModeChange('daemon');
+                    onModeChange('api');
                     onAgentChange(agentId);
                   }}
                   onSelectModel={(model) => {

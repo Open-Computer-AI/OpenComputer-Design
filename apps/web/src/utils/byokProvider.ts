@@ -31,15 +31,17 @@ export function byokProviderRequiresApiKey(
  * `providers/openai-compatible` 整条链拖进来 —— amr-guidance 刻意不带运行时依赖
  * (见该文件头注释)。本模块只有 `import type`,运行时是空的。
  */
+export const INFERNO_AGENT_ID = 'inferno';
+
 export const API_PROTOCOL_AGENT_IDS: Record<ApiProtocol, string> = {
-  anthropic: 'anthropic-api',
-  openai: 'openai-api',
-  azure: 'azure-openai-api',
-  google: 'google-gemini-api',
-  ollama: 'ollama-cloud-api',
-  senseaudio: 'senseaudio-api',
-  aihubmix: 'aihubmix-api',
-  bedrock: 'bedrock-api',
+  anthropic: INFERNO_AGENT_ID,
+  openai: INFERNO_AGENT_ID,
+  azure: INFERNO_AGENT_ID,
+  google: INFERNO_AGENT_ID,
+  ollama: INFERNO_AGENT_ID,
+  senseaudio: INFERNO_AGENT_ID,
+  aihubmix: INFERNO_AGENT_ID,
+  bedrock: INFERNO_AGENT_ID,
 };
 
 /** daemon 模式下那台替 BYOK 跑活的 OpenCode。 */
