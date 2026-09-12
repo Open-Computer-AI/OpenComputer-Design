@@ -193,7 +193,7 @@ describe('unpaid DeepSeek path opens public Pricing', () => {
 
     expect(open).toHaveBeenCalledTimes(1);
     const url = new URL(String(open.mock.calls[0]?.[0]));
-    expect(url.origin + url.pathname).toBe('https://open-design.ai/pricing/');
+    expect(url.origin + url.pathname).toBe('https://tryopencomputer.com/pricing/');
     expect(url.searchParams.get('od_locale')).toBe('en');
     expect(url.searchParams.get('od_entry_source')).toBe('deepseek_unpaid_modal');
     expect(url.searchParams.get('od_campaign_id')).toBe('deepseek_v4_pro');
@@ -218,7 +218,7 @@ describe('unpaid DeepSeek path opens public Pricing', () => {
     expect(open).toHaveBeenCalledTimes(1);
     const url = new URL(String(open.mock.calls[0]?.[0]));
     expect(url.searchParams.get('od_device_id')).toBeNull();
-    expect(url.origin + url.pathname).toBe('https://open-design.ai/pricing/');
+    expect(url.origin + url.pathname).toBe('https://tryopencomputer.com/pricing/');
   });
 
   it('shares the DeepSeek frequency key with the paid campaign', () => {

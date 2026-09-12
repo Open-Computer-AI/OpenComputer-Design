@@ -9,7 +9,7 @@ export const GO_PLAN_CAMPAIGN = {
   },
 } as const;
 
-export const GO_PLAN_PRICING_URL = 'https://open-design.ai/pricing/';
+export const GO_PLAN_PRICING_URL = 'https://tryopencomputer.com/pricing/';
 
 const LANDING_LOCALE_BY_APP_LOCALE: Record<Locale, string> = {
   en: 'en',
