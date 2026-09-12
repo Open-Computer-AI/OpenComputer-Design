@@ -260,6 +260,35 @@ function inferApiProtocol(model: string, baseUrl: string): ApiProtocol {
   }
 }
 
+function pinInfernoHost(config: AppConfig): boolean {
+  let changed = false;
+  if (config.mode !== 'api') {
+    config.mode = 'api';
+    changed = true;
+  }
+  if (config.agentId !== 'inferno') {
+    config.agentId = 'inferno';
+    changed = true;
+  }
+  if (config.onboardingCompleted !== true) {
+    config.onboardingCompleted = true;
+    changed = true;
+  }
+  if (config.apiProtocol !== 'openai') {
+    config.apiProtocol = 'openai';
+    changed = true;
+  }
+  if (config.baseUrl !== INFERNO_BASE_URL) {
+    config.baseUrl = INFERNO_BASE_URL;
+    changed = true;
+  }
+  if (config.apiProviderBaseUrl !== INFERNO_BASE_URL) {
+    config.apiProviderBaseUrl = INFERNO_BASE_URL;
+    changed = true;
+  }
+  return changed;
+}
+
 function migrateRetiredKnownProviderModel(
   protocol: ApiProtocol,
   config: Pick<
@@ -406,16 +435,7 @@ export function loadConfig(): AppConfig {
       merged.baseUrl = resolveFixedOriginBaseUrl(merged.apiProtocol, merged.baseUrl);
     }
 
-    if (merged.mode !== 'api') {
-      merged.mode = 'api';
-      migratedConfig = true;
-    }
-    if (merged.agentId !== 'inferno') {
-      merged.agentId = 'inferno';
-      migratedConfig = true;
-    }
-    if (merged.onboardingCompleted !== true) {
-      merged.onboardingCompleted = true;
+    if (pinInfernoHost(merged)) {
       migratedConfig = true;
     }
 
@@ -663,6 +683,7 @@ export function saveConfig(config: AppConfig): void {
     ...config,
     agentCliEnv: sanitizeAgentCliEnv(config.agentCliEnv),
   };
+  pinInfernoHost(sanitized);
   for (const key of DAEMON_OWNED_KEYS) {
     delete (sanitized as unknown as Record<string, unknown>)[key];
   }
@@ -706,11 +727,13 @@ export function mergeDaemonConfig(
   localConfig: AppConfig,
   daemonConfig: AppConfigPrefs | null,
 ): AppConfig {
-  const next = { ...localConfig, mode: 'api' as const, agentId: 'inferno' };
+  const next = { ...localConfig };
+  pinInfernoHost(next);
   if (!daemonConfig) return next;
 
   next.onboardingCompleted = true;
   next.agentId = 'inferno';
+  pinInfernoHost(next);
   if (daemonConfig.skillId !== undefined) {
     next.skillId = daemonConfig.skillId;
   }

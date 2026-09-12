@@ -206,13 +206,16 @@ import {
 import { TasksView } from './TasksView';
 import {
   API_KEY_PLACEHOLDERS,
-  API_PROTOCOL_TABS,
   SUGGESTED_MODELS_BY_PROTOCOL,
 } from '../state/apiProtocols';
 import { defaultKnownProviderModel, KNOWN_PROVIDERS } from '../state/config';
 import type { KnownProvider } from '../state/config';
-import { testAgent, testApiProvider } from '../providers/connection-test';
-import { fetchProviderModels } from '../providers/provider-models';
+import { testAgent } from '../providers/connection-test';
+import {
+  fetchInfernoProviderModels,
+  INFERNO_MODELS_CACHE_KEY,
+  testInfernoConnection,
+} from '../providers/inferno-status';
 import { invalidateProjectFilesCache } from '../providers/registry';
 import {
   cancelVelaLogin,
@@ -233,7 +236,6 @@ import { summarizeProjectNameFromPrompt } from '../utils/projectName';
 import { deepSeekHarnessNeedsSetup } from '../utils/visibleAgents';
 import { LIBRARY_UI_VISIBLE } from '../features/libraryUi';
 import {
-  providerModelsCacheKey,
   type ProviderModelsCache,
 } from './providerModelsCache';
 import {
@@ -2229,33 +2231,17 @@ function OnboardingView({
   const apiProtocol = config.apiProtocol ?? 'anthropic';
   const providerTestInputKey = [
     apiProtocol,
-    config.baseUrl.trim(),
     config.model.trim(),
-    config.apiKey.trim(),
-    config.apiVersion?.trim() ?? '',
   ].join('\n');
-  const providerModelsInputKey = providerModelsCacheKey(
-    apiProtocol,
-    config.baseUrl,
-    config.apiKey,
-    config.apiVersion ?? '',
-  );
+  const providerModelsInputKey = INFERNO_MODELS_CACHE_KEY;
   providerModelAutoSelectRef.current = {
     model: config.model,
     providerModelsInputKey,
     runtime,
     step,
   };
-  const canTestProvider =
-    Boolean(config.apiKey.trim()) &&
-    Boolean(config.baseUrl.trim()) &&
-    Boolean(config.model.trim());
-  const canFetchProviderModels =
-    apiProtocol !== 'azure' &&
-    apiProtocol !== 'ollama' &&
-    Boolean(config.apiKey.trim()) &&
-    Boolean(config.baseUrl.trim()) &&
-    isLikelyHttpUrl(config.baseUrl);
+  const canTestProvider = Boolean(config.model.trim());
+  const canFetchProviderModels = true;
   const visibleProviderTestState =
     providerTestState.status !== 'idle' &&
     providerTestState.inputKey === providerTestInputKey
@@ -2569,17 +2555,10 @@ function OnboardingView({
     });
   }
   const protocolProviders = KNOWN_PROVIDERS.filter((provider) => provider.protocol === apiProtocol);
-  const hasProtocolOwnedEmptyProvider =
-    apiProtocol === 'azure' && protocolProviders.some((provider) => provider.baseUrl === '');
-  const byokProviderOptions = [
-    ...(hasProtocolOwnedEmptyProvider
-      ? []
-      : [{ value: '', label: t('settings.customProvider') }]),
-    ...protocolProviders.map((provider) => ({
-      value: provider.baseUrl,
-      label: provider.label,
-    })),
-  ];
+  const byokProviderOptions = protocolProviders.map((provider) => ({
+    value: provider.baseUrl,
+    label: provider.label,
+  }));
   const agentModelOptions =
     selectedAgent?.models?.map((model) => ({
       value: model.id,
@@ -3309,20 +3288,12 @@ function OnboardingView({
   function testProviderInline(): Promise<ConnectionTestResponse | null> {
     if (!canTestProvider) return Promise.resolve(null);
     const inputKey = providerTestInputKey;
-    const protocol = apiProtocol;
-    const baseUrl = config.baseUrl;
-    const apiKey = config.apiKey;
     const model = config.model;
-    const apiVersion =
-      protocol === 'azure' ? config.apiVersion?.trim() || undefined : undefined;
     return startOrJoinInlineTest(providerTestRunRef, inputKey, async (signal) => {
       providerAutoTestKeyRef.current = inputKey;
       setProviderTestState({ status: 'running', inputKey });
       try {
-        const result = await testApiProvider(
-          { protocol, baseUrl, apiKey, model, apiVersion },
-          signal,
-        );
+        const result = await testInfernoConnection(model, signal);
         setProviderTestState({ status: 'done', inputKey, result });
         return result;
       } catch (error) {
@@ -3460,11 +3431,7 @@ function OnboardingView({
     }
     setProviderModelsState({ status: 'running', inputKey });
     try {
-      const result = await fetchProviderModels({
-        protocol: apiProtocol,
-        baseUrl: config.baseUrl,
-        apiKey: config.apiKey,
-      });
+      const result = await fetchInfernoProviderModels();
       if (result.ok && result.models?.length) {
         selectPreferredProviderModelWhenEmpty(result.models, inputKey);
         activeSetProviderModelsCache((current) => ({
@@ -4121,17 +4088,14 @@ function OnboardingCliSetupPanel({
 function OnboardingByokSetupPanel({
   apiProtocol,
   apiKey,
-  baseUrl,
   model,
   selectedProvider,
   providerOptions,
   apiKeyVisible,
   onToggleApiKey,
-  onProtocolChange,
   onProviderChange,
   onApiKeyChange,
   onModelChange,
-  onBaseUrlChange,
   modelOptions,
   testState,
   canTest,
@@ -4199,34 +4163,17 @@ function OnboardingByokSetupPanel({
           </button>
         </div>
       </div>
-      <div
-        className="onboarding-view__protocol-strip"
-        role="tablist"
-        aria-label={t('settings.protocolAria')}
-      >
-        {API_PROTOCOL_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={apiProtocol === tab.id}
-            className={apiProtocol === tab.id ? 'is-selected' : ''}
-            onClick={() => onProtocolChange(tab.id)}
-          >
-            {tab.title}
-          </button>
-        ))}
-      </div>
-      <OnboardingDropdown
-        label={t('settings.quickFillProvider')}
-        placeholder={t('settings.customProvider')}
-        value={selectedProvider?.baseUrl ?? ''}
-        options={providerOptions}
-        onChange={onProviderChange}
-        allowEmptyValue={apiProtocol === 'azure'}
-        searchable
-        searchPlaceholder={t('settings.quickFillProvider')}
-      />
+      {providerOptions.length > 1 ? (
+        <OnboardingDropdown
+          label={t('settings.quickFillProvider')}
+          placeholder={t('settings.customProvider')}
+          value={selectedProvider?.baseUrl ?? ''}
+          options={providerOptions}
+          onChange={onProviderChange}
+          searchable
+          searchPlaceholder={t('settings.quickFillProvider')}
+        />
+      ) : null}
       <label className="onboarding-view__inline-field">
         <span>{t('settings.apiKey')}</span>
         <span className="onboarding-view__field-row">
@@ -4242,16 +4189,6 @@ function OnboardingByokSetupPanel({
         </span>
       </label>
       <div className="onboarding-view__compact-fields">
-        <label className="onboarding-view__inline-field">
-          <span>{t('settings.baseUrl')}</span>
-          <input
-            type="url"
-            inputMode="url"
-            value={baseUrl}
-            placeholder={selectedProvider?.baseUrl ?? 'https://api.anthropic.com'}
-            onChange={(event) => onBaseUrlChange(event.target.value)}
-          />
-        </label>
         {modelOptions.length > 0 && !useDeploymentInput ? (
           <OnboardingDropdown
             label={t('settings.model')}
@@ -4329,15 +4266,6 @@ function onboardingProviderModelsVariant(
   if (result.ok) return 'success';
   if (result.kind === 'rate_limited' || result.kind === 'no_models') return 'warn';
   return 'error';
-}
-
-function isLikelyHttpUrl(value: string): boolean {
-  try {
-    const parsed = new URL(value.trim());
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-  } catch {
-    return false;
-  }
 }
 
 function mergeOnboardingProviderModelOptions(

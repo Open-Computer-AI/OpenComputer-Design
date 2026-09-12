@@ -9,6 +9,8 @@ import type {
   WorkspaceCollabContext,
 } from '@open-design/contracts';
 import { streamViaDaemon } from '../providers/daemon';
+import { streamMessage } from '../providers/anthropic';
+import { composeInfernoSystemPrompt } from '../providers/inferno-prompt';
 import {
   connectConnector,
   createDesignSystemDraft,
@@ -2400,7 +2402,7 @@ export function DesignSystemDetailView({
         setActiveConversationId(fresh.id);
         conversationId = fresh.id;
       }
-      if (config.mode !== 'daemon' || !config.agentId) {
+      if (config.mode !== 'api' && (config.mode !== 'daemon' || !config.agentId)) {
         setChatError(t('dsFlow.pickLocalAgentFirst'));
         return;
       }
@@ -2510,6 +2512,103 @@ export function DesignSystemDetailView({
       const wasOnboardingHandoff =
         Boolean(peekOnboardingSessionId())
         || sessionStorage.getItem(`od:auto-send-first:${projectId}`) === '1';
+      const infernoHandlers = {
+          onDelta: (delta: string) => {
+            updateAssistant((message) => ({
+              ...message,
+              content: message.content + delta,
+              events: [...(message.events ?? []), { kind: 'text', text: delta }],
+            }));
+          },
+          onDone: () => {
+            updateAssistant(
+              (message) => ({
+                ...message,
+                endedAt: Date.now(),
+                runStatus: message.runStatus === 'failed' || message.runStatus === 'canceled'
+                  ? message.runStatus
+                  : 'succeeded',
+              }),
+              true,
+            );
+            setChatStreaming(false);
+            chatAbortRef.current = null;
+            chatCancelRef.current = null;
+            pendingWorkspaceFileWritesRef.current.clear();
+            void (async () => {
+              const nextFiles = await refreshWorkspaceProjectFiles(projectId);
+              if (!nextFiles) return;
+              const synced = await syncDesignSystemBodyFromWorkspace(projectId);
+              void syncDesignSystemAssetsFromWorkspace();
+              const audit = await fetchProjectDesignSystemPackageAudit(
+                projectId,
+                workspaceContext,
+              );
+              const auditSummary = audit ? summarizeDesignSystemPackageAudit(audit) : null;
+              if (auditSummary) {
+                updateAssistant(
+                  (message) => ({
+                    ...message,
+                    events: [...(message.events ?? []), { kind: 'status', label: 'audit', detail: auditSummary }],
+                  }),
+                  true,
+                );
+              }
+              const repairPrompt = audit ? buildDesignSystemPackageAuditRepairPrompt(audit) : null;
+              if (auditSummary) {
+                setStatusLine(
+                  repairPrompt
+                    ? t('dsFlow.auditNeedsRepair', { summary: auditSummary })
+                    : t('dsFlow.workspaceUpdatedWithAudit', { summary: auditSummary }),
+                );
+              } else {
+                setStatusLine(
+                  synced
+                    ? t('dsFlow.workspaceUpdatedSynced')
+                    : t('dsFlow.workspaceUpdatedReview'),
+                );
+              }
+              await onProjectsRefresh?.();
+            })().catch(() => {
+              setChatError(t('dsFlow.workspaceOpenFailed'));
+            });
+          },
+          onError: (error: Error) => {
+            const message = error.message;
+            setChatError(message);
+            updateAssistant(
+              (previous) => ({
+                ...appendErrorStatusEvent(previous, message),
+                endedAt: Date.now(),
+                runStatus: 'failed' as const,
+              }),
+              true,
+            );
+            setChatStreaming(false);
+            chatAbortRef.current = null;
+            chatCancelRef.current = null;
+            pendingWorkspaceFileWritesRef.current.clear();
+          },
+      };
+      if (config.mode === 'api') {
+        const infernoSystemPrompt = await composeInfernoSystemPrompt({
+          locale,
+          designSystemId: system.id,
+          designSystemBody: system.body,
+          designSystemTitle: system.title,
+          workspaceContext,
+        });
+        if (controller.signal.aborted) return;
+        void streamMessage(
+          config,
+          infernoSystemPrompt,
+          agentHistory,
+          controller.signal,
+          infernoHandlers,
+          { projectId, workspaceContext },
+        );
+        return;
+      }
       void streamViaDaemon({
         agentId: config.agentId,
         history: agentHistory,
@@ -2681,6 +2780,7 @@ export function DesignSystemDetailView({
       activeConversationId,
       agents,
       chatStreaming,
+      config,
       config.agentId,
       config.agentModels,
       config.mode,
@@ -2698,6 +2798,7 @@ export function DesignSystemDetailView({
       syncDesignSystemBodyFromWorkspace,
       system,
       t,
+      workspaceContext,
       workspaceProjectId,
     ],
   );

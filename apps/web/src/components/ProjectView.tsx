@@ -21,6 +21,7 @@ import { recoverHtmlDocumentFromMarkdownFence, recoverStandaloneHtmlDocument, re
 import { createArtifactParser } from '../artifacts/parser';
 import { useI18n } from '../i18n';
 import { streamMessage } from '../providers/anthropic';
+import { composeInfernoSystemPrompt } from '../providers/inferno-prompt';
 import {
   type DaemonAgentReconnectState,
   type DaemonAgentRetryState,
@@ -8120,8 +8121,7 @@ export function ProjectView({
       );
       const byokOpenCodeProvider = byokOpenCodeProviderFromConfig(config);
       const requiresByokPreflight =
-        (config.mode === 'api' && config.apiProtocol !== 'bedrock') ||
-        (config.mode === 'daemon' && config.agentId === 'byok-opencode');
+        config.mode === 'daemon' && config.agentId === 'byok-opencode';
       if (requiresByokPreflight && !byokOpenCodeProvider) {
         const blockReason = byokPreflightBlockReason(config) ?? 'config_invalid';
         const recoveryActionInstanceId = `blocked:${taskAnalytics.taskExecutionId}`;
@@ -9952,15 +9952,6 @@ export function ProjectView({
         return true;
       } else {
         const userText = (userMsg.content ?? '').trim();
-        const byokChatProvider = byokOpenCodeProvider
-          ? {
-              provider: byokOpenCodeProvider.protocol,
-              apiKey: byokOpenCodeProvider.apiKey,
-              baseUrl: byokOpenCodeProvider.baseUrl,
-              apiVersion: byokOpenCodeProvider.apiVersion,
-              model: byokOpenCodeProvider.model,
-            }
-          : undefined;
         if (userText.length > 0) {
           try {
             await fetch('/api/memory/extract', {
@@ -9970,7 +9961,6 @@ export function ProjectView({
                 userMessage: userText,
                 projectId: project.id,
                 conversationId: runConversationId,
-                byokChatProvider,
               }),
             });
           } catch {
@@ -9993,9 +9983,18 @@ export function ProjectView({
             workspaceContext: projectRunWorkspaceContext,
           },
         );
+        const infernoSystemPrompt = await composeInfernoSystemPrompt({
+          locale,
+          sessionMode: runSessionMode,
+          metadata: project.metadata,
+          skillId: project.skillId ?? config.skillId,
+          designSystemId: runtimeDesignSystemId ?? project.designSystemId,
+          workspaceContext: projectRunWorkspaceContext,
+        });
+        if (controller.signal.aborted) return true;
         void streamMessage(
           config,
-          '',
+          infernoSystemPrompt,
           infernoHistory,
           controller.signal,
           handlers,

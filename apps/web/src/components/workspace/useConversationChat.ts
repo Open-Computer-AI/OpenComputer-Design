@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { streamViaDaemon } from '../../providers/daemon';
+import { streamMessage } from '../../providers/anthropic';
+import { composeInfernoSystemPrompt } from '../../providers/inferno-prompt';
 import { listMessages, saveMessage } from '../../state/projects';
 import {
   appendErrorStatusEvent,
@@ -192,11 +194,11 @@ export function useConversationChat(
         workspaceContext,
       } = ctxRef.current;
       if (messagesReadyScopeKeyRef.current !== messageScopeKey) return;
-      if (cfg.mode !== 'daemon') {
+      if (cfg.mode !== 'api' && cfg.mode !== 'daemon') {
         setError('Side Chat needs a local agent. Pick one in the top bar.');
         return;
       }
-      if (!cfg.agentId) {
+      if (cfg.mode === 'daemon' && !cfg.agentId) {
         setError('Pick a local agent first (top bar).');
         return;
       }
@@ -324,6 +326,25 @@ export function useConversationChat(
           clearRefs();
         },
       };
+
+      if (cfg.mode === 'api') {
+        void (async () => {
+          const infernoSystemPrompt = await composeInfernoSystemPrompt({
+            locale: loc,
+            sessionMode,
+            skillId: cfg.skillId,
+            designSystemId: cfg.designSystemId,
+            workspaceContext,
+          });
+          if (controller.signal.aborted) return;
+          await streamMessage(cfg, infernoSystemPrompt, history, controller.signal, {
+            onDelta: handlers.onDelta,
+            onDone: handlers.onDone,
+            onError: handlers.onError,
+          });
+        })();
+        return;
+      }
 
       void streamViaDaemon({
         agentId: cfg.agentId,

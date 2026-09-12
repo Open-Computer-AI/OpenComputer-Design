@@ -91,15 +91,18 @@ import type { KnownProvider } from '../state/config';
 import { navigate as navigateRoute, useRoute } from '../router';
 import {
   API_PROTOCOL_TABS,
-  DEFAULT_BASE_URL_BY_PROTOCOL,
   API_PROTOCOL_LABELS,
   isFixedOriginGateway,
   resolveFixedOriginBaseUrl,
   SUGGESTED_MODELS_BY_PROTOCOL,
 } from '../state/apiProtocols';
 import {
+  fetchInfernoProviderModels,
+  INFERNO_MODELS_CACHE_KEY,
+  testInfernoConnection,
+} from '../providers/inferno-status';
+import {
   mergeProviderModelOptions,
-  providerModelsCacheKey,
   type ProviderModelsCache,
 } from './providerModelsCache';
 export {
@@ -129,9 +132,7 @@ import type {
 } from '../types';
 import {
   testAgent,
-  testApiProvider,
 } from '../providers/connection-test';
-import { fetchProviderModels } from '../providers/provider-models';
 import {
   fetchConnectors,
   fetchDesignTemplates,
@@ -1852,24 +1853,7 @@ export function SettingsDialog({
       ? onProviderModelsCacheChange!
       : setLocalProviderModelsCache;
   const [providerModelsCommittedKey, setProviderModelsCommittedKey] =
-    useState<string | null>(() => {
-      const protocol = initial.apiProtocol ?? 'anthropic';
-      if (
-        initial.mode !== 'api' ||
-        protocol === 'azure' ||
-        protocol === 'ollama' ||
-        missingByokModelFetchFields(initial, protocol).length > 0 ||
-        !isValidApiBaseUrl(initial.baseUrl)
-      ) {
-        return null;
-      }
-      return providerModelsCacheKey(
-        protocol,
-        initial.baseUrl,
-        initial.apiKey,
-        initial.apiVersion ?? '',
-      );
-    });
+    useState<string | null>(INFERNO_MODELS_CACHE_KEY);
   const agentTestAbortRef = useRef<AbortController | null>(null);
   const providerTestAbortRef = useRef<AbortController | null>(null);
   const providerModelsAbortRef = useRef<AbortController | null>(null);
@@ -2566,8 +2550,10 @@ export function SettingsDialog({
     if (providerTestState.status === 'running') {
       return;
     }
-    const blockingIssues = blockingByokDraftIssues(byokDraftValidation);
-    const hasFirstPartyHostTypo = Boolean(byokFirstPartyBaseUrl?.hostTypo);
+    const blockingIssues = blockingByokDraftIssues(byokDraftValidation).filter(
+      (issue) => issue.field === 'model',
+    );
+    const hasFirstPartyHostTypo = false;
     const currentConfigKey = providerConnectionTestKey(apiProtocol, cfg);
     const lastUnsuccessfulConfigKey = byokLastUnsuccessfulTestKeyRef.current;
     const configKeyChanged = lastUnsuccessfulConfigKey !== null &&
@@ -2618,19 +2604,7 @@ export function SettingsDialog({
       }
     };
     try {
-      const result = await testApiProvider(
-        {
-          protocol: apiProtocol,
-          baseUrl: cfg.baseUrl,
-          apiKey: cleanByokApiKey(cfg.apiKey),
-          model: cfg.model,
-          apiVersion:
-            apiProtocol === 'azure'
-              ? cfg.apiVersion?.trim() || undefined
-              : undefined,
-        },
-        controller.signal,
-      );
+      const result = await testInfernoConnection(cfg.model, controller.signal);
       if (controller.signal.aborted) return;
       if (providerTestRevisionRef.current !== revision) {
         clearIfStale();
@@ -2699,10 +2673,9 @@ export function SettingsDialog({
     if (providerTestState.status === 'running') {
       return;
     }
-    if (byokFirstPartyBaseUrl?.hostTypo) {
-      return;
-    }
-    if (blockingByokDraftIssues(byokDraftValidation).length > 0) {
+    if (
+      blockingByokDraftIssues(byokDraftValidation).some((issue) => issue.field === 'model')
+    ) {
       return;
     }
     const key = providerConnectionTestKey(apiProtocol, cfg);
@@ -2738,84 +2711,7 @@ export function SettingsDialog({
     if (providerModelsState.status === 'running') {
       return;
     }
-    if (apiProtocol === 'azure') {
-      trackModelsFetchResult({
-        result: 'failed',
-        error_code: 'unsupported_azure',
-        error_kind: 'unsupported_azure',
-        duration_ms: 0,
-      });
-      if (!options.silent) {
-        setByokPreconditionNotice({
-          action: 'test',
-          message: t('settings.fetchModelsUnsupportedAzure'),
-        });
-      }
-      return;
-    }
-    if (apiProtocol === 'ollama') {
-      trackModelsFetchResult({
-        result: 'failed',
-        error_code: 'unsupported_ollama',
-        error_kind: 'unsupported_ollama',
-        duration_ms: 0,
-      });
-      if (!options.silent) {
-        setByokPreconditionNotice({
-          action: 'test',
-          message: t('settings.fetchModelsUnsupportedOllama'),
-        });
-      }
-      return;
-    }
-    if (isProviderModelDiscoveryUnsupported(apiProtocol, cfg.baseUrl)) {
-      trackModelsFetchResult({
-        result: 'failed',
-        error_code: 'unsupported_provider_models',
-        error_kind: 'unsupported_provider_models',
-        duration_ms: 0,
-      });
-      if (!options.silent) {
-        setByokPreconditionNotice({
-          action: 'test',
-          message: t('settings.fetchModelsUnsupported'),
-        });
-      }
-      return;
-    }
-    const modelFetchBlockingIssues = blockingByokDraftIssues(
-      byokModelFetchDraftValidation,
-    );
-    if (byokFirstPartyBaseUrl?.hostTypo) {
-      if (!options.silent) {
-        setByokPreconditionNotice({
-          action: 'test',
-          field: 'base_url',
-          message: t('settings.testInvalidBaseUrl'),
-        });
-        focusByokRequiredField('base_url');
-      }
-      return;
-    }
-    if (modelFetchBlockingIssues.length > 0) {
-      trackModelsFetchResult({
-        result: 'failed',
-        error_code: byokErrorKindFromIssues(modelFetchBlockingIssues),
-        error_kind: byokErrorKindFromIssues(modelFetchBlockingIssues),
-        field_missing: byokFieldMissingFromIssues(modelFetchBlockingIssues),
-        duration_ms: 0,
-      });
-      if (!options.silent) {
-        showByokDraftValidationNotice('test', byokModelFetchDraftValidation);
-      }
-      return;
-    }
-    const cacheKey = providerModelsCacheKey(
-      apiProtocol,
-      cfg.baseUrl,
-      cfg.apiKey,
-      cfg.apiVersion ?? '',
-    );
+    const cacheKey = INFERNO_MODELS_CACHE_KEY;
     const cachedModels = activeProviderModelsCache[cacheKey];
     if (cachedModels) {
       trackModelsFetchResult(
@@ -2849,14 +2745,7 @@ export function SettingsDialog({
       }
     };
     try {
-      const result = await fetchProviderModels(
-        {
-          protocol: apiProtocol,
-          baseUrl: cfg.baseUrl,
-          apiKey: cleanByokApiKey(cfg.apiKey),
-        },
-        controller.signal,
-      );
+      const result = await fetchInfernoProviderModels(controller.signal);
       if (controller.signal.aborted) return;
       if (providerModelsRevisionRef.current !== revision) {
         clearIfStale();
@@ -3000,57 +2889,15 @@ export function SettingsDialog({
     setAgentTestState({ status: 'idle' });
   };
 
-  const apiProtocol = cfg.apiProtocol ?? 'anthropic';
+  const apiProtocol = cfg.apiProtocol ?? 'openai';
   const defaultApiKeyConsoleLink = API_KEY_CONSOLE_LINKS[apiProtocol];
-  const byokProviderPresets: ReadonlyArray<ByokProviderPreset> = [
-    ...BYOK_PROVIDER_PRESETS,
-    {
-      id: 'custom',
-      title: t('settings.customProvider'),
-      protocol: apiProtocol,
-      baseUrl: cfg.baseUrl,
-      preferredModels: cfg.model ? [cfg.model] : [],
-      custom: true,
-    },
-  ];
-  const customByokProvider = byokProviderPresets.find((provider) => provider.custom) ?? {
-    id: 'custom',
-    title: t('settings.customProvider'),
-    protocol: apiProtocol,
-    baseUrl: cfg.baseUrl,
-    preferredModels: cfg.model ? [cfg.model] : [],
-    custom: true,
-  };
-  const byokPresetProtocols = new Set(
-    byokProviderPresets
-      .filter((provider) => !provider.custom)
-      .map((provider) => provider.protocol),
-  );
-  const byokProviderOptions: ReadonlyArray<ByokProviderPreset> = [
-    ...byokProviderPresets.filter((provider) => !provider.custom),
-    ...API_PROTOCOL_TABS.filter((tab) => !byokPresetProtocols.has(tab.id)).map((tab) => {
-      const fallback = defaultApiProtocolConfig(tab.id);
-      return {
-        id: `protocol-${tab.id}`,
-        title: tab.title,
-        protocol: tab.id,
-        baseUrl: fallback.baseUrl || DEFAULT_BASE_URL_BY_PROTOCOL[tab.id],
-        preferredModels: [
-          fallback.model || SUGGESTED_MODELS_BY_PROTOCOL[tab.id][0] || '',
-        ].filter(Boolean),
-      };
-    }),
-    customByokProvider,
-  ];
+  const byokProviderOptions: ReadonlyArray<ByokProviderPreset> = BYOK_PROVIDER_PRESETS;
   const selectedByokProvider =
-    cfg.apiProviderBaseUrl === null
-      ? customByokProvider
-      : byokProviderOptions.find(
-        (provider) =>
-          !provider.custom &&
-          provider.protocol === apiProtocol &&
-          provider.baseUrl === cfg.apiProviderBaseUrl,
-      ) ?? customByokProvider;
+    byokProviderOptions.find(
+      (provider) =>
+        provider.protocol === apiProtocol &&
+        provider.baseUrl === cfg.apiProviderBaseUrl,
+    ) ?? byokProviderOptions[0];
   const baseUrlValid = isValidApiBaseUrl(cfg.baseUrl);
   const baseUrlInvalid = Boolean(cfg.baseUrl.trim() && !baseUrlValid);
   const byokRequiredLabel = (field: ByokRequiredField): string => {
@@ -3449,10 +3296,9 @@ export function SettingsDialog({
   const apiKeyConsoleLink =
     selectedProvider?.apiKeyConsoleLink ?? defaultApiKeyConsoleLink;
   const showProviderPreset =
-    protocolProviders.length > 0 && !isFixedOriginGateway(apiProtocol);
-  // Fixed-origin gateways resolve their Base URL automatically; nothing for the
-  // user to edit, so hide the field entirely.
-  const showBaseUrlField = !isFixedOriginGateway(apiProtocol);
+    protocolProviders.length > 1 && !isFixedOriginGateway(apiProtocol);
+  // Inferno's origin is pinned on the daemon. Never show a user-editable URL.
+  const showBaseUrlField = false;
   const byokRequiresApiKey = byokProviderRequiresApiKey(
     apiProtocol,
     selectedProvider,
@@ -3561,15 +3407,7 @@ export function SettingsDialog({
       cfg.model,
     ],
   );
-  const providerModelsKey = useMemo(
-    () => providerModelsCacheKey(
-      apiProtocol,
-      cfg.baseUrl,
-      cfg.apiKey,
-      cfg.apiVersion ?? '',
-    ),
-    [apiProtocol, cfg.baseUrl, cfg.apiKey, cfg.apiVersion],
-  );
+  const providerModelsKey = INFERNO_MODELS_CACHE_KEY;
   const providerModelDiscoveryUnavailable =
     apiProtocol !== 'azure' &&
     apiProtocol !== 'ollama' &&
@@ -3674,13 +3512,11 @@ export function SettingsDialog({
     if (cfg.mode !== 'api') return;
     if (visualStabilityMode) return;
     if (providerTestState.status === 'running') return;
-    if (byokFirstPartyBaseUrl?.hostTypo) return;
-    if (blockingByokDraftIssues(byokDraftValidation).length > 0) return;
+    if (
+      blockingByokDraftIssues(byokDraftValidation).some((issue) => issue.field === 'model')
+    ) return;
     if (providerModelDiscoverySupported) {
-      if (
-        apiProtocol !== 'aihubmix' &&
-        providerModelsCommittedKey !== providerModelsKey
-      ) {
+      if (providerModelsCommittedKey !== providerModelsKey) {
         const timer = window.setTimeout(() => {
           setProviderModelsCommittedKey(providerModelsKey);
         }, 200);
@@ -3725,14 +3561,6 @@ export function SettingsDialog({
   useEffect(() => {
     if (cfg.mode !== 'api') return;
     if (visualStabilityMode) return;
-    if (isProviderModelDiscoveryUnsupported(apiProtocol, cfg.baseUrl)) return;
-    if (byokFirstPartyBaseUrl?.hostTypo) return;
-    if (blockingByokDraftIssues(byokModelFetchDraftValidation).length > 0) return;
-    // AIHubMix needs no key and prefills its base URL, so there's nothing to
-    // debounce-commit — fetch as soon as the tab is selected. Every other
-    // protocol waits until the key/baseUrl inputs are committed (on blur) so we
-    // don't fire on each keystroke.
-    if (apiProtocol !== 'aihubmix' && providerModelsCommittedKey !== providerModelsKey) return;
     const timer = window.setTimeout(() => {
       void handleFetchProviderModels({ silent: true });
     }, 300);
