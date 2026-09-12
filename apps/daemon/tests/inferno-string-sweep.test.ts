@@ -52,4 +52,32 @@ describe('string sweep', () => {
       expect(text, rel).not.toMatch(/Claude Design alternative/);
     }
   });
+
+  it('Design Files tips do not advertise Discord, stars, or Open Design socials', () => {
+    const en = readRepoFile('apps/web/src/i18n/locales/en.ts');
+    const tipBlock = [...en.matchAll(/'designFiles\.usefulInfoTip\w*':\s*'[^']*'/g)]
+      .map((m) => m[0])
+      .join('\n');
+    expect(tipBlock.length).toBeGreaterThan(0);
+    const panel = readRepoFile('apps/web/src/components/DesignFilesPanel.tsx');
+    for (const banned of [
+      /Join us on Discord/i,
+      /Star us on GitHub/i,
+      /OpenDesignHQ/,
+      /@opendesign\.ai/i,
+      /opendesign\.ai/i,
+    ]) {
+      expect(tipBlock, String(banned)).not.toMatch(banned);
+    }
+    for (const banned of [
+      /x\.com\/OpenDesignHQ/,
+      /threads\.com\/@opendesign\.ai/,
+      /instagram\.com\/opendesign\.ai/,
+      /youtube\.com\/@Open-Design-ai/,
+      /linkedin\.com\/company\/open-design-ai/,
+      /xiaohongshu\.com\/user\/profile/,
+    ]) {
+      expect(panel, String(banned)).not.toMatch(banned);
+    }
+  });
 });

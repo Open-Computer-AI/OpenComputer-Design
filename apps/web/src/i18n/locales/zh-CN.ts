@@ -3149,10 +3149,9 @@ export const zhCN: Dict = {
     "选好设计系统再生成，结果会与品牌风格保持一致。",
   "designFiles.usefulInfoTip5":
     "没有想法？试试首页 Community 的插件模板，一键生成同款。",
-  "designFiles.usefulInfoTip6": "遇到问题或有建议？加入 Discord 和我们聊聊。",
-  "designFiles.usefulInfoTip7": "觉得好用？在 GitHub 给我们点个 Star。",
-  "designFiles.usefulInfoTip8":
-    "在 X 上关注 @OpenDesignHQ，第一时间了解新功能。",
+  'designFiles.usefulInfoTip6': 'Questions or feedback? Visit tryopencomputer.com.',
+  'designFiles.usefulInfoTip7': 'OpenComputer Design runs locally with Inferno — add your key in Settings.',
+  'designFiles.usefulInfoTip8': 'Learn more about OpenComputer Design at tryopencomputer.com.',
   "designFiles.usefulInfoTip9":
     "把图片、文档甚至整个文件夹拖到当前面板，智能体都会用作上下文。",
   "designFiles.usefulInfoTip10":
@@ -3164,16 +3163,11 @@ export const zhCN: Dict = {
   "designFiles.usefulInfoTip14":
     "满意的项目可通过「分享」菜单保存为模板，下次直接复用。",
   "designFiles.usefulInfoTip15": "部署后可以直接生成社媒分享卡片。",
-  "designFiles.usefulInfoTip16":
-    "在 Threads 上关注 @opendesign.ai，看团队幕后动态。",
-  "designFiles.usefulInfoTip17":
-    "在 Instagram 上关注 @opendesign.ai，获取设计灵感。",
-  "designFiles.usefulInfoTip18":
-    "在 YouTube 上订阅 OpenDesign，观看教程和演示。",
-  "designFiles.usefulInfoTip19":
-    "在 LinkedIn 上关注 OpenDesign，了解产品动态。",
-  "designFiles.usefulInfoTip20":
-    "在小红书上关注 OpenDesign，获取技巧和灵感。",
+  'designFiles.usefulInfoTip16': 'Need product updates? Visit tryopencomputer.com.',
+  'designFiles.usefulInfoTip17': 'Configure Inferno in Settings to use managed models.',
+  'designFiles.usefulInfoTip18': 'OpenComputer Design keeps projects on your machine — export anytime.',
+  'designFiles.usefulInfoTip19': 'Drive OpenComputer Design from any shell with the ocd CLI.',
+  'designFiles.usefulInfoTip20': 'Pick Inferno in Settings when you want managed models without self-hosting providers.',
   "quickSwitcher.placeholder": "打开标签页或文件…",
   "quickSwitcher.empty": "此项目中没有文件",
   "quickSwitcher.noMatches": "无匹配项",
