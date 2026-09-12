@@ -39,6 +39,19 @@ import { googleStreamGenerateContentUrl } from '../integrations/google-models.js
 import { createRoleMarkerGuard } from '../role-marker-guard.js';
 import { authorizeReasoningEgress, sendReasoningEgressDenial } from '../reasoning-egress.js';
 import type { AuthorizeProjectRequest } from '../collab/project-request-authority.js';
+import {
+  clearInfernoApiKey,
+  infernoKeyTail,
+  readInfernoApiKey,
+  saveInfernoApiKey,
+} from '../inferno/credentials.js';
+import { INFERNO_ERROR_CODES } from '../inferno/errors.js';
+import { InfernoError, fetchInfernoModels, type InfernoModel } from '../inferno/models.js';
+import {
+  infernoErrorHttpStatus,
+  openInfernoUpstream,
+  resetInfernoProxyState,
+} from '../inferno/proxy.js';
 
 // Allowlist for the `/feedback` route. Mirrors the
 // ChatMessageFeedbackReasonCode union in packages/contracts/src/api/chat.ts.
@@ -982,6 +995,244 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
       })),
     },
   ];
+
+  let infernoModels: InfernoModel[] = [];
+  let infernoModelsFetchOk = false;
+  let infernoModelsFetched = false;
+
+  const infernoStatusBody = (apiKey: string | null) => {
+    const apiKeyConfigured = Boolean(apiKey);
+    return {
+      ready: apiKeyConfigured && infernoModelsFetchOk && infernoModels.length > 0,
+      models: apiKeyConfigured ? infernoModels : [],
+      apiKeyConfigured,
+      apiKeyTail: apiKey ? infernoKeyTail(apiKey) : null,
+    };
+  };
+
+  const refreshInfernoModels = async (apiKey: string) => {
+    infernoModelsFetched = true;
+    try {
+      infernoModels = await fetchInfernoModels(apiKey);
+      infernoModelsFetchOk = true;
+    } catch (err) {
+      infernoModels = [];
+      infernoModelsFetchOk = false;
+      throw err;
+    }
+  };
+
+  const sendInfernoError = (res: any, err: InfernoError) =>
+    sendApiError(res, infernoErrorHttpStatus(err.code), err.code, err.message);
+
+  app.put('/api/inferno/key', async (req, res) => {
+    const apiKey = typeof req.body?.apiKey === 'string' ? req.body.apiKey : '';
+    try {
+      await saveInfernoApiKey(ctx.paths.RUNTIME_DATA_DIR, apiKey);
+      resetInfernoProxyState();
+      const stored = (await readInfernoApiKey(ctx.paths.RUNTIME_DATA_DIR)) ?? apiKey.trim();
+      await refreshInfernoModels(stored);
+      return res.json(infernoStatusBody(stored));
+    } catch (err) {
+      if (err instanceof InfernoError) return sendInfernoError(res, err);
+      return sendApiError(
+        res,
+        500,
+        'INTERNAL_ERROR',
+        err instanceof Error ? err.message : String(err),
+      );
+    }
+  });
+
+  app.delete('/api/inferno/key', async (_req, res) => {
+    try {
+      await clearInfernoApiKey(ctx.paths.RUNTIME_DATA_DIR);
+      resetInfernoProxyState();
+      infernoModels = [];
+      infernoModelsFetchOk = false;
+      infernoModelsFetched = false;
+      return res.json(infernoStatusBody(null));
+    } catch (err) {
+      return sendApiError(
+        res,
+        500,
+        'INTERNAL_ERROR',
+        err instanceof Error ? err.message : String(err),
+      );
+    }
+  });
+
+  app.get('/api/inferno/status', async (_req, res) => {
+    try {
+      const apiKey = await readInfernoApiKey(ctx.paths.RUNTIME_DATA_DIR);
+      if (apiKey && !infernoModelsFetched) {
+        try {
+          await refreshInfernoModels(apiKey);
+        } catch {
+          // Status reports not-ready; never include the raw key.
+        }
+      }
+      return res.json(infernoStatusBody(apiKey));
+    } catch (err) {
+      return sendApiError(
+        res,
+        500,
+        'INTERNAL_ERROR',
+        err instanceof Error ? err.message : String(err),
+      );
+    }
+  });
+
+  const pipeInfernoUpstreamSse = async (
+    sse: any,
+    dialect: 'openai' | 'anthropic' | 'google',
+    response: Response,
+  ) => {
+    let ended = false;
+    const guard = createDeltaGuard(sse);
+    if (dialect === 'anthropic') {
+      await streamUpstreamSse(response, ({ event, data }: any) => {
+        if (!data) return false;
+        if (event === 'error' || data.type === 'error') {
+          const message = data.error?.message || data.message || 'Anthropic upstream error';
+          sendProxyError(sse, message, { details: data });
+          ended = true;
+          return true;
+        }
+        if (event === 'content_block_delta' && typeof data.delta?.text === 'string') {
+          guard.sendDelta(data.delta.text);
+          if (guard.contaminated) {
+            sse.send('end', {});
+            ended = true;
+            return true;
+          }
+        }
+        if (event === 'message_stop') {
+          sse.send('end', {});
+          ended = true;
+          return true;
+        }
+        return false;
+      });
+    } else if (dialect === 'google') {
+      await streamUpstreamSse(response, ({ data }: any) => {
+        if (!data) return false;
+        const streamError = extractStreamErrorMessage(data);
+        if (streamError) {
+          sendProxyError(sse, `Gemini error: ${streamError}`, { details: data });
+          ended = true;
+          return true;
+        }
+        const delta = extractGeminiText(data);
+        if (delta) {
+          guard.sendDelta(delta);
+          if (guard.contaminated) {
+            sse.send('end', {});
+            ended = true;
+            return true;
+          }
+        }
+        const blockMessage = extractGeminiBlockMessage(data);
+        if (blockMessage) {
+          sendProxyError(sse, blockMessage, { details: data });
+          ended = true;
+          return true;
+        }
+        return false;
+      });
+    } else {
+      await streamUpstreamSse(response, ({ payload, data }: any) => {
+        if (payload === '[DONE]') {
+          sse.send('end', {});
+          ended = true;
+          return true;
+        }
+        if (!data) return false;
+        const streamError = extractStreamErrorMessage(data);
+        if (streamError) {
+          sendProxyError(sse, `Provider error: ${streamError}`, { details: data });
+          ended = true;
+          return true;
+        }
+        const delta = extractOpenAIText(data);
+        if (delta) {
+          guard.sendDelta(delta);
+          if (guard.contaminated) {
+            sse.send('end', {});
+            ended = true;
+            return true;
+          }
+        }
+        return false;
+      });
+    }
+    if (!ended) sse.send('end', {});
+  };
+
+  app.post('/api/proxy/inferno/stream', async (req, res) => {
+    const proxyBody = req.body || {};
+    if (rejectProxyPluginContext(proxyBody, res)) return;
+    const { model, systemPrompt, messages, maxTokens } = proxyBody;
+    if (typeof model !== 'string' || !model.trim()) {
+      return sendApiError(res, 400, 'BAD_REQUEST', 'model is required');
+    }
+
+    const apiKey = await readInfernoApiKey(ctx.paths.RUNTIME_DATA_DIR);
+    if (!apiKey) {
+      return sendApiError(
+        res,
+        401,
+        INFERNO_ERROR_CODES.KEY_REQUIRED,
+        'Inferno API key is required',
+      );
+    }
+
+    let proxyDispatcher: ReturnType<typeof proxyDispatcherRequestInit> | null = null;
+    try {
+      proxyDispatcher = proxyDispatcherRequestInit();
+      const signal = clientDisconnectSignal(res, req);
+      const opened = await openInfernoUpstream({
+        model,
+        apiKey,
+        systemPrompt,
+        messages,
+        maxTokens,
+        ownedBy: infernoModels.find((row) => row.id === model)?.ownedBy ?? null,
+        signal,
+        requestInit: proxyDispatcher.requestInit,
+      });
+      if (!opened.ok) return sendInfernoError(res, opened.error);
+
+      console.log(`[proxy:inferno] ${req.method} dialect=${opened.dialect} model=${model}`);
+      const sse = createSseResponse(res);
+      sse.send('start', { model });
+      try {
+        await pipeInfernoUpstreamSse(sse, opened.dialect, opened.response);
+      } catch (err: any) {
+        console.error(`[proxy:inferno] internal error: ${err.message}`);
+        sendProxyError(sse, err.message, { code: 'INTERNAL_ERROR' });
+      }
+      sse.end();
+    } catch (err: any) {
+      if (!res.headersSent) {
+        return sendApiError(
+          res,
+          500,
+          'INTERNAL_ERROR',
+          err instanceof Error ? err.message : String(err),
+        );
+      }
+    } finally {
+      await proxyDispatcher?.close();
+    }
+  });
+
+  const INFERNO_ONLY_PROXY_MESSAGE = 'Only Inferno is available.';
+  for (const provider of ['openai', 'anthropic', 'azure', 'google', 'ollama', 'senseaudio', 'aihubmix']) {
+    app.post(`/api/proxy/${provider}/stream`, (_req, res) => {
+      sendApiError(res, 403, 'FORBIDDEN', INFERNO_ONLY_PROXY_MESSAGE);
+    });
+  }
 
   app.post('/api/proxy/anthropic/stream', async (req, res) => {
     /** @type {Partial<ProxyStreamRequest>} */
