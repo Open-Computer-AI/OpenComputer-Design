@@ -23,7 +23,67 @@ import {
   resolveAgentExecutable,
   spawnEnvForAgent,
 } from '../../../src/agents.js';
+import { aiderAgentDef } from '../../../src/runtimes/defs/aider.js';
+import { ampAgentDef } from '../../../src/runtimes/defs/amp.js';
+import { amrAgentDef } from '../../../src/runtimes/defs/amr.js';
+import { antigravityAgentDef } from '../../../src/runtimes/defs/antigravity.js';
+import { atomcodeAgentDef } from '../../../src/runtimes/defs/atomcode.js';
+import { byokOpenCodeAgentDef } from '../../../src/runtimes/defs/byok-opencode.js';
+import { claudeAgentDef } from '../../../src/runtimes/defs/claude.js';
+import { codebuddyAgentDef } from '../../../src/runtimes/defs/codebuddy.js';
+import { codexAgentDef } from '../../../src/runtimes/defs/codex.js';
+import { copilotAgentDef } from '../../../src/runtimes/defs/copilot.js';
+import { cursorAgentDef } from '../../../src/runtimes/defs/cursor-agent.js';
+import { deepseekAgentDef } from '../../../src/runtimes/defs/deepseek.js';
+import { deepseekHarnessAgentDef } from '../../../src/runtimes/defs/deepseek-harness.js';
+import { devinAgentDef } from '../../../src/runtimes/defs/devin.js';
+import { grokBuildAgentDef } from '../../../src/runtimes/defs/grok-build.js';
+import { hermesAgentDef } from '../../../src/runtimes/defs/hermes.js';
+import { infernoAgentDef } from '../../../src/runtimes/defs/inferno.js';
+import { kiloAgentDef } from '../../../src/runtimes/defs/kilo.js';
+import { kimiAgentDef } from '../../../src/runtimes/defs/kimi.js';
+import { kiroAgentDef } from '../../../src/runtimes/defs/kiro.js';
+import { mimoAgentDef } from '../../../src/runtimes/defs/mimo.js';
+import { opencodeAgentDef } from '../../../src/runtimes/defs/opencode.js';
+import { piAgentDef } from '../../../src/runtimes/defs/pi.js';
+import { qoderAgentDef } from '../../../src/runtimes/defs/qoder.js';
+import { qwenAgentDef } from '../../../src/runtimes/defs/qwen.js';
+import { reasonixAgentDef } from '../../../src/runtimes/defs/reasonix.js';
+import { traeCliAgentDef } from '../../../src/runtimes/defs/trae-cli.js';
+import { vibeAgentDef } from '../../../src/runtimes/defs/vibe.js';
 import type { RuntimeAgentDef } from '../../../src/runtimes/types.js';
+
+/** Adapter files still exist for leftover CLI code; they are not in AGENT_DEFS. */
+const LEGACY_ADAPTER_DEFS: RuntimeAgentDef[] = [
+  aiderAgentDef,
+  ampAgentDef,
+  amrAgentDef,
+  antigravityAgentDef,
+  atomcodeAgentDef,
+  byokOpenCodeAgentDef,
+  claudeAgentDef,
+  codebuddyAgentDef,
+  copilotAgentDef,
+  cursorAgentDef,
+  deepseekAgentDef,
+  deepseekHarnessAgentDef,
+  devinAgentDef,
+  grokBuildAgentDef,
+  hermesAgentDef,
+  infernoAgentDef,
+  kiloAgentDef,
+  kimiAgentDef,
+  kiroAgentDef,
+  mimoAgentDef,
+  opencodeAgentDef,
+  piAgentDef,
+  qoderAgentDef,
+  qwenAgentDef,
+  reasonixAgentDef,
+  traeCliAgentDef,
+  vibeAgentDef,
+  codexAgentDef,
+];
 
 export {
   assert,
@@ -51,7 +111,9 @@ export {
 export type TestAgentDef = RuntimeAgentDef;
 
 export function requireAgent(id: string): TestAgentDef {
-  const agent = AGENT_DEFS.find((candidate) => candidate.id === id);
+  const agent =
+    AGENT_DEFS.find((candidate) => candidate.id === id)
+    ?? LEGACY_ADAPTER_DEFS.find((candidate) => candidate.id === id);
   assert.ok(agent, `missing agent definition for ${id}`);
   return agent;
 }
@@ -73,6 +135,7 @@ export function minimalAgentDef(
 }
 
 export const amp = requireAgent('amp');
+export const amr = requireAgent('amr');
 export const claude = requireAgent('claude');
 export const codex = requireAgent('codex');
 export const hermes = requireAgent('hermes');

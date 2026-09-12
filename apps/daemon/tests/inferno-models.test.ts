@@ -10,7 +10,7 @@ describe('inferno models', () => {
   });
 
   it('parses GET /v1/models with the bearer key', async () => {
-    const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const fetchImpl = vi.fn(async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
       expect(String(input)).toBe('https://router.tryopencomputer.com/v1/models');
       expect(init?.headers).toMatchObject({ Authorization: 'Bearer sk-test' });
       return new Response(JSON.stringify({

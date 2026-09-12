@@ -91,8 +91,9 @@ test('sandbox runtime registry ignores host-local agent profiles at module load'
         const { AGENT_DEFS } = await import('../src/runtimes/registry.js');
         const ids = AGENT_DEFS.map((def) => def.id);
 
+        assert.deepEqual(ids, ['inferno']);
         assert.equal(ids.includes('host-wrapper'), false);
-        assert.equal(ids.includes('sandbox-wrapper'), true);
+        assert.equal(ids.includes('sandbox-wrapper'), false);
       },
     );
   } finally {
@@ -133,6 +134,7 @@ test('sandbox runtime registry ignores implicit profiles without OD_DATA_DIR', a
         const { AGENT_DEFS } = await import('../src/runtimes/registry.js');
         const ids = AGENT_DEFS.map((def) => def.id);
 
+        assert.deepEqual(ids, ['inferno']);
         assert.equal(ids.includes('host-wrapper'), false);
       },
     );

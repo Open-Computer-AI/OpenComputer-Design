@@ -116,9 +116,10 @@ function syntheticEntry(
 }
 
 describe('OD Next runtime capability gate', () => {
-  it('binds initial path descriptors to existing runtime definitions without changing detection', () => {
+  it('does not bind OD Next CLI path descriptors in the Inferno-only registry', () => {
+    expect(getAgentDef('inferno')?.id).toBe('inferno');
     for (const descriptor of OD_NEXT_RUNTIME_PATH_DESCRIPTORS) {
-      expect(getAgentDef(descriptor.agentId)?.id).toBe(descriptor.agentId);
+      expect(getAgentDef(descriptor.agentId)).toBeNull();
     }
   });
 

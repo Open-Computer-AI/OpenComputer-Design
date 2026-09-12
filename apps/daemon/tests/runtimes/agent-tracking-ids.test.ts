@@ -18,12 +18,10 @@ import { SHIPPED_AGENT_DEFS } from '../../src/runtimes/registry.js';
 // personal config into a failure that reads exactly like a missing mapper case,
 // and the next person to hit it could not tell the two apart.
 describe('every shipped agent has its own analytics id', () => {
-  it('maps no shipped agent to the catch-all bucket', () => {
-    const collapsed = SHIPPED_AGENT_DEFS.map((def) => def.id)
-      .filter((id) => agentIdToTracking(id) === 'other')
-      .sort();
-
-    expect(collapsed).toEqual([]);
+  it('ships only Inferno, which is HTTP-only and not a CLI provider id', () => {
+    expect(SHIPPED_AGENT_DEFS.map((def) => def.id)).toEqual(['inferno']);
+    expect(agentIdToTracking('inferno')).toBe('other');
+    expect(agentIdToTracking('claude')).toBe('claude_code');
   });
 
   // A locally declared agent is not ours to name. PostHog should never learn an
@@ -34,13 +32,9 @@ describe('every shipped agent has its own analytics id', () => {
     expect(agentIdToTracking(null)).toBe('other');
   });
 
-  // The regression that made this guard worth rewriting: whose machine it runs
-  // on must not change the answer. Walking AGENT_DEFS instead of
-  // SHIPPED_AGENT_DEFS fails here with `expected [ 'my-custom-agent' ] to
-  // deeply equal []` — a developer's personal config wearing the costume of a
-  // missing mapper case. Registry lists are built once at module load, so the
-  // profile has to exist before the import to be part of it.
-  it('stays green on a machine that declares a local agent profile', async () => {
+  // Inferno-only builds disable local CLI profiles, so a developer's
+  // agents.local.json must not appear in AGENT_DEFS or SHIPPED_AGENT_DEFS.
+  it('does not merge a local agent profile into the Inferno-only registry', async () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'od-local-agent-profile-'));
     const profilesFile = path.join(dir, 'agents.local.json');
     writeFileSync(
@@ -53,18 +47,10 @@ describe('every shipped agent has its own analytics id', () => {
     try {
       const registry = await import('../../src/runtimes/registry.js');
 
-      // Guards the assertions below against passing for the boring reason that
-      // the profile never loaded at all.
-      expect(registry.AGENT_DEFS.map((def) => def.id)).toContain('my-custom-agent');
-      expect(registry.SHIPPED_AGENT_DEFS.map((def) => def.id)).not.toContain(
-        'my-custom-agent',
-      );
-
-      const collapsed = registry.SHIPPED_AGENT_DEFS.map((def) => def.id)
-        .filter((id) => agentIdToTracking(id) === 'other')
-        .sort();
-
-      expect(collapsed).toEqual([]);
+      expect(registry.readLocalAgentProfileDefs()).toEqual([]);
+      expect(registry.AGENT_DEFS.map((def) => def.id)).toEqual(['inferno']);
+      expect(registry.SHIPPED_AGENT_DEFS.map((def) => def.id)).toEqual(['inferno']);
+      expect(agentIdToTracking('my-custom-agent')).toBe('other');
     } finally {
       vi.unstubAllEnvs();
       vi.resetModules();

@@ -7,13 +7,6 @@ type FetchInit = Parameters<typeof fetch>[1];
 
 const realFetch = globalThis.fetch;
 
-function sseResponse(body: string): Response {
-  return new Response(new TextEncoder().encode(body), {
-    status: 200,
-    headers: { 'content-type': 'text/event-stream' },
-  });
-}
-
 describe('reasoningExecution egress policy', () => {
   let baseUrl: string;
   let server: http.Server | null = null;
@@ -82,117 +75,40 @@ describe('reasoningExecution egress policy', () => {
   const disabledPolicy = { mode: 'disabled' };
 
   it.each([
-    { label: 'missing mode object', reasoningExecution: {} },
-    { label: 'invalid mode object', reasoningExecution: { mode: 'off' } },
-    { label: 'null value', reasoningExecution: null },
-    { label: 'array value', reasoningExecution: [] },
-  ])('rejects malformed reasoningExecution before upstream fetch: $label', async ({ reasoningExecution }) => {
-    await expectReasoningDenied(
-      '/api/proxy/openai/stream',
-      {
-        baseUrl: 'https://api.openai.com/v1',
-        apiKey: 'sk-openai',
-        model: 'gpt-test',
-        messages: [{ role: 'user', content: 'hello' }],
-        reasoningExecution,
-      },
-      {
-        status: 400,
-        routeKind: 'proxy',
-        provider: 'openai',
-        code: 'reasoning_execution_invalid_policy',
-      },
-    );
+    'openai',
+    'anthropic',
+    'azure',
+    'google',
+    'ollama',
+    'senseaudio',
+    'aihubmix',
+  ])('rejects /api/proxy/%s/stream with 403 Inferno-only before reasoning policy', async (provider) => {
+    const fetchMock = stubUnexpectedUpstreamFetch();
+    const res = await postJson(`/api/proxy/${provider}/stream`, {
+      baseUrl: 'https://api.example.com/v1',
+      apiKey: 'sk-test',
+      model: 'gpt-test',
+      messages: [{ role: 'user', content: 'hello' }],
+      reasoningExecution: disabledPolicy,
+    });
+    expect(res.status).toBe(403);
+    await expect(res.json()).resolves.toMatchObject({
+      error: { code: 'FORBIDDEN', message: 'Only Inferno is available.' },
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it.each([
-    {
-      provider: 'anthropic',
-      path: '/api/proxy/anthropic/stream',
-      body: {
-        baseUrl: 'https://api.anthropic.com',
-        apiKey: 'sk-ant',
-        model: 'claude-test',
-        messages: [{ role: 'user', content: 'hello' }],
-      },
-    },
-    {
-      provider: 'openai',
-      path: '/api/proxy/openai/stream',
-      body: {
-        baseUrl: 'https://api.openai.com/v1',
-        apiKey: 'sk-openai',
-        model: 'gpt-test',
-        messages: [{ role: 'user', content: 'hello' }],
-      },
-    },
-    {
-      provider: 'azure',
-      path: '/api/proxy/azure/stream',
-      body: {
-        baseUrl: 'https://resource.openai.azure.com',
-        apiKey: 'azure-key',
-        model: 'deployment-one',
-        messages: [{ role: 'user', content: 'hello' }],
-      },
-    },
-    {
-      provider: 'google',
-      path: '/api/proxy/google/stream',
-      body: {
-        baseUrl: 'https://generativelanguage.googleapis.com',
-        apiKey: 'google-key',
-        model: 'gemini-test',
-        messages: [{ role: 'user', content: 'hello' }],
-      },
-    },
-    {
-      provider: 'ollama',
-      path: '/api/proxy/ollama/stream',
-      body: {
-        baseUrl: 'https://ollama.example.com',
-        apiKey: 'ollama-key',
-        model: 'llama3',
-        messages: [{ role: 'user', content: 'hello' }],
-      },
-    },
-    {
-      provider: 'senseaudio',
-      path: '/api/proxy/senseaudio/stream',
-      body: {
-        baseUrl: 'https://api.senseaudio.cn',
-        apiKey: 'senseaudio-key',
-        model: 'senseaudio-s2',
-        projectId: 'project-1',
-        messages: [{ role: 'user', content: 'hello' }],
-      },
-    },
-    {
-      provider: 'aihubmix',
-      path: '/api/proxy/aihubmix/stream',
-      body: {
-        baseUrl: 'https://aihubmix.com/v1',
-        apiKey: 'aihubmix-key',
-        model: 'gpt-test',
-        projectId: 'project-1',
-        messages: [{ role: 'user', content: 'hello' }],
-      },
-    },
-    {
-      provider: 'newprovider',
-      path: '/api/proxy/newprovider/stream',
-      body: {
+  it('still applies reasoning policy to unknown proxy providers', async () => {
+    await expectReasoningDenied(
+      '/api/proxy/newprovider/stream',
+      {
         baseUrl: 'https://newprovider.example.com/v1',
         apiKey: 'newprovider-key',
         model: 'new-model',
         messages: [{ role: 'user', content: 'hello' }],
+        reasoningExecution: disabledPolicy,
       },
-    },
-  ])('blocks disabled proxy egress for $provider before upstream fetch', async ({ path, provider, body }) => {
-    await expectReasoningDenied(
-      path,
-      { ...body, reasoningExecution: disabledPolicy },
-      { routeKind: 'proxy', provider },
+      { routeKind: 'proxy', provider: 'newprovider' },
     );
   });
 
@@ -238,14 +154,8 @@ describe('reasoningExecution egress policy', () => {
     );
   });
 
-  it('allows proxy egress only when base URL and model are allowlisted', async () => {
-    const fetchMock = vi.fn((input: FetchInput, init?: FetchInit) => {
-      const url = String(input);
-      if (url.startsWith(baseUrl)) return realFetch(input, init);
-      return Promise.resolve(sseResponse('data: [DONE]\n\n'));
-    });
-    vi.stubGlobal('fetch', fetchMock);
-
+  it('rejects allowlisted OpenAI proxy egress with 403 Inferno-only', async () => {
+    const fetchMock = stubUnexpectedUpstreamFetch();
     const res = await postJson('/api/proxy/openai/stream', {
       baseUrl: 'http://localhost:1234/v1/',
       apiKey: 'sk-openai',
@@ -257,85 +167,11 @@ describe('reasoningExecution egress policy', () => {
         allowedModels: ['gpt-test'],
       },
     });
-
-    expect(res.status).toBe(200);
-    await expect(res.text()).resolves.toContain('event: end');
-    expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:1234/v1/chat/completions',
-      expect.objectContaining({ method: 'POST' }),
-    );
-  });
-
-  it('canonicalizes Google proxy model ids before checking the allowlist', async () => {
-    const fetchMock = vi.fn((input: FetchInput, init?: FetchInit) => {
-      const url = String(input);
-      if (url.startsWith(baseUrl)) return realFetch(input, init);
-      return Promise.resolve(sseResponse('data: {"candidates":[{"content":{"parts":[{"text":"ok"}]}}]}\n\n'));
+    expect(res.status).toBe(403);
+    await expect(res.json()).resolves.toMatchObject({
+      error: { code: 'FORBIDDEN', message: 'Only Inferno is available.' },
     });
-    vi.stubGlobal('fetch', fetchMock);
-
-    const res = await postJson('/api/proxy/google/stream', {
-      baseUrl: 'https://generativelanguage.googleapis.com',
-      apiKey: 'google-key',
-      model: 'models/gemini-test',
-      messages: [{ role: 'user', content: 'hello' }],
-      reasoningExecution: {
-        mode: 'allowlist',
-        allowedBaseUrls: ['https://generativelanguage.googleapis.com'],
-        allowedModels: ['gemini-test'],
-      },
-    });
-
-    expect(res.status).toBe(200);
-    await expect(res.text()).resolves.toContain('event: end');
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-test:streamGenerateContent?alt=sse',
-      expect.objectContaining({ method: 'POST' }),
-    );
-  });
-
-  it('denies allowlist proxy egress when the resolved base URL is not allowlisted', async () => {
-    await expectReasoningDenied(
-      '/api/proxy/openai/stream',
-      {
-        baseUrl: 'https://api.openai.com/v1',
-        apiKey: 'sk-openai',
-        model: 'gpt-test',
-        messages: [{ role: 'user', content: 'hello' }],
-        reasoningExecution: {
-          mode: 'allowlist',
-          allowedBaseUrls: ['http://localhost:1234/v1'],
-          allowedModels: ['gpt-test'],
-        },
-      },
-      {
-        routeKind: 'proxy',
-        provider: 'openai',
-        code: 'reasoning_execution_not_allowlisted',
-      },
-    );
-  });
-
-  it('denies allowlist proxy egress when the model is not allowlisted', async () => {
-    await expectReasoningDenied(
-      '/api/proxy/openai/stream',
-      {
-        baseUrl: 'http://localhost:1234/v1',
-        apiKey: 'sk-openai',
-        model: 'gpt-other',
-        messages: [{ role: 'user', content: 'hello' }],
-        reasoningExecution: {
-          mode: 'allowlist',
-          allowedBaseUrls: ['http://localhost:1234/v1'],
-          allowedModels: ['gpt-test'],
-        },
-      },
-      {
-        routeKind: 'proxy',
-        provider: 'openai',
-        code: 'reasoning_execution_not_allowlisted',
-      },
-    );
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('honors explicit allowlist denial flags for discovery, tests, and finalize', async () => {
