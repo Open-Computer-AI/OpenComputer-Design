@@ -138,15 +138,12 @@ describe('W85 · 四条量尺差异的真实归属', () => {
       expect(canvasBox(big).w).not.toBe(canvasBox(small).w);
     });
 
-    it('跑着的壳头画的是 24 的球(陈列页照出 20 是它自己那段脚本丢了 data-orb-box)', () => {
+    it('跑着的壳头是一颗圆形 spinner,不是 24px connecting 四散点', () => {
       stubNoCanvasContext();
       const root = show([...read('r0', 'tokens.css', [0, 400])], 'running');
-      const host = root.querySelector('[data-orb]');
-      expect(host, '跑着的壳头没有球').not.toBeNull();
-      expect(host?.getAttribute('data-orb')).toBe('connecting');
-      // 属性和画布必须**同时**是 24:陈列页的毛病正是属性写着 24、画布画成 20
-      expect(host?.getAttribute('data-orb-box')).toBe('24');
-      expect(canvasBox(root)).toEqual({ w: '24px', h: '24px' });
+      const spinner = root.querySelector('[data-testid="record-head-spinner"]');
+      expect(spinner, '跑着的壳头没有 spinner').not.toBeNull();
+      expect(root.querySelector('summary [data-orb="connecting"]')).toBeNull();
     });
 
     it('反向对照:思考那一格的球仍是 20,没跟着壳头一起变大', () => {

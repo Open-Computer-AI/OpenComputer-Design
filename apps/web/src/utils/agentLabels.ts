@@ -17,14 +17,15 @@ const AGENT_LABELS: Record<string, string> = {
   'deepseek-harness': 'DeepSeek Harness',
   deepseek: 'DeepSeek',
   antigravity: 'Antigravity',
-  'anthropic-api': 'Anthropic API via OpenCode',
-  'openai-api': 'OpenAI API via OpenCode',
-  'azure-openai-api': 'Azure OpenAI via OpenCode',
-  'google-gemini-api': 'Google Gemini via OpenCode',
-  'ollama-cloud-api': 'Ollama Cloud API via OpenCode',
-  'senseaudio-api': 'SenseAudio API via OpenCode',
-  'aihubmix-api': 'AIHubMix API via OpenCode',
-  'bedrock-api': 'AWS Bedrock via OpenCode',
+  inferno: 'Inferno',
+  'anthropic-api': 'Inferno',
+  'openai-api': 'Inferno',
+  'azure-openai-api': 'Inferno',
+  'google-gemini-api': 'Inferno',
+  'ollama-cloud-api': 'Inferno',
+  'senseaudio-api': 'Inferno',
+  'aihubmix-api': 'Inferno',
+  'bedrock-api': 'Inferno',
 };
 
 const AGENT_ALIASES: Record<string, string> = {
@@ -75,7 +76,9 @@ export function agentIconId(
     const base = raw.split(' · ')[0]?.trim() || raw;
     const key = normalizeKey(base);
     const alias = AGENT_ALIASES[key] ?? key;
-    if (AGENT_LABELS[alias]) return alias;
+    if (AGENT_LABELS[alias]) {
+      return AGENT_LABELS[alias] === 'Inferno' ? 'inferno' : alias;
+    }
     if (alias.includes('cursor-agent')) return 'cursor-agent';
     for (const id of Object.keys(AGENT_LABELS)) {
       if (alias.includes(id)) return id;

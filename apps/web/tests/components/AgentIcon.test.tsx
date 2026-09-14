@@ -105,6 +105,14 @@ describe('AgentIcon', () => {
     expect(markup).not.toContain('<img src="/agent-icons/cursor-agent.svg"');
   });
 
+  it('renders Inferno as the OpenComputer petal mark, not the letter I', () => {
+    const markup = renderToStaticMarkup(<AgentIcon id="inferno" size={20} />);
+
+    expect(markup).toContain('src="/agent-icons/inferno.png"');
+    expect(markup).not.toContain('agent-icon-fallback');
+    expect(markup).not.toContain('>I</span>');
+  });
+
   it('falls back to an initial-letter pill for unknown agents', () => {
     const markup = renderToStaticMarkup(<AgentIcon id="unknown-agent" size={24} />);
 

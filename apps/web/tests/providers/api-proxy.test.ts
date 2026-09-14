@@ -375,6 +375,77 @@ describe('streamProxyEndpoint Inferno errors', () => {
     expect(error.code).toBe('INFERNO_KEY_REQUIRED');
     expect(error.message).toContain('Inferno API key is required');
   });
+
+  it('does not call onDone after an Inferno stream error even if end follows', async () => {
+    const onError = vi.fn();
+    const onDone = vi.fn();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode(
+              'event: start\ndata: {"model":"gpt-5.6-luna"}\n\n'
+              + 'event: error\ndata: {"message":"Inferno: Upstream service temporarily unavailable","error":{"code":"INFERNO_UNAVAILABLE","message":"Inferno: Upstream service temporarily unavailable"}}\n\n'
+              + 'event: end\ndata: {}\n\n',
+            ));
+            controller.close();
+          },
+        }),
+      }),
+    );
+
+    await streamProxyEndpoint(
+      '/api/proxy/inferno/stream',
+      { apiKey: '', baseUrl: '', model: 'gpt-5.6-luna' } as any,
+      'sys',
+      [{ id: '1', role: 'user', content: 'hi', createdAt: 1 }],
+      new AbortController().signal,
+      { onDelta: vi.fn(), onDone, onError },
+      undefined,
+      { omitBaseUrl: true, omitApiKey: true },
+    );
+
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onDone).not.toHaveBeenCalled();
+  });
+
+  it('treats a completed Inferno stream with no tokens as an error', async () => {
+    const onError = vi.fn();
+    const onDone = vi.fn();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode(
+              'event: start\ndata: {"model":"gpt-5.6-luna"}\n\n'
+              + 'event: end\ndata: {}\n\n',
+            ));
+            controller.close();
+          },
+        }),
+      }),
+    );
+
+    await streamProxyEndpoint(
+      '/api/proxy/inferno/stream',
+      { apiKey: '', baseUrl: '', model: 'gpt-5.6-luna' } as any,
+      'sys',
+      [{ id: '1', role: 'user', content: 'hi', createdAt: 1 }],
+      new AbortController().signal,
+      { onDelta: vi.fn(), onDone, onError },
+      undefined,
+      { omitBaseUrl: true, omitApiKey: true },
+    );
+
+    expect(onDone).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledTimes(1);
+  });
 });
 
 function userMessage(

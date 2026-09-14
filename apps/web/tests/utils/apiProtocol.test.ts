@@ -7,17 +7,17 @@ import {
 } from '../../src/utils/agentLabels';
 
 describe('api protocol labels', () => {
-  it('labels the selected API protocol instead of assuming Anthropic', () => {
-    expect(apiProtocolLabel('openai')).toBe('OpenAI API');
-    expect(apiProtocolLabel('google')).toBe('Google Gemini');
-    expect(apiProtocolLabel(undefined)).toBe('Anthropic API');
+  it('labels every API protocol as Inferno', () => {
+    expect(apiProtocolLabel('openai')).toBe('Inferno');
+    expect(apiProtocolLabel('google')).toBe('Inferno');
+    expect(apiProtocolLabel(undefined)).toBe('Inferno');
   });
 
   it('includes the selected model when labeling API assistant messages', () => {
     expect(apiProtocolModelLabel('openai', 'google/gemma-4-e4b')).toBe(
-      'OpenAI API via OpenCode · google/gemma-4-e4b',
+      'Inferno · google/gemma-4-e4b',
     );
-    expect(apiProtocolModelLabel('azure', '  ')).toBe('Azure OpenAI via OpenCode');
+    expect(apiProtocolModelLabel('azure', '  ')).toBe('Inferno');
   });
 
   it('includes explicit local CLI models when labeling agent messages', () => {
@@ -27,8 +27,10 @@ describe('api protocol labels', () => {
     expect(agentModelDisplayName('claude', 'Claude Code', 'default')).toBe('Claude');
   });
 
-  it('labels OpenCode-backed BYOK protocol agent ids', () => {
-    expect(agentDisplayName('senseaudio-api')).toBe('SenseAudio API via OpenCode');
+  it('labels leftover BYOK protocol agent ids as Inferno', () => {
+    expect(agentDisplayName('senseaudio-api')).toBe('Inferno');
+    expect(agentDisplayName('openai-api')).toBe('Inferno');
+    expect(agentDisplayName('inferno')).toBe('Inferno');
   });
 
   it('normalizes Qoder local CLI ids, aliases, and executable paths', () => {

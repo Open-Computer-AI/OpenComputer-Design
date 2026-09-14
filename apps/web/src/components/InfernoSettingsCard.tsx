@@ -25,7 +25,14 @@ function infernoSaveErrorMessage(error: unknown): string {
   if (code === 'INFERNO_UNAVAILABLE') {
     return 'Cannot reach Inferno at router.tryopencomputer.com.';
   }
-  if (error instanceof Error && error.message.trim()) return error.message;
+  const message = error instanceof Error ? error.message.trim() : '';
+  if (
+    error instanceof TypeError
+    || /NetworkError|Failed to fetch|Load failed/i.test(message)
+  ) {
+    return 'Cannot reach the local daemon. Wait for the app to finish starting, then Save again.';
+  }
+  if (message) return message;
   return 'Cannot reach Inferno at router.tryopencomputer.com.';
 }
 

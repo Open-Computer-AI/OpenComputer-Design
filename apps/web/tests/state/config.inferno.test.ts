@@ -35,6 +35,7 @@ describe('inferno-only web config', () => {
     expect(DEFAULT_CONFIG.mode).toBe('api');
     expect(DEFAULT_CONFIG.onboardingCompleted).toBe(true);
     expect(DEFAULT_CONFIG.agentId).toBe('inferno');
+    expect(DEFAULT_CONFIG.model).toBe('');
     expect(BYOK_PROVIDER_PRESETS).toHaveLength(1);
     expect(BYOK_PROVIDER_PRESETS[0]?.id).toBe('inferno');
   });
@@ -54,6 +55,7 @@ describe('inferno-only web config', () => {
       mode: 'daemon',
       agentId: 'claude',
       apiProtocol: 'anthropic',
+      model: 'claude-sonnet-4-5',
       baseUrl: 'https://api.anthropic.com',
       apiProviderBaseUrl: 'https://api.openai.com/v1',
     }));
@@ -61,6 +63,7 @@ describe('inferno-only web config', () => {
     expect(loaded.mode).toBe('api');
     expect(loaded.agentId).toBe('inferno');
     expect(loaded.apiProtocol).toBe('openai');
+    expect(loaded.model).toBe('');
     expect(loaded.baseUrl).toBe(INFERNO_BASE_URL);
     expect(loaded.apiProviderBaseUrl).toBe(INFERNO_BASE_URL);
 

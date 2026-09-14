@@ -796,6 +796,27 @@
   display: inline-flex;
   align-items: center;
 }
+
+/* Working 壳头: Open Design's incomplete ring, not the remix loader glyph.
+   `!important` beats `base.css` reduced-motion (`animation-duration: 0.01ms`
+   on `*`) so the ring actually rotates while a turn is in flight. */
+.headSpinner {
+  display: inline-block;
+  flex: none;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+  border-style: solid;
+  border-color: var(--chat-text-faint);
+  border-top-color: var(--chat-text-strong);
+  border-radius: 50%;
+  transform-origin: 50% 50%;
+  animation: od-record-spin 0.7s linear infinite !important;
+}
+@keyframes od-record-spin {
+  to { transform: rotate(360deg); }
+}
 /* 画布必须是块级,否则行内基线会在它下面垫出一条缝 */
 .orb canvas,
 .mark canvas {

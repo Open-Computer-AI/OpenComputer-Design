@@ -84,7 +84,7 @@ describe('S12 · 文案撤回(壳头读回「进行中」)', () => {
 
     expect(screen.getByText('进行中')).toBeTruthy();
     expect(headOf(container)).toContain('30s');
-    expect(document.querySelector('[data-orb="connecting"]')).not.toBeNull();
+    expect(document.querySelector('[data-testid="record-head-spinner"]')).not.toBeNull();
   });
 });
 

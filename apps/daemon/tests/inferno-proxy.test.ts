@@ -356,4 +356,87 @@ describe('inferno chat routes', () => {
       apiKeyTail: null,
     });
   });
+
+  it('maps Inferno SSE upstream_error to INFERNO_UNAVAILABLE', async () => {
+    const dataDir = await mkdtemp(path.join(tmpdir(), 'inferno-proxy-'));
+    const origin = { current: '' };
+    const fetchMock = vi.fn(async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+      const url = String(input);
+      if (origin.current && url.startsWith(origin.current)) return realFetch(input, init);
+      if (url === 'https://router.tryopencomputer.com/v1/models') {
+        return new Response(
+          JSON.stringify({ data: [{ id: 'gpt-5.6-luna', owned_by: 'openai' }] }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      if (url === 'https://router.tryopencomputer.com/v1/chat/completions') {
+        return new Response(
+          [
+            'data: {"error":{"type":"upstream_error","message":"Upstream service temporarily unavailable"}}',
+            '',
+            'data: [DONE]',
+            '',
+          ].join('\n'),
+          { status: 200, headers: { 'content-type': 'text/event-stream' } },
+        );
+      }
+      return new Response(`unexpected ${url}`, { status: 500 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    await saveInfernoApiKey(dataDir, 'sk-live-abcd');
+    origin.current = await startInfernoChatApp(dataDir);
+
+    const stream = await realFetch(`${origin.current}/api/proxy/inferno/stream`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-5.6-luna',
+        messages: [{ role: 'user', content: 'hi' }],
+      }),
+    });
+    const streamText = await stream.text();
+    expect(stream.status).toBe(200);
+    expect(streamText).toContain('event: error');
+    expect(streamText).toContain('INFERNO_UNAVAILABLE');
+    expect(streamText).not.toContain('"UPSTREAM_UNAVAILABLE"');
+  });
+
+  it('treats an Inferno stream that ends with no tokens as a failure', async () => {
+    const dataDir = await mkdtemp(path.join(tmpdir(), 'inferno-proxy-'));
+    const origin = { current: '' };
+    const fetchMock = vi.fn(async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+      const url = String(input);
+      if (origin.current && url.startsWith(origin.current)) return realFetch(input, init);
+      if (url === 'https://router.tryopencomputer.com/v1/models') {
+        return new Response(
+          JSON.stringify({ data: [{ id: 'gpt-5.6-luna', owned_by: 'openai' }] }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      if (url === 'https://router.tryopencomputer.com/v1/chat/completions') {
+        return new Response(
+          ['data: [DONE]', ''].join('\n'),
+          { status: 200, headers: { 'content-type': 'text/event-stream' } },
+        );
+      }
+      return new Response(`unexpected ${url}`, { status: 500 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    await saveInfernoApiKey(dataDir, 'sk-live-abcd');
+    origin.current = await startInfernoChatApp(dataDir);
+
+    const stream = await realFetch(`${origin.current}/api/proxy/inferno/stream`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-5.6-luna',
+        messages: [{ role: 'user', content: 'hi' }],
+      }),
+    });
+    const streamText = await stream.text();
+    expect(stream.status).toBe(200);
+    expect(streamText).toContain('event: error');
+    expect(streamText).toContain('INFERNO_UNAVAILABLE');
+    expect(streamText).not.toMatch(/event: end/);
+  });
 });

@@ -7,6 +7,8 @@
  * 用真实的 buildTurnBlocks 产出当输入,而不是手捏 shell 对象:
  * 手捏的话组件与数据层可能各自漂移,接起来才发现对不上。
  */
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render as rtlRender, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
@@ -59,8 +61,34 @@ describe('壳头', () => {
     const [shell] = shellsOf([{ kind: 'status', label: 'requesting' }, ...call('t1', 'Bash', { command: 'ls' })], 'running');
     render(<ExecutionShell shell={shell as ShellData} />);
     expect(screen.getByText('进行中')).toBeTruthy();
-    expect(document.querySelector('[data-orb="connecting"]')).not.toBeNull();
+    expect(document.querySelector('[data-testid="record-head-spinner"]')).toBeTruthy();
     expect(document.querySelector('details')?.open).toBe(true);
+  });
+
+  it('运行中壳头的 loading 是一颗在转的圆,不是四散的点', () => {
+    const [shell] = shellsOf([{ kind: 'status', label: 'requesting' }], 'running');
+    const { container } = render(<ExecutionShell shell={shell as ShellData} />);
+    const spinner = container.querySelector('[data-testid="record-head-spinner"]');
+    expect(spinner, '壳头要有一颗圆形 spinner,紧挨着 Working').toBeTruthy();
+    expect(spinner?.closest('summary')).toBeTruthy();
+    expect(
+      container.querySelector('summary [data-orb="connecting"]'),
+      '24px connecting orb paints as four specks — do not use it as the Working spinner',
+    ).toBeNull();
+  });
+
+  it('壳头 spinner CSS 是无限旋转,不被 reduced-motion 的 0.01ms 定格', () => {
+    const css = readFileSync(
+      resolve(process.cwd(), 'src/components/chat/primitives/record.module.css'),
+      'utf8',
+    );
+    expect(css).toMatch(/@keyframes od-record-spin/);
+    expect(css).toMatch(/animation:\s*od-record-spin[^;]*infinite\s*!important/);
+    const spinnerBlock = css.match(/\.headSpinner\s*\{[^}]+\}/)?.[0] ?? '';
+    expect(spinnerBlock).toMatch(/border-width:\s*2px/);
+    expect(spinnerBlock).toMatch(/border-style:\s*solid/);
+    expect(spinnerBlock).toMatch(/display:\s*inline-block/);
+    expect(spinnerBlock).not.toMatch(/color-mix/);
   });
 
   /**
@@ -120,7 +148,7 @@ describe('壳头', () => {
   it('空态:没有内容时不出箭头(D21)', () => {
     const [shell] = shellsOf([{ kind: 'status', label: 'requesting' }], 'running');
     render(<ExecutionShell shell={shell as ShellData} />);
-    expect(document.querySelector('details svg')).toBeNull();
+    expect(document.querySelector('[data-testid="chat-foldable-toggle"]')).toBeNull();
   });
 
   it('壳头耗时按粗档写(31s 而不是 31.0s)', () => {

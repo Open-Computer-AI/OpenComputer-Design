@@ -25,10 +25,10 @@ describe('assistantRoleLabel', () => {
       agentId: 'openai-api',
     };
 
-    expect(assistantRoleLabel(message, t)).toBe('OpenAI API via OpenCode');
+    expect(assistantRoleLabel(message, t)).toBe('Inferno');
   });
 
-  it('maps OpenCode-backed BYOK protocol ids to readable labels', () => {
+  it('maps leftover BYOK protocol ids to Inferno', () => {
     const message: ChatMessage = {
       id: 'message-senseaudio',
       role: 'assistant',
@@ -36,7 +36,7 @@ describe('assistantRoleLabel', () => {
       agentId: 'senseaudio-api',
     };
 
-    expect(assistantRoleLabel(message, t)).toBe('SenseAudio API via OpenCode');
+    expect(assistantRoleLabel(message, t)).toBe('Inferno');
   });
 
   it('normalizes saved API protocol ids used as display names', () => {
@@ -47,7 +47,7 @@ describe('assistantRoleLabel', () => {
       agentName: 'openai-api',
     };
 
-    expect(assistantRoleLabel(message, t)).toBe('OpenAI API via OpenCode');
+    expect(assistantRoleLabel(message, t)).toBe('Inferno');
   });
 
   it('preserves an explicit local agent model in the display name', () => {

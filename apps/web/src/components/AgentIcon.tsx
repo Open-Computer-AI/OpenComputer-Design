@@ -32,6 +32,7 @@ const ICON_EXT: Record<string, 'svg' | 'png'> = {
   kilo: 'svg',
   vibe: 'svg',
   antigravity: 'svg',
+  inferno: 'png',
   aider: 'png',
   'trae-cli': 'png',
   devin: 'png',
@@ -41,6 +42,14 @@ const ICON_EXT: Record<string, 'svg' | 'png'> = {
 // instead of duplicating identical SVG files under transport-specific ids.
 const ICON_ASSET_ID: Record<string, string> = {
   'deepseek-harness': 'deepseek',
+  'anthropic-api': 'inferno',
+  'openai-api': 'inferno',
+  'azure-openai-api': 'inferno',
+  'google-gemini-api': 'inferno',
+  'ollama-cloud-api': 'inferno',
+  'senseaudio-api': 'inferno',
+  'aihubmix-api': 'inferno',
+  'bedrock-api': 'inferno',
 };
 
 // SVG marks that are single-color silhouettes (no baked brand colors).

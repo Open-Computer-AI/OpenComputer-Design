@@ -231,16 +231,15 @@ const flatOf = (root: HTMLElement): HTMLElement =>
   need(root.querySelector<HTMLElement>(`details.${cls('flat')}`), '扁平壳');
 
 /**
- * 壳头那个状态词。运行态是 `span.shimmer.head`(旁边还有个 `span[data-orb]` 的球),
+ * 壳头那个状态词。运行态是 `span.shimmer.head`(旁边是圆形 spinner),
  * 终态是一枚纯 `<span>`(失败那一态多戴一枚 `.stFail`)。
- * 排掉球是因为它是同级的 `<span>`,不是文字。
  */
 function headWord(root: HTMLElement): HTMLElement {
   const content = need(
     flatOf(root).querySelector<HTMLElement>(`:scope > summary > .${cls('summaryContent')}`),
     '壳头',
   );
-  const spans = [...content.querySelectorAll<HTMLElement>(':scope > span:not([data-orb])')];
+  const spans = [...content.querySelectorAll<HTMLElement>(':scope > span:not([data-orb]):not([data-testid="record-head-spinner"])')];
   return need(spans[spans.length - 1], '壳头的状态词');
 }
 

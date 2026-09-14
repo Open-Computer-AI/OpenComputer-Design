@@ -6,7 +6,7 @@
  * 这个组件只负责画,不做任何归属判断 —— 判断留在纯函数层才能脱离 React 测。
  *
  * 壳头四种样子(设计稿只有三态,手动停止是旗标不是第四态):
- *   进行中   球 + 会扫光的「进行中」+ 秒数,默认展开
+ *   进行中   共享 spinner + 会扫光的「进行中」+ 秒数,默认展开
  *   思考中   同上但换文案 + 三个点。**靠事件驱动**:claude 的 thinking 全是空串,
  *            靠文字判断永远等不到(S21 / W11)
  *   已完成   纯文本 + 总耗时,**默认收起**
@@ -259,8 +259,10 @@ export function ExecutionShell({
        */
       return (
         <>
-          {/* 不给标签:紧跟着的就是「进行中」那行字,读屏念一遍就够 */}
-          <Orb state="connecting" box={24} className={styles.orb} />
+          {/* Open Design loading ring. Remix `loader-4-line` looks like a
+              closed circle at 14px so rotation is invisible; this border
+              ring is the same spinner as `.questions-continue-spinner`. */}
+          <i className={styles.headSpinner} data-testid="record-head-spinner" aria-hidden />
           <span className={`${styles.shimmer} ${styles.head}`}>{t('chat.record.running')}</span>
         </>
       );

@@ -2,28 +2,16 @@ import { isOpenAICompatible } from '../providers/openai-compatible';
 import type { ApiProtocol, AppConfig } from '../types';
 import { API_PROTOCOL_AGENT_IDS } from './byokProvider';
 
-const API_PROTOCOL_LABELS: Record<ApiProtocol, string> = {
-  anthropic: 'Anthropic API',
-  openai: 'OpenAI API',
-  azure: 'Azure OpenAI',
-  google: 'Google Gemini',
-  ollama: 'Ollama Cloud API',
-  senseaudio: 'SenseAudio API',
-  aihubmix: 'AIHubMix API',
-  bedrock: 'AWS Bedrock',
-};
-
-export function apiProtocolLabel(protocol: ApiProtocol | undefined): string {
-  return API_PROTOCOL_LABELS[protocol ?? 'anthropic'];
+export function apiProtocolLabel(_protocol: ApiProtocol | undefined): string {
+  return 'Inferno';
 }
 
 export function apiProtocolModelLabel(
-  protocol: ApiProtocol | undefined,
+  _protocol: ApiProtocol | undefined,
   model: string,
 ): string {
-  const label = `${apiProtocolLabel(protocol)} via OpenCode`;
   const trimmed = model.trim();
-  return trimmed ? `${label} · ${trimmed}` : label;
+  return trimmed ? `Inferno · ${trimmed}` : 'Inferno';
 }
 
 export function apiProtocolAgentId(protocol: ApiProtocol | undefined): string {

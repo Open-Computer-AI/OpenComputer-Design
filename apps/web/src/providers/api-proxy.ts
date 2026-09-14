@@ -57,6 +57,23 @@ export async function streamProxyEndpoint(
   }
 
   let acc = '';
+  let settled = false;
+  const isInfernoProxy = endpoint.includes('/proxy/inferno/');
+  const fail = (error: Error) => {
+    if (settled) return;
+    settled = true;
+    if (isInfernoKeyRequiredError(error)) notifyInfernoKeyRequired();
+    handlers.onError(error);
+  };
+  const finish = (text: string) => {
+    if (settled) return;
+    if (isInfernoProxy && !text.trim()) {
+      fail(taggedError('Inferno returned no output.', 'INFERNO_UNAVAILABLE'));
+      return;
+    }
+    settled = true;
+    handlers.onDone(text);
+  };
 
   try {
     const messages = await buildProxyMessages(endpoint, history, context);
@@ -95,9 +112,7 @@ export async function streamProxyEndpoint(
 
     if (!resp.ok || !resp.body) {
       const text = await resp.text().catch(() => '');
-      const error = infernoProxyHttpError(resp.status, text);
-      if (isInfernoKeyRequiredError(error)) notifyInfernoKeyRequired();
-      handlers.onError(error);
+      fail(infernoProxyHttpError(resp.status, text));
       return;
     }
 
@@ -129,23 +144,21 @@ export async function streamProxyEndpoint(
         }
 
         if (parsed.event === 'error') {
-          const error = proxyStreamError(parsed.data);
-          if (isInfernoKeyRequiredError(error)) notifyInfernoKeyRequired();
-          handlers.onError(error);
+          fail(proxyStreamError(parsed.data));
           return;
         }
 
         if (parsed.event === 'end') {
-          handlers.onDone(acc);
+          finish(acc);
           return;
         }
       }
     }
 
-    handlers.onDone(acc);
+    finish(acc);
   } catch (err) {
     if ((err as Error).name === 'AbortError') return;
-    handlers.onError(err instanceof Error ? err : new Error(String(err)));
+    fail(err instanceof Error ? err : new Error(String(err)));
   }
 }
 

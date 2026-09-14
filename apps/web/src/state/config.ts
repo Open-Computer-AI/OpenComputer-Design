@@ -79,7 +79,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   mode: 'api',
   apiKey: '',
   baseUrl: INFERNO_BASE_URL,
-  model: 'claude-sonnet-4-5',
+  model: '',
   // Shadow protocol: Inferno routes by model on the daemon. Keep openai so
   // existing BYOK form fields that key off apiProtocol still have a value.
   apiProtocol: 'openai',
@@ -277,6 +277,11 @@ function pinInfernoHost(config: AppConfig): boolean {
   }
   if (config.apiProviderBaseUrl !== INFERNO_BASE_URL) {
     config.apiProviderBaseUrl = INFERNO_BASE_URL;
+    changed = true;
+  }
+  // Leftover Open Design default; Inferno fills the picker from GET /v1/models.
+  if (config.model === 'claude-sonnet-4-5') {
+    config.model = '';
     changed = true;
   }
   return changed;

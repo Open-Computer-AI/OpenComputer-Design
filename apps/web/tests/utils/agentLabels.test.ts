@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   agentDisplayName,
+  agentIconId,
   agentModelDisplayName,
   exactAgentDisplayName,
 } from '../../src/utils/agentLabels';
@@ -80,3 +81,12 @@ describe('agentModelDisplayName', () => {
     expect(agentModelDisplayName(null, null, 'sonnet-4-6')).toBe('sonnet-4-6');
   });
 });
+
+describe('agentIconId', () => {
+  it('uses the Inferno icon id for Inferno and leftover API protocol ids', () => {
+    expect(agentIconId('inferno')).toBe('inferno');
+    expect(agentIconId('openai-api')).toBe('inferno');
+    expect(agentIconId('anthropic-api')).toBe('inferno');
+  });
+});
+

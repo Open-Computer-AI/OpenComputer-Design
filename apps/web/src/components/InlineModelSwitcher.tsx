@@ -52,7 +52,13 @@ import {
   workspaceBillingBalanceUsd,
 } from '../collab/useWorkspaceContext';
 import { KNOWN_PROVIDERS } from '../state/config';
-import { fetchInfernoProviderModels, INFERNO_MODELS_CACHE_KEY } from '../providers/inferno-status';
+import {
+  fetchInfernoProviderModels,
+  fetchInfernoStatus,
+  INFERNO_MODELS_CACHE_KEY,
+  INFERNO_STATUS_CHANGED_EVENT,
+  type InfernoStatusResponse,
+} from '../providers/inferno-status';
 import { SUGGESTED_MODELS_BY_PROTOCOL } from '../state/apiProtocols';
 import {
   canUpgradeVelaPlan,
@@ -64,7 +70,7 @@ import {
   type VelaLoginStatus,
 } from '../providers/daemon';
 import type { AgentInfo, ApiProtocol, AppConfig, ExecMode } from '../types';
-import { apiProtocolLabel } from '../utils/apiProtocol';
+
 import { isVisibleLocalCliAgent } from '../utils/visibleAgents';
 import { AgentIcon } from './AgentIcon';
 import { Icon } from './Icon';
@@ -961,6 +967,35 @@ export function InlineModelSwitcher({
         : t('settings.amrSignIn');
   const amrStatusIconName = amrLoginPending ? 'spinner' : null;
 
+  const [infernoStatus, setInfernoStatus] = useState<InfernoStatusResponse | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const apply = (next: InfernoStatusResponse) => {
+      if (!cancelled) setInfernoStatus(next);
+    };
+    void fetchInfernoStatus()
+      .then(apply)
+      .catch(() => {
+        if (!cancelled) {
+          setInfernoStatus({
+            ready: false,
+            models: [],
+            apiKeyConfigured: false,
+            apiKeyTail: null,
+          });
+        }
+      });
+    const onStatus = (event: Event) => {
+      const detail = (event as CustomEvent<InfernoStatusResponse>).detail;
+      if (detail) apply(detail);
+    };
+    window.addEventListener(INFERNO_STATUS_CHANGED_EVENT, onStatus);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(INFERNO_STATUS_CHANGED_EVENT, onStatus);
+    };
+  }, []);
+
   const apiProtocol = config.apiProtocol ?? 'anthropic';
   const providerForProtocol = useMemo(
     () =>
@@ -1035,6 +1070,15 @@ export function InlineModelSwitcher({
     [apiModelOptions],
   );
 
+  useEffect(() => {
+    if (config.mode !== 'api') return;
+    const first = apiModelIds[0];
+    if (!first) return;
+    if (!config.model.trim() || !apiModelIds.includes(config.model)) {
+      onApiModelChange?.(first);
+    }
+  }, [apiModelIds, config.mode, config.model, onApiModelChange]);
+
   // Chip text — keep it tight so the pill doesn't wrap on small viewports.
   // CLI: "Claude · Sonnet 4.5"; BYOK: "Anthropic · sonnet-4.5".
   const chipMode =
@@ -1046,7 +1090,7 @@ export function InlineModelSwitcher({
       ? currentAgent
         ? displayAgentChipName(currentAgent)
         : t('inlineSwitcher.noAgent')
-      : apiProtocolLabel(apiProtocol);
+      : 'Inferno';
   const chipModel =
     config.mode === 'daemon'
       ? isDeepSeekV4FlashCampaignModel(currentModelId)
@@ -1059,9 +1103,11 @@ export function InlineModelSwitcher({
   // Compact home chip surfaces the selected model name + a connection-status
   // dot; label/tooltip fall back to the agent name. In CLI mode the agent's
   // `available` flag is the connection signal (reachable on PATH); API/BYOK is
-  // a user-configured endpoint, treated as connected.
+  // connected only after Inferno has a key and a model catalog.
   const chipConnected =
-    config.mode === 'daemon' ? currentAgent?.available === true : true;
+    config.mode === 'daemon'
+      ? currentAgent?.available === true
+      : infernoStatus?.ready === true;
   /**
    * 紧凑 chip 的读屏标签 / 提示里那个「谁在跑」。
    *
@@ -1076,7 +1122,7 @@ export function InlineModelSwitcher({
       ? currentAgent
         ? displayAgentName(currentAgent)
         : t('inlineSwitcher.chipTitle')
-      : apiProtocolLabel(apiProtocol);
+      : 'Inferno';
 
   const handleChipClick = useCallback(() => {
     const nextOpen = !open;
@@ -1233,16 +1279,6 @@ export function InlineModelSwitcher({
                       });
                       onApiModelChange?.(nextValue);
                     }}
-                    additionalOptions={
-                      config.model && !apiModelIds.includes(config.model)
-                        ? [
-                            {
-                              value: config.model,
-                              label: `${config.model} ${t('inlineSwitcher.customSuffix')}`,
-                            },
-                          ]
-                        : undefined
-                    }
                   />
                 ) : (
                   <span className="inline-switcher__hint">
@@ -1251,7 +1287,7 @@ export function InlineModelSwitcher({
                 )}
               </div>
 
-              {!config.apiKey ? (
+              {!infernoStatus?.apiKeyConfigured ? (
                 <div className="inline-switcher__warn" role="status">
                   {t('inlineSwitcher.missingApiKey')}
                 </div>

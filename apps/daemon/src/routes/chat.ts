@@ -1054,29 +1054,51 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
     sse: any,
     dialect: 'openai' | 'anthropic' | 'google',
     response: Response,
+    model: string,
   ) => {
     let ended = false;
+    let sentDelta = false;
     const guard = createDeltaGuard(sse);
+    const sendInfernoStreamError = (message: string, details: unknown) => {
+      console.error(`[proxy:inferno] stream error model=${model} ${message}`);
+      sendProxyError(sse, message, {
+        code: INFERNO_ERROR_CODES.UNAVAILABLE,
+        details,
+        retryable: true,
+      });
+    };
+    const sendInfernoDelta = (text: string) => {
+      if (!text) return;
+      sentDelta = true;
+      guard.sendDelta(text);
+    };
+    const finishInfernoStream = (details: unknown = {}) => {
+      if (ended) return;
+      ended = true;
+      if (!sentDelta) {
+        sendInfernoStreamError('Inferno returned no output.', details);
+        return;
+      }
+      sse.send('end', {});
+    };
     if (dialect === 'anthropic') {
       await streamUpstreamSse(response, ({ event, data }: any) => {
         if (!data) return false;
         if (event === 'error' || data.type === 'error') {
           const message = data.error?.message || data.message || 'Anthropic upstream error';
-          sendProxyError(sse, message, { details: data });
+          sendInfernoStreamError(`Inferno: ${message}`, data);
           ended = true;
           return true;
         }
         if (event === 'content_block_delta' && typeof data.delta?.text === 'string') {
-          guard.sendDelta(data.delta.text);
+          sendInfernoDelta(data.delta.text);
           if (guard.contaminated) {
-            sse.send('end', {});
-            ended = true;
+            finishInfernoStream(data);
             return true;
           }
         }
         if (event === 'message_stop') {
-          sse.send('end', {});
-          ended = true;
+          finishInfernoStream(data);
           return true;
         }
         return false;
@@ -1086,22 +1108,21 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
         if (!data) return false;
         const streamError = extractStreamErrorMessage(data);
         if (streamError) {
-          sendProxyError(sse, `Gemini error: ${streamError}`, { details: data });
+          sendInfernoStreamError(`Inferno: ${streamError}`, data);
           ended = true;
           return true;
         }
         const delta = extractGeminiText(data);
         if (delta) {
-          guard.sendDelta(delta);
+          sendInfernoDelta(delta);
           if (guard.contaminated) {
-            sse.send('end', {});
-            ended = true;
+            finishInfernoStream(data);
             return true;
           }
         }
         const blockMessage = extractGeminiBlockMessage(data);
         if (blockMessage) {
-          sendProxyError(sse, blockMessage, { details: data });
+          sendInfernoStreamError(`Inferno: ${blockMessage}`, data);
           ended = true;
           return true;
         }
@@ -1110,30 +1131,28 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
     } else {
       await streamUpstreamSse(response, ({ payload, data }: any) => {
         if (payload === '[DONE]') {
-          sse.send('end', {});
-          ended = true;
+          finishInfernoStream(data);
           return true;
         }
         if (!data) return false;
         const streamError = extractStreamErrorMessage(data);
         if (streamError) {
-          sendProxyError(sse, `Provider error: ${streamError}`, { details: data });
+          sendInfernoStreamError(`Inferno: ${streamError}`, data);
           ended = true;
           return true;
         }
         const delta = extractOpenAIText(data);
         if (delta) {
-          guard.sendDelta(delta);
+          sendInfernoDelta(delta);
           if (guard.contaminated) {
-            sse.send('end', {});
-            ended = true;
+            finishInfernoStream(data);
             return true;
           }
         }
         return false;
       });
     }
-    if (!ended) sse.send('end', {});
+    if (!ended) finishInfernoStream();
   };
 
   app.post('/api/proxy/inferno/stream', async (req, res) => {
@@ -1188,7 +1207,7 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
       const sse = createSseResponse(res);
       sse.send('start', { model });
       try {
-        await pipeInfernoUpstreamSse(sse, opened.dialect, opened.response);
+        await pipeInfernoUpstreamSse(sse, opened.dialect, opened.response, model);
       } catch (err: any) {
         console.error(`[proxy:inferno] internal error: ${err.message}`);
         sendProxyError(sse, err.message, { code: 'INTERNAL_ERROR' });

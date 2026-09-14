@@ -193,6 +193,12 @@ describe('resolveRunFailureUi', () => {
     expect(resolveRunFailureUi('UNAUTHORIZED', null, null).cloudSwitchCta).toBe(true);
   });
 
+  it('does not offer Switch to Cloud for Inferno or leftover API agent ids', () => {
+    expect(resolveRunFailureUi('UPSTREAM_UNAVAILABLE', null, 'inferno').cloudSwitchCta).toBe(false);
+    expect(resolveRunFailureUi('UPSTREAM_UNAVAILABLE', null, 'openai-api').cloudSwitchCta).toBe(false);
+    expect(resolveRunFailureUi('INFERNO_UNAVAILABLE', null, 'inferno').cloudSwitchCta).toBe(false);
+  });
+
   // #895 follow-up: the daemon's fine-grained failure_detail can refine — and
   // even override — a too-coarse error_code. A hard quota and a transient 429
   // both arrive as RATE_LIMITED, but retrying a hard quota is futile, so it must

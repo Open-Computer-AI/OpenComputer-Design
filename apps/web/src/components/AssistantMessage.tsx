@@ -398,6 +398,22 @@ function useTickingNow(active: boolean, runId?: string): StreamClock {
   return tick;
 }
 
+/**
+ * Inferno HTTP turns write the spoken reply on `message.content` and only a
+ * `requesting` status on `message.events`. Preferring any non-empty events
+ * array would drop that reply into a collapsed Done shell.
+ */
+function eventsForAssistantDisplay(message: ChatMessage): AgentEvent[] {
+  const events = message.events ?? [];
+  const content = message.content ?? "";
+  if (!content.trim()) return events;
+  const hasCoveringText = events.some(
+    (event) => event.kind === "text" && event.text.trim().length > 0,
+  );
+  if (hasCoveringText) return events;
+  return [...events, { kind: "text", text: content }];
+}
+
 function AssistantMessageImpl({
   message,
   streaming,
@@ -467,12 +483,10 @@ function AssistantMessageImpl({
   // execution shell (`components/chat/ExecutionShell.tsx`), which builds its own
   // link handler, so that memo has no consumer left and is deliberately dropped
   // rather than carried as an unused binding.
-  const events =
-    (message.events?.length ?? 0) > 0
-      ? message.events!
-      : message.content.trim()
-        ? ([{ kind: "text", text: message.content }] satisfies AgentEvent[])
-        : [];
+  const events = useMemo(
+    () => eventsForAssistantDisplay(message),
+    [message.content, message.events],
+  );
   const displayEvents = useMemo(
     () => dedupeToolUsesById(dropSupersededInFlightToolUses(events)),
     [events],
@@ -534,7 +548,9 @@ function AssistantMessageImpl({
   } else if (
     message.resultDeliveryState === 'no_result' ||
     message.resultDeliveryState === 'delivery_failed' ||
-    (!message.runStatus && legacyTurnFailed(displayEvents, message.endedAt))
+    (!message.runStatus && legacyTurnFailed(displayEvents, message.endedAt)) ||
+    (!message.content?.trim() &&
+      (message.events ?? []).some((event) => event.kind === 'status' && event.label === 'error'))
   ) {
     turnRunStatus = 'failed';
   } else {
@@ -895,6 +911,9 @@ function AssistantMessageImpl({
   const hasEmptyResponse = events.some(
     (e) => e.kind === "status" && e.label === "empty_response"
   );
+  const providerFailedWithNoOutput =
+    !message.content?.trim() &&
+    events.some((e) => e.kind === "status" && e.label === "error");
   const hasResultDeliveryFailure =
     message.resultDeliveryState === "no_result" ||
     message.resultDeliveryState === "delivery_failed";
@@ -1084,7 +1103,8 @@ function AssistantMessageImpl({
    * (那格必须显示 "No output",且 "Done" 计数为 0)。它也没有壳头替它说话。
    */
   const failedTurnIsAnnouncedByTheShell =
-    message.runStatus === "failed" && !hasEmptyResponse;
+    (message.runStatus === "failed" || hasResultDeliveryFailure || providerFailedWithNoOutput)
+    && !hasEmptyResponse;
   /**
    * 这一行要不要报「这一轮怎么样了」。
    *

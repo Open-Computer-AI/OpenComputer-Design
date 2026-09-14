@@ -138,9 +138,10 @@ function messageRow(id: string): HTMLElement {
   return row;
 }
 
-/** 这条消息在屏幕上有没有「进行中」的样子(执行记录壳那颗转球)。 */
+/** 这条消息在屏幕上有没有「进行中」的样子(执行记录壳头那颗转圈)。 */
 function looksRunning(id: string): boolean {
-  return messageRow(id).querySelector('[data-orb]') !== null;
+  const row = messageRow(id);
+  return row.querySelector('[data-testid="record-head-spinner"], [data-orb]') !== null;
 }
 
 describe('晚到的宿主卡不许把 API 模式的流式指示顶掉', () => {

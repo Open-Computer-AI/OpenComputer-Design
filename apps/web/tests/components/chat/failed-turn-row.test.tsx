@@ -170,3 +170,62 @@ describe('整轮失败 · 静态对照(证明没一刀切)', () => {
     expect(container.querySelector('[data-testid="assistant-label"]')).toBeNull();
   });
 });
+
+describe('Inferno empty provider failure · last turn', () => {
+  function infernoEmptyFailure(): ChatMessage {
+    return {
+      id: 'inferno-empty-fail',
+      role: 'assistant',
+      content: '',
+      agentId: 'inferno',
+      agentName: 'Inferno · gpt-5.6-luna',
+      runStatus: 'failed',
+      startedAt: 1789374359051,
+      endedAt: 1789374361540,
+      createdAt: 1789374361540,
+      events: [
+        { kind: 'status', label: 'requesting', detail: 'gpt-5.6-luna' },
+        {
+          kind: 'status',
+          label: 'error',
+          detail: 'Provider error: Upstream service temporarily unavailable',
+          code: 'UPSTREAM_UNAVAILABLE',
+        },
+      ],
+      producedFiles: [],
+    } as ChatMessage;
+  }
+
+  it('does not paint Done when Inferno failed with no output', () => {
+    const { container } = render(
+      <AssistantMessage
+        message={infernoEmptyFailure()}
+        streaming={false}
+        isLast
+        projectId="p1"
+        errorCardOwnerId={null}
+        onFeedback={vi.fn()}
+        onForkFromMessage={vi.fn()}
+      />,
+    );
+    expect(container.textContent).toContain(en['chat.record.failedTurn']);
+    const label = container.querySelector('[data-testid="assistant-label"]');
+    expect(label?.textContent ?? null).not.toBe(en['assistant.doneLabel']);
+  });
+
+  it('does not paint Done when the provider error left no text even if runStatus is succeeded', () => {
+    const { container } = render(
+      <AssistantMessage
+        message={{ ...infernoEmptyFailure(), runStatus: 'succeeded' }}
+        streaming={false}
+        isLast
+        projectId="p1"
+        errorCardOwnerId={null}
+        onFeedback={vi.fn()}
+        onForkFromMessage={vi.fn()}
+      />,
+    );
+    const label = container.querySelector('[data-testid="assistant-label"]');
+    expect(label?.textContent ?? null).not.toBe(en['assistant.doneLabel']);
+  });
+});

@@ -1628,9 +1628,17 @@ export function resolveRunFailureUi(
     rawMessage,
     verdict,
   );
+  // Inferno-only: there is no Open Design Cloud / AMR to switch to.
+  if (isInfernoDistributionAgent(agentId)) return withoutCloudSelfPromotion(ui);
   return runsOnALocalAgent(agentId)
     ? withCloudSwitchCta(ui)
     : withoutCloudSelfPromotion(ui);
+}
+
+function isInfernoDistributionAgent(agentId: string | null | undefined): boolean {
+  if (!agentId) return false;
+  if (agentId === 'inferno') return true;
+  return agentId.endsWith('-api');
 }
 
 function resolveRunFailureUiIgnoringSelfPromotion(
@@ -1866,7 +1874,11 @@ function resolveRunFailureUiIgnoringSelfPromotion(
       { cloudSwitchCta: true },
     );
   }
-  if (code === 'UPSTREAM_UNAVAILABLE') {
+  if (
+    code === 'UPSTREAM_UNAVAILABLE'
+    || code === 'INFERNO_UNAVAILABLE'
+    || code === 'INFERNO_MODEL_UNREACHABLE'
+  ) {
     return failureCard(
       { transient: true },
       'chat.runError.title.upstreamUnavailable',
