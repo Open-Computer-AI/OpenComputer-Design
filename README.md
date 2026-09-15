@@ -7,9 +7,12 @@ Fork of nexu-io/open-design (Apache-2.0).
 Website: [tryopencomputer.com](https://tryopencomputer.com)
 
 <p align="center">
+  <a href="https://github.com/Open-Computer-AI/OpenComputer-Design/releases"><img alt="release" src="https://img.shields.io/github/v/release/Open-Computer-AI/OpenComputer-Design?style=flat&color=blueviolet&label=release&include_prereleases&display_name=tag" /></a>
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-Apache%202.0-blue.svg?style=flat" /></a>
   <a href="QUICKSTART.md"><img alt="quickstart" src="https://img.shields.io/badge/quickstart-3%20commands-green?style=flat" /></a>
 </p>
+
+<p align="center"><b>English</b> · <a href="docs/i18n/README.es.md">Español</a> · <a href="docs/i18n/README.pt-BR.md">Português</a> · <a href="docs/i18n/README.de.md">Deutsch</a> · <a href="docs/i18n/README.fr.md">Français</a> · <a href="docs/i18n/README.zh-CN.md">简体中文</a> · <a href="docs/i18n/README.zh-TW.md">繁體中文</a> · <a href="docs/i18n/README.ko.md">한국어</a> · <a href="docs/i18n/README.ja-JP.md">日本語</a> · <a href="docs/i18n/README.ar.md">العربية</a> · <a href="docs/i18n/README.ru.md">Русский</a> · <a href="docs/i18n/README.uk.md">Українська</a> · <a href="docs/i18n/README.tr.md">Türkçe</a> · <a href="docs/i18n/README.th.md">ภาษาไทย</a></p>
 
 ---
 
@@ -21,12 +24,29 @@ OpenComputer Design is a local web UI and daemon (`ocd`) that talks **only to In
 - **CLI `ocd`.** Not `od` (macOS `/usr/bin/od`) and not `oc` (OpenComputer platform CLI).
 - **Data dir** `~/.opencomputer-design`. Override with `OCD_DATA_DIR`, then `OD_DATA_DIR`. See `AGENTS.md` → **Daemon data directory contract** — this README does not restate it.
 - **Studio** for prototypes, decks, documents, mobile, and HyperFrames (local HTML → MP4). Remote image/video providers are not offered.
+- **Packaged app identity** is **OpenComputer Design** (`OpenComputer Design.exe` on Windows, `OpenComputer Design.app` on macOS). Internal npm packages stay `@open-design/*`.
 
 Generate / Send stays blocked until Inferno is ready (key saved and model catalog fetched). The banner is: **Add your Inferno API key in Settings to generate.**
 
 ---
 
 ## Quick start
+
+### Packaged desktop
+
+Build the installer this repo ships (unsigned until you attach a cert):
+
+```bash
+# Windows NSIS → OpenComputer Design Setup
+pnpm tools-pack win build --to nsis
+
+# macOS DMG → OpenComputer Design.app
+pnpm tools-pack mac build --to dmg
+```
+
+Install, launch **OpenComputer Design**, then **Settings → Inferno**, paste your API key, Save. Auto-update metadata is `https://releases.tryopencomputer.com/<channel>/latest/metadata.json` (override with `OD_UPDATE_METADATA_URL`).
+
+GitHub Releases: [Open-Computer-AI/OpenComputer-Design](https://github.com/Open-Computer-AI/OpenComputer-Design/releases).
 
 ### Run from source
 
@@ -182,11 +202,12 @@ MCP is still available so **external** tools can read local projects (`ocd mcp i
 | Layer | Stack |
 |---|---|
 | Frontend | Next.js App Router + React + TypeScript |
+| Desktop | Electron · NSIS (Windows) · DMG (macOS) · product name **OpenComputer Design** |
 | Daemon | Node 24 · Express · SSE · `better-sqlite3` |
 | Storage | `AGENTS.md` → **Daemon data directory contract** |
 | Preview | `<artifact>` blocks → project files → sandboxed iframe |
 | Export | HTML · PDF · PPTX · ZIP · Markdown · MP4 (HyperFrames) |
-| Lifecycle | `pnpm tools-dev` (start / stop / run / status / logs / inspect / check) |
+| Lifecycle | `pnpm tools-dev` (dev) · `pnpm tools-pack` (installers) |
 
 Full architecture → [`docs/architecture.md`](docs/architecture.md).
 

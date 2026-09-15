@@ -56,6 +56,17 @@ OD_API_TOKEN=
 
 Before documenting, changing, or choosing any persistent daemon storage path, read root `AGENTS.md` → **Daemon data directory contract**. This Quickstart MUST NOT restate that contract.
 
+## Packaged desktop
+
+The customer app is **OpenComputer Design**, not Open Design.
+
+```bash
+pnpm tools-pack win build --to nsis   # Windows Setup.exe
+pnpm tools-pack mac build --to dmg    # macOS .dmg
+```
+
+After install: **Settings → Inferno**, paste the API key. Full pack commands → [`tools/pack/README.md`](tools/pack/README.md).
+
 ## One-shot (dev mode)
 
 ```bash
