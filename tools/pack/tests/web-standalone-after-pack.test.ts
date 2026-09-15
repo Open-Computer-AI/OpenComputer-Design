@@ -103,8 +103,8 @@ async function writeHyperframesRuntimeFixture(options: {
     ? path.dirname(path.dirname(options.resourcesRoot))
     : path.dirname(options.resourcesRoot);
   const bundledNodePath = options.platformName === "win32"
-    ? join(appPath, "Open Design.exe")
-    : join(appPath, "Contents", "MacOS", "Open Design");
+    ? join(appPath, "OpenComputer Design.exe")
+    : join(appPath, "Contents", "MacOS", "OpenComputer Design");
   await mkdir(path.dirname(bundledNodePath), { recursive: true });
   if (process.platform !== "win32") {
     const quotedNodePath = process.execPath.replaceAll("'", "'\\''");
@@ -204,9 +204,9 @@ async function runFixture(options: {
   const platformName = options.platformName ?? "win32";
   const appOutDir = join(root, "builder", platformName === "darwin" ? "mac-arm64" : "win-unpacked");
   const resourcesRoot = platformName === "darwin"
-    ? join(appOutDir, "Open Design.app", "Contents", "Resources")
+    ? join(appOutDir, "OpenComputer Design.app", "Contents", "Resources")
     : join(appOutDir, "resources");
-  const appPath = join(appOutDir, "Open Design.app");
+  const appPath = join(appOutDir, "OpenComputer Design.app");
   const auditReportPath = join(root, "audit.json");
   const configPath = join(root, "config.json");
   const hyperframesRuntimeSourceRoot = join(workspaceRoot, "assembled", "app");
@@ -225,7 +225,7 @@ async function runFixture(options: {
     await writeFile(join(electronFrameworkRoot, "Versions", "A", "Helpers", "chrome_crashpad_handler"), "binary\n", "utf8");
     await writeFile(join(electronFrameworkRoot, "Versions", "Current", "Electron Framework"), "binary\n", "utf8");
     await mkdir(join(frameworksRoot, "ReactiveObjC.framework"), { recursive: true });
-    await mkdir(join(frameworksRoot, "Open Design Helper.app"), { recursive: true });
+    await mkdir(join(frameworksRoot, "OpenComputer Design Helper.app"), { recursive: true });
   }
   if (options.omitRootWebPackage !== true) {
     await writeRootWebPackage(resourcesRoot);
@@ -267,7 +267,7 @@ async function runFixture(options: {
     await runWebStandaloneAfterPack({
       appOutDir,
       electronPlatformName: platformName,
-      packager: { appInfo: { productFilename: "Open Design" } },
+      packager: { appInfo: { productFilename: "OpenComputer Design" } },
     });
   } catch (error) {
     await rm(root, { force: true, recursive: true });
@@ -308,7 +308,7 @@ describe("web standalone afterPack hook", () => {
         /resources\/app\/node_modules\/hyperframes\/dist\/cli\.js$/,
       );
       expect(report.hyperframesCliSmoke.nodePath.split(path.sep).join("/")).toMatch(
-        /win-unpacked\/Open Design\.exe$/,
+        /win-unpacked\/OpenComputer Design\.exe$/,
       );
     } finally {
       await rm(fixture.root, { force: true, recursive: true });
@@ -326,7 +326,7 @@ describe("web standalone afterPack hook", () => {
     await expect(runWebStandaloneAfterPack({
       appOutDir: "/tmp/open-design-linux",
       electronPlatformName: "linux",
-      packager: { appInfo: { productFilename: "Open Design" } },
+      packager: { appInfo: { productFilename: "OpenComputer Design" } },
     })).rejects.toThrow(/unsupported platform: linux/);
   });
 
@@ -466,15 +466,15 @@ describe("web standalone afterPack hook", () => {
         expect.arrayContaining([
           expect.stringMatching(/Electron Framework\.framework\/Versions\/Current$/),
           expect.stringMatching(/ReactiveObjC\.framework$/),
-          expect.stringMatching(/Open Design Helper\.app$/),
-          expect.stringMatching(/Open Design\.app$/),
+          expect.stringMatching(/OpenComputer Design Helper\.app$/),
+          expect.stringMatching(/OpenComputer Design\.app$/),
         ]),
       );
       expect(signedTargets).not.toContainEqual(expect.stringMatching(/Electron Framework\.framework$/));
       await expect(
         readlink(join(
           fixture.appOutDir,
-          "Open Design.app",
+          "OpenComputer Design.app",
           "Contents",
           "Frameworks",
           "Electron Framework.framework",
@@ -485,7 +485,7 @@ describe("web standalone afterPack hook", () => {
       await expect(
         readlink(join(
           fixture.appOutDir,
-          "Open Design.app",
+          "OpenComputer Design.app",
           "Contents",
           "Frameworks",
           "Electron Framework.framework",
@@ -495,7 +495,7 @@ describe("web standalone afterPack hook", () => {
       await expect(
         readlink(join(
           fixture.appOutDir,
-          "Open Design.app",
+          "OpenComputer Design.app",
           "Contents",
           "Frameworks",
           "Electron Framework.framework",

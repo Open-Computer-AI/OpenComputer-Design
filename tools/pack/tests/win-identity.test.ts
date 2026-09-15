@@ -30,7 +30,7 @@ describe("resolveWinInstallIdentity", () => {
       appPathsKey: "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\OpenComputer Design.exe",
       displayName: "OpenComputer Design",
       exeName: "OpenComputer Design.exe",
-      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Open Design-release-stable-win",
+      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenComputer Design-release-stable-win",
       shortcutName: "OpenComputer Design.lnk",
       uninstallerName: "Uninstall OpenComputer Design.exe",
     });
@@ -40,7 +40,7 @@ describe("resolveWinInstallIdentity", () => {
     expect(resolveWinInstallIdentity({ namespace: "release-beta-win" })).toMatchObject({
       appPathsKey: "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\OpenComputer Design Beta.exe",
       displayName: "OpenComputer Design Beta",
-      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Open Design-release-beta-win",
+      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenComputer Design-release-beta-win",
       shortcutName: "OpenComputer Design Beta.lnk",
       uninstallerName: "Uninstall OpenComputer Design Beta.exe",
     });
@@ -50,7 +50,7 @@ describe("resolveWinInstallIdentity", () => {
     expect(resolveWinInstallIdentity({ namespace: "beta-local-flow" })).toMatchObject({
       appPathsKey: "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\OpenComputer Design beta-local-flow.exe",
       displayName: "OpenComputer Design beta-local-flow",
-      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Open Design-beta-local-flow",
+      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenComputer Design-beta-local-flow",
       shortcutName: "OpenComputer Design beta-local-flow.lnk",
       uninstallerName: "Uninstall OpenComputer Design beta-local-flow.exe",
     });
@@ -60,7 +60,7 @@ describe("resolveWinInstallIdentity", () => {
     expect(resolveWinInstallIdentity({ namespace: "release-preview-win" })).toMatchObject({
       appPathsKey: "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\OpenComputer Design Preview.exe",
       displayName: "OpenComputer Design Preview",
-      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Open Design-release-preview-win",
+      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenComputer Design-release-preview-win",
       shortcutName: "OpenComputer Design Preview.lnk",
       uninstallerName: "Uninstall OpenComputer Design Preview.exe",
     });
@@ -73,7 +73,7 @@ describe("resolveWinInstallIdentity", () => {
     })).toMatchObject({
       appPathsKey: "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\OpenComputer Design Prerelease.exe",
       displayName: "OpenComputer Design Prerelease",
-      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Open Design-release-stable-win",
+      registryKey: "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenComputer Design-release-stable-win",
       shortcutName: "OpenComputer Design Prerelease.lnk",
       uninstallerName: "Uninstall OpenComputer Design Prerelease.exe",
     });
@@ -90,11 +90,11 @@ describe("resolveWinInstallIdentity", () => {
   });
 
   it("emits a valid NSIS command literal for executable paths containing spaces", () => {
-    expect(createNsisQuotedCommandLiteral(["$INSTDIR\\Open Design.exe", "%1"])).toBe(
-      `'"$INSTDIR\\Open Design.exe" "%1"'`,
+    expect(createNsisQuotedCommandLiteral(["$INSTDIR\\OpenComputer Design.exe", "%1"])).toBe(
+      `'"$INSTDIR\\OpenComputer Design.exe" "%1"'`,
     );
-    expect(createNsisQuotedCommandLiteral(["$INSTDIR\\Open Design.exe"])).toBe(
-      `'"$INSTDIR\\Open Design.exe"'`,
+    expect(createNsisQuotedCommandLiteral(["$INSTDIR\\OpenComputer Design.exe"])).toBe(
+      `'"$INSTDIR\\OpenComputer Design.exe"'`,
     );
   });
 

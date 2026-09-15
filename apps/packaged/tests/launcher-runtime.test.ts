@@ -51,11 +51,11 @@ async function writeActiveMacPayloadFixture(
     root,
     version,
   });
-  const appRoot = join(versionPaths.payloadRoot, "Open Design Beta.app");
+  const appRoot = join(versionPaths.payloadRoot, "OpenComputer Design Beta.app");
   const resourcesPath = join(appRoot, "Contents", "Resources");
   await mkdir(join(appRoot, "Contents", "MacOS"), { recursive: true });
   await mkdir(resourcesPath, { recursive: true });
-  await writeFile(join(appRoot, "Contents", "MacOS", "Open Design Beta"), "");
+  await writeFile(join(appRoot, "Contents", "MacOS", "OpenComputer Design Beta"), "");
   await writeFile(
     join(resourcesPath, "open-design-config.json"),
     `${JSON.stringify({
@@ -69,8 +69,8 @@ async function writeActiveMacPayloadFixture(
     `${JSON.stringify({
       channel: "beta",
       entry: {
-        cwd: "payload/Open Design Beta.app",
-        executable: "payload/Open Design Beta.app/Contents/MacOS/Open Design Beta",
+        cwd: "payload/OpenComputer Design Beta.app",
+        executable: "payload/OpenComputer Design Beta.app/Contents/MacOS/OpenComputer Design Beta",
       },
       namespace: config.namespace,
       payloadRoot: "payload",
@@ -106,13 +106,13 @@ describe("resolvePackagedLauncherRuntime", () => {
     try {
       const physicalRoot = join(root, "physical");
       const aliasRoot = join(root, "alias");
-      const executable = join(physicalRoot, "Open Design.app", "Contents", "MacOS", "Open Design");
+      const executable = join(physicalRoot, "OpenComputer Design.app", "Contents", "MacOS", "OpenComputer Design");
       await mkdir(dirname(executable), { recursive: true });
       await writeFile(executable, "");
       await symlink(physicalRoot, aliasRoot, "dir");
 
       await expect(sameExecutablePath(
-        join(aliasRoot, "Open Design.app", "Contents", "MacOS", "Open Design"),
+        join(aliasRoot, "OpenComputer Design.app", "Contents", "MacOS", "OpenComputer Design"),
         executable,
       )).resolves.toBe(true);
     } finally {
@@ -205,16 +205,16 @@ describe("resolvePackagedLauncherRuntime", () => {
         root,
         version: "1.2.3-beta.5",
       });
-      const resourcesPath = join(versionPaths.payloadRoot, "Open Design Beta.app", "Contents", "Resources");
+      const resourcesPath = join(versionPaths.payloadRoot, "OpenComputer Design Beta.app", "Contents", "Resources");
       const payloadExecutablePath = join(
         versionPaths.payloadRoot,
-        "Open Design Beta.app",
+        "OpenComputer Design Beta.app",
         "Contents",
         "MacOS",
-        "Open Design Beta",
+        "OpenComputer Design Beta",
       );
       await mkdir(join(resourcesPath, "open-design", "bin"), { recursive: true });
-      await mkdir(join(versionPaths.payloadRoot, "Open Design Beta.app", "Contents", "MacOS"), { recursive: true });
+      await mkdir(join(versionPaths.payloadRoot, "OpenComputer Design Beta.app", "Contents", "MacOS"), { recursive: true });
       await mkdir(join(resourcesPath, "prebundled", "daemon"), { recursive: true });
       await mkdir(join(resourcesPath, "prebundled", "web"), { recursive: true });
       await writeFile(join(resourcesPath, "open-design", "bin", "node"), "");
@@ -236,8 +236,8 @@ describe("resolvePackagedLauncherRuntime", () => {
         `${JSON.stringify({
           channel: "beta",
           entry: {
-            cwd: "payload/Open Design Beta.app",
-            executable: "payload/Open Design Beta.app/Contents/MacOS/Open Design Beta",
+            cwd: "payload/OpenComputer Design Beta.app",
+            executable: "payload/OpenComputer Design Beta.app/Contents/MacOS/OpenComputer Design Beta",
           },
           namespace: config.namespace,
           payloadRoot: "payload",
@@ -261,7 +261,7 @@ describe("resolvePackagedLauncherRuntime", () => {
         join(paths.installationRoot, "launcher", "channels", "beta", "namespaces", config.namespace, "install.json"),
         `${JSON.stringify({
           channel: "beta",
-          launchPath: "/Applications/Open Design Beta.app",
+          launchPath: "/Applications/OpenComputer Design Beta.app",
           namespace: config.namespace,
           schemaVersion: LAUNCHER_SCHEMA_VERSION,
         })}\n`,
@@ -271,13 +271,13 @@ describe("resolvePackagedLauncherRuntime", () => {
         // The launcher process runs from the stable installed app bundle, so
         // its stable launch path matches the persisted install descriptor and
         // the payload branch keeps the persisted entry untouched.
-        currentExecutablePath: "/Applications/Open Design Beta.app",
+        currentExecutablePath: "/Applications/OpenComputer Design Beta.app",
       });
 
       expect(runtime.source).toBe("payload");
       expect(runtime.desktopExecutablePath).toBe(payloadExecutablePath);
       expect(runtime.electronNodeCommand).toBeNull();
-      expect(runtime.installedLaunchPath).toBe("/Applications/Open Design Beta.app");
+      expect(runtime.installedLaunchPath).toBe("/Applications/OpenComputer Design Beta.app");
       expect(runtime.targetVersion).toBe("1.2.3-beta.5");
       expect(runtime.config.appVersion).toBe("1.2.3-beta.5");
       expect(runtime.config.resourceRoot).toBe(join(resourcesPath, "open-design"));
@@ -357,16 +357,16 @@ describe("resolvePackagedLauncherRuntime", () => {
         root,
         version: "1.2.3-beta.5",
       });
-      const resourcesPath = join(versionPaths.payloadRoot, "Open Design Beta.app", "Contents", "Resources");
+      const resourcesPath = join(versionPaths.payloadRoot, "OpenComputer Design Beta.app", "Contents", "Resources");
       const payloadExecutablePath = join(
         versionPaths.payloadRoot,
-        "Open Design Beta.app",
+        "OpenComputer Design Beta.app",
         "Contents",
         "MacOS",
-        "Open Design Beta",
+        "OpenComputer Design Beta",
       );
       await mkdir(join(resourcesPath, "open-design", "bin"), { recursive: true });
-      await mkdir(join(versionPaths.payloadRoot, "Open Design Beta.app", "Contents", "MacOS"), { recursive: true });
+      await mkdir(join(versionPaths.payloadRoot, "OpenComputer Design Beta.app", "Contents", "MacOS"), { recursive: true });
       await mkdir(join(resourcesPath, "prebundled", "daemon"), { recursive: true });
       await mkdir(join(resourcesPath, "prebundled", "web"), { recursive: true });
       await writeFile(join(resourcesPath, "open-design", "bin", "node"), "");
@@ -388,8 +388,8 @@ describe("resolvePackagedLauncherRuntime", () => {
         `${JSON.stringify({
           channel: "beta",
           entry: {
-            cwd: "payload/Open Design Beta.app",
-            executable: "payload/Open Design Beta.app/Contents/MacOS/Open Design Beta",
+            cwd: "payload/OpenComputer Design Beta.app",
+            executable: "payload/OpenComputer Design Beta.app/Contents/MacOS/OpenComputer Design Beta",
           },
           namespace: config.namespace,
           payloadRoot: "payload",
@@ -417,22 +417,22 @@ describe("resolvePackagedLauncherRuntime", () => {
         installPath,
         `${JSON.stringify({
           channel: "beta",
-          launchPath: "/Applications/Open Design Legacy.app",
+          launchPath: "/Applications/OpenComputer Design Legacy.app",
           namespace: config.namespace,
           schemaVersion: LAUNCHER_SCHEMA_VERSION,
         })}\n`,
       );
 
       const runtime = await resolvePackagedLauncherRuntime(config, paths, {
-        currentExecutablePath: "/Applications/Open Design Beta.app",
+        currentExecutablePath: "/Applications/OpenComputer Design Beta.app",
       });
 
       expect(runtime.source).toBe("payload");
       expect(runtime.payloadDesktopProcess).toBe(false);
-      expect(runtime.installedLaunchPath).toBe("/Applications/Open Design Beta.app");
+      expect(runtime.installedLaunchPath).toBe("/Applications/OpenComputer Design Beta.app");
       expect(JSON.parse(await readFile(installPath, "utf8"))).toMatchObject({
         channel: "beta",
-        launchPath: "/Applications/Open Design Beta.app",
+        launchPath: "/Applications/OpenComputer Design Beta.app",
         namespace: config.namespace,
         schemaVersion: LAUNCHER_SCHEMA_VERSION,
       });
@@ -459,10 +459,10 @@ describe("resolvePackagedLauncherRuntime", () => {
         "versions",
         secondPayload.version,
         "payload",
-        "Open Design Beta.app",
+        "OpenComputer Design Beta.app",
         "Contents",
         "MacOS",
-        "Open Design Beta",
+        "OpenComputer Design Beta",
       );
       await mkdir(currentPackageRuntime.launcherPaths.stateRoot, { recursive: true });
       await writeFile(
@@ -546,7 +546,7 @@ describe("resolvePackagedLauncherRuntime", () => {
         version: "1.2.3-beta.5",
       });
       const resourcesPath = join(versionPaths.versionRoot, "payload", "resources");
-      const payloadExePath = join(versionPaths.versionRoot, "payload", "Open Design.exe");
+      const payloadExePath = join(versionPaths.versionRoot, "payload", "OpenComputer Design.exe");
       const webStandaloneRoot = join(resourcesPath, "open-design-web-standalone");
       await mkdir(join(resourcesPath, "prebundled", "daemon"), { recursive: true });
       await mkdir(join(resourcesPath, "prebundled", "web"), { recursive: true });
@@ -570,7 +570,7 @@ describe("resolvePackagedLauncherRuntime", () => {
           channel: "beta",
           entry: {
             cwd: "payload",
-            executable: "payload/Open Design.exe",
+            executable: "payload/OpenComputer Design.exe",
           },
           namespace: config.namespace,
           payloadRoot: "payload",

@@ -539,10 +539,10 @@ async function writeAssembledApp(
     main: "main.cjs",
     dependencies,
     description: "Local-first design product: detects your installed code-agent CLI, runs design skills + design systems, streams artifacts into a sandboxed preview.",
-    author: "Open Design Team",
+    author: "OpenComputer Design Team",
     repository: {
       type: "git",
-      url: "https://github.com/nexu-io/open-design.git"
+      url: "https://github.com/Open-Computer-AI/OpenComputer-Design.git"
     }
   };
   await writeFile(paths.assembledPackageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf8");
@@ -633,8 +633,8 @@ async function writeLinuxBuilderConfig(config: ToolPackConfig, paths: LinuxPaths
       target,
       icon: linuxResources.icon,
       category: "Development",
-      synopsis: "Open Design",
-      maintainer: "Open Design Contributors",
+      synopsis: "OpenComputer Design",
+      maintainer: "OpenComputer Design Contributors",
     },
     // Keep the AppImage launch fallback explicit. Our top-level AppRun wrapper
     // clears ELECTRON_RUN_AS_NODE before these Chromium flags reach Electron,
@@ -1210,7 +1210,7 @@ export async function installPackedLinuxHeadless(config: ToolPackConfig): Promis
   const dataDir = dirname(config.roots.runtime.namespaceBaseRoot);
   const script = [
     "#!/bin/sh",
-    `# Open Design headless launcher — namespace: ${config.namespace}`,
+    `# OpenComputer Design headless launcher — namespace: ${config.namespace}`,
     `OD_PACKAGED_NAMESPACE=${JSON.stringify(config.namespace)} OD_DATA_DIR=${JSON.stringify(dataDir)} OD_RESOURCE_ROOT=${JSON.stringify(paths.resourceRoot)} exec ${JSON.stringify(nodePath)} ${JSON.stringify(entryPath)} "$@"`,
   ].join("\n") + "\n";
 
